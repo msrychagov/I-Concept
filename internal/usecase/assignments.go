@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -17,7 +18,13 @@ func (a *Service) StartAssignment(student model.Account, id string) (any, error)
 			}
 		}
 		if assignment.ID == "" || !assignment.Active || !assignmentApplies(assignment, student) {
+			if assignment.FormID != "" {
+				return nil, failure(Forbidden, map[string]any{"error": "Задание недоступно."})
+			}
 			return nil, failure(Forbidden, map[string]any{"error": "Тестирование недоступно."})
+		}
+		if assignment.FormID != "" {
+			return a.startForm(db, student, assignment)
 		}
 		for _, rec := range db.Sessions {
 			if rec.Session.StudentID == student.ID && rec.Session.AssignmentID == id {
@@ -42,6 +49,9 @@ func (a *Service) StartAssignment(student model.Account, id string) (any, error)
 }
 func (a *Service) AssignmentCommand(b Input, op string) (any, error) {
 	return a.transaction(func(db *model.Database) (any, error) {
+		if op == "assignment" && str(b, "formId") != "" {
+			return a.assignForm(db, b)
+		}
 		if op == "assignment" {
 			var p model.Profile
 			for _, x := range db.Profiles {
@@ -78,4 +88,36 @@ func (a *Service) AssignmentCommand(b Input, op string) (any, error) {
 		}
 		return nil, failure(Invalid, map[string]any{"error": fmt.Sprintf("Неизвестное действие %s", op)})
 	})
+}
+
+// assignForm assigns a fixed questionnaire; it needs no template.
+func (a *Service) assignForm(db *model.Database, b Input) (any, error) {
+	form, known := a.forms[str(b, "formId")]
+	title := strings.TrimSpace(str(b, "title"))
+	platoon := strings.TrimSpace(str(b, "platoon"))
+	if !known || str(b, "profileId") != "" || title == "" || len(title) > 200 || len(platoon) > 80 {
+		return nil, failure(Invalid, map[string]any{"error": "Выберите анкету и укажите название задания."})
+	}
+	db.Assignments = append(db.Assignments, model.Assignment{ID: uuid(), Title: title, Platoon: platoon, FormID: form.ID, Active: true, Created: time.Now().UTC().Format(time.RFC3339)})
+	return map[string]any{"ok": true}, nil
+}
+
+// startForm returns the student's submission for the assignment, creating it on first start.
+func (a *Service) startForm(db *model.Database, student model.Account, assignment model.Assignment) (any, error) {
+	form, known := a.forms[assignment.FormID]
+	if !known {
+		return nil, failure(Invalid, map[string]any{"error": "Анкета не найдена."})
+	}
+	for _, submission := range db.Submissions {
+		if submission.StudentID == student.ID && submission.AssignmentID == assignment.ID {
+			if submission.Completed {
+				return nil, failure(Conflict, map[string]any{"error": "Анкета уже сдана."})
+			}
+			return map[string]any{"url": "/autobiography?id=" + submission.ID}, nil
+		}
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	submission := model.FormSubmission{ID: uuid(), FormID: form.ID, FormVersion: form.Version, StudentID: student.ID, AssignmentID: assignment.ID, Created: now, Updated: now, SavedSections: []string{}, Answers: map[string]json.RawMessage{}}
+	db.Submissions = append(db.Submissions, submission)
+	return map[string]any{"url": "/autobiography?id=" + submission.ID}, nil
 }
