@@ -1,0 +1,2980 @@
+{
+ "id": "autobiography",
+ "version": "1.0",
+ "title": "Автобиография",
+ "intro": "Автобиография заменяет бумажный бланк. Сведения сохраняются в системе ВУЦ и доступны преподавателям. Заполнять можно частями, черновик сохраняется. После сдачи изменить ответы нельзя.",
+ "sections": [
+  {
+   "id": "about",
+   "title": "О себе",
+   "fields": [
+    {
+     "id": "name_changed",
+     "label": "Менялись ли у вас ФИО?",
+     "type": "choice",
+     "required": true,
+     "options": [
+      {
+       "id": "no",
+       "text": "Нет"
+      },
+      {
+       "id": "yes",
+       "text": "Да"
+      }
+     ]
+    },
+    {
+     "id": "prev_names",
+     "label": "Прежние ФИО",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "name_changed",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "name_change_reason",
+     "label": "Причина смены ФИО",
+     "type": "choice",
+     "required": true,
+     "options": [
+      {
+       "id": "marriage",
+       "text": "Вступление в брак"
+      },
+      {
+       "id": "own",
+       "text": "По собственному желанию"
+      },
+      {
+       "id": "adoption",
+       "text": "Усыновление или установление отцовства"
+      },
+      {
+       "id": "other",
+       "text": "Другое"
+      }
+     ],
+     "showIf": {
+      "field": "name_changed",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "birth_date",
+     "label": "Дата рождения",
+     "type": "date",
+     "required": true
+    },
+    {
+     "id": "birth_country",
+     "label": "Страна рождения",
+     "type": "choice",
+     "required": true,
+     "ref": "countries"
+    },
+    {
+     "id": "birth_region",
+     "label": "Регион рождения",
+     "type": "choice",
+     "required": true,
+     "ref": "regions",
+     "showIf": {
+      "field": "birth_country",
+      "in": [
+       "RU"
+      ]
+     }
+    },
+    {
+     "id": "birth_place",
+     "label": "Населённый пункт рождения",
+     "type": "text",
+     "hint": "Как указано в паспорте.",
+     "required": true
+    },
+    {
+     "id": "nationality",
+     "label": "Национальность",
+     "type": "choice",
+     "required": true,
+     "ref": "nationalities"
+    },
+    {
+     "id": "nationality_other",
+     "label": "Другая национальность",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "nationality",
+      "in": [
+       "other"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "education",
+   "title": "Учёба до вуза",
+   "fields": [
+    {
+     "id": "education_list",
+     "label": "Учебные заведения",
+     "type": "group",
+     "required": true,
+     "min": 1,
+     "max": 10,
+     "addLabel": "Добавить учебное заведение",
+     "fields": [
+      {
+       "id": "edu_type",
+       "label": "Тип учебного заведения",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "school",
+         "text": "Школа"
+        },
+        {
+         "id": "lyceum",
+         "text": "Лицей"
+        },
+        {
+         "id": "gymnasium",
+         "text": "Гимназия"
+        },
+        {
+         "id": "cadet",
+         "text": "Кадетская школа или корпус"
+        },
+        {
+         "id": "suvorov",
+         "text": "Суворовское, нахимовское, президентское кадетское училище"
+        },
+        {
+         "id": "college",
+         "text": "Колледж, техникум"
+        },
+        {
+         "id": "university",
+         "text": "Другой вуз"
+        },
+        {
+         "id": "other",
+         "text": "Другое"
+        }
+       ]
+      },
+      {
+       "id": "edu_profile",
+       "label": "Профиль",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "none",
+         "text": "Без профиля"
+        },
+        {
+         "id": "fiziko_matematicheskiy",
+         "text": "Физико-математический"
+        },
+        {
+         "id": "informatsionno_tekhnologicheskiy",
+         "text": "Информационно-технологический"
+        },
+        {
+         "id": "inzhenerno_tekhnicheskiy",
+         "text": "Инженерно-технический"
+        },
+        {
+         "id": "estestvenno_nauchnyy",
+         "text": "Естественно-научный"
+        },
+        {
+         "id": "gumanitarnyy",
+         "text": "Гуманитарный"
+        },
+        {
+         "id": "lingvisticheskiy",
+         "text": "Лингвистический"
+        },
+        {
+         "id": "sotsialno_ekonomicheskiy",
+         "text": "Социально-экономический"
+        },
+        {
+         "id": "cadet",
+         "text": "Кадетский, оборонно-спортивный"
+        },
+        {
+         "id": "sportivnyy",
+         "text": "Спортивный"
+        },
+        {
+         "id": "art",
+         "text": "Художественный, музыкальный"
+        },
+        {
+         "id": "other",
+         "text": "Другой"
+        }
+       ]
+      },
+      {
+       "id": "edu_region",
+       "label": "Регион",
+       "type": "choice",
+       "required": true,
+       "ref": "regions"
+      },
+      {
+       "id": "school_city",
+       "label": "Населённый пункт",
+       "type": "text",
+       "required": true,
+       "suggest": true
+      },
+      {
+       "id": "school_name",
+       "label": "Название или номер",
+       "type": "text",
+       "required": true,
+       "suggest": true
+      },
+      {
+       "id": "edu_year",
+       "label": "Год окончания",
+       "type": "year",
+       "required": true,
+       "llm": true
+      },
+      {
+       "id": "edu_speciality",
+       "label": "Специальность",
+       "type": "text",
+       "required": true,
+       "llm": true,
+       "showIf": {
+        "field": "edu_type",
+        "in": [
+         "college",
+         "university"
+        ]
+       }
+      },
+      {
+       "id": "edu_finished",
+       "label": "Окончили ли вы это учебное заведение?",
+       "type": "choice",
+       "required": true,
+       "options": [
+        {
+         "id": "yes",
+         "text": "Да"
+        },
+        {
+         "id": "no",
+         "text": "Нет"
+        }
+       ],
+       "showIf": {
+        "field": "edu_type",
+        "in": [
+         "college",
+         "university"
+        ]
+       }
+      },
+      {
+       "id": "edu_medal",
+       "label": "Медаль или диплом с отличием",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "no",
+         "text": "Нет"
+        },
+        {
+         "id": "yes",
+         "text": "Да"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "hse",
+   "title": "Учёба в ВШЭ",
+   "fields": [
+    {
+     "id": "hse_campus",
+     "label": "Кампус",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "msk",
+       "text": "Москва"
+      },
+      {
+       "id": "spb",
+       "text": "Санкт-Петербург"
+      },
+      {
+       "id": "nnov",
+       "text": "Нижний Новгород"
+      },
+      {
+       "id": "perm",
+       "text": "Пермь"
+      }
+     ]
+    },
+    {
+     "id": "hse_level",
+     "label": "Уровень",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "bakalavriat",
+       "text": "Бакалавриат"
+      },
+      {
+       "id": "spetsialitet",
+       "text": "Специалитет"
+      },
+      {
+       "id": "magistratura",
+       "text": "Магистратура"
+      }
+     ]
+    },
+    {
+     "id": "hse_faculty_msk",
+     "label": "Факультет",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "ref": "hse_faculties_msk",
+     "showIf": {
+      "field": "hse_campus",
+      "in": [
+       "msk"
+      ]
+     }
+    },
+    {
+     "id": "hse_faculty_spb",
+     "label": "Факультет",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "ref": "hse_faculties_spb",
+     "showIf": {
+      "field": "hse_campus",
+      "in": [
+       "spb"
+      ]
+     }
+    },
+    {
+     "id": "hse_faculty_nnov",
+     "label": "Факультет",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "ref": "hse_faculties_nnov",
+     "showIf": {
+      "field": "hse_campus",
+      "in": [
+       "nnov"
+      ]
+     }
+    },
+    {
+     "id": "hse_faculty_perm",
+     "label": "Факультет",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "ref": "hse_faculties_perm",
+     "showIf": {
+      "field": "hse_campus",
+      "in": [
+       "perm"
+      ]
+     }
+    },
+    {
+     "id": "hse_program",
+     "label": "Направление подготовки (программа)",
+     "type": "text",
+     "hint": "Начните вводить — появятся варианты, которые уже указывали другие студенты.",
+     "required": true,
+     "llm": true,
+     "suggest": true
+    },
+    {
+     "id": "hse_start",
+     "label": "Месяц и год поступления",
+     "type": "month",
+     "required": true,
+     "llm": true
+    },
+    {
+     "id": "hse_end",
+     "label": "Месяц и год окончания",
+     "type": "month",
+     "hint": "Для учащегося — ожидаемый.",
+     "required": true,
+     "llm": true
+    }
+   ]
+  },
+  {
+   "id": "work",
+   "title": "Работа до вуза",
+   "fields": [
+    {
+     "id": "work_has",
+     "label": "Работали ли вы до поступления в вуз?",
+     "type": "choice",
+     "required": true,
+     "options": [
+      {
+       "id": "no",
+       "text": "Нет"
+      },
+      {
+       "id": "yes",
+       "text": "Да"
+      }
+     ]
+    },
+    {
+     "id": "work_list",
+     "label": "Места работы",
+     "type": "group",
+     "required": true,
+     "showIf": {
+      "field": "work_has",
+      "in": [
+       "yes"
+      ]
+     },
+     "min": 1,
+     "max": 10,
+     "addLabel": "Добавить место работы",
+     "fields": [
+      {
+       "id": "org",
+       "label": "Организация",
+       "type": "text",
+       "required": true
+      },
+      {
+       "id": "sphere",
+       "label": "Сфера",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "ref": "spheres"
+      },
+      {
+       "id": "position",
+       "label": "Должность",
+       "type": "text",
+       "required": true,
+       "llm": true
+      },
+      {
+       "id": "from",
+       "label": "Работал(а) с",
+       "type": "month",
+       "required": true,
+       "llm": true
+      },
+      {
+       "id": "still",
+       "label": "Работаете там до сих пор?",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "yes",
+         "text": "Да"
+        },
+        {
+         "id": "no",
+         "text": "Нет"
+        }
+       ]
+      },
+      {
+       "id": "to",
+       "label": "Работал(а) по",
+       "type": "month",
+       "required": true,
+       "llm": true,
+       "showIf": {
+        "field": "still",
+        "in": [
+         "no"
+        ]
+       }
+      },
+      {
+       "id": "leave_reason",
+       "label": "Причина ухода",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "study",
+         "text": "Поступление в вуз"
+        },
+        {
+         "id": "contract",
+         "text": "Закончился договор, сезонная работа"
+        },
+        {
+         "id": "own",
+         "text": "По собственному желанию"
+        },
+        {
+         "id": "move",
+         "text": "Переезд"
+        },
+        {
+         "id": "cut",
+         "text": "Сокращение"
+        },
+        {
+         "id": "other",
+         "text": "Другое"
+        }
+       ],
+       "showIf": {
+        "field": "still",
+        "in": [
+         "no"
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "military",
+   "title": "Воинская обязанность",
+   "fields": [
+    {
+     "id": "served",
+     "label": "Служили ли вы в Вооружённых силах?",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "no",
+       "text": "Нет"
+      },
+      {
+       "id": "yes",
+       "text": "Да"
+      }
+     ]
+    },
+    {
+     "id": "service_branch",
+     "label": "Вид или род войск",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "ref": "branches",
+     "showIf": {
+      "field": "served",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "service_from",
+     "label": "Служил(а) с",
+     "type": "month",
+     "required": true,
+     "llm": true,
+     "showIf": {
+      "field": "served",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "service_to",
+     "label": "Служил(а) по",
+     "type": "month",
+     "required": true,
+     "llm": true,
+     "showIf": {
+      "field": "served",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "service_place",
+     "label": "Место службы",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "served",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "service_position",
+     "label": "Должность",
+     "type": "text",
+     "required": true,
+     "llm": true,
+     "showIf": {
+      "field": "served",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "service_vus",
+     "label": "ВУС",
+     "type": "text",
+     "hint": "Военно-учётная специальность.",
+     "required": true,
+     "showIf": {
+      "field": "served",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "service_rank",
+     "label": "Звание",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "ref": "ranks",
+     "showIf": {
+      "field": "served",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "vk_region",
+     "label": "Военный комиссариат сейчас: регион",
+     "type": "choice",
+     "required": true,
+     "ref": "regions"
+    },
+    {
+     "id": "vk_district",
+     "label": "Район или город военного комиссариата",
+     "type": "text",
+     "hint": "Название программа дополнит сама: «Военный комиссариат …».",
+     "required": true,
+     "suggest": true
+    },
+    {
+     "id": "vk_same",
+     "label": "Был ли до поступления тот же военный комиссариат?",
+     "type": "choice",
+     "required": true,
+     "options": [
+      {
+       "id": "yes",
+       "text": "Да"
+      },
+      {
+       "id": "no",
+       "text": "Нет"
+      }
+     ]
+    },
+    {
+     "id": "vk_prev_region",
+     "label": "Прежний военный комиссариат: регион",
+     "type": "choice",
+     "required": true,
+     "ref": "regions",
+     "showIf": {
+      "field": "vk_same",
+      "in": [
+       "no"
+      ]
+     }
+    },
+    {
+     "id": "vk_prev_district",
+     "label": "Прежний военный комиссариат: район или город",
+     "type": "text",
+     "required": true,
+     "suggest": true,
+     "showIf": {
+      "field": "vk_same",
+      "in": [
+       "no"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "languages",
+   "title": "Иностранные языки",
+   "fields": [
+    {
+     "id": "lang_has",
+     "label": "Владеете ли вы иностранными языками?",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "no",
+       "text": "Нет"
+      },
+      {
+       "id": "yes",
+       "text": "Да"
+      }
+     ]
+    },
+    {
+     "id": "lang_list",
+     "label": "Языки",
+     "type": "group",
+     "required": true,
+     "showIf": {
+      "field": "lang_has",
+      "in": [
+       "yes"
+      ]
+     },
+     "min": 1,
+     "max": 10,
+     "addLabel": "Добавить язык",
+     "fields": [
+      {
+       "id": "language",
+       "label": "Язык",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "ref": "languages"
+      },
+      {
+       "id": "degree",
+       "label": "Степень владения",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "fluent",
+         "text": "Свободно"
+        },
+        {
+         "id": "talk",
+         "text": "Читаю и могу объясняться"
+        },
+        {
+         "id": "dict",
+         "text": "Читаю и перевожу со словарём"
+        }
+       ]
+      },
+      {
+       "id": "practice",
+       "label": "Практика",
+       "type": "multi",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "school",
+         "text": "Изучал(а) в школе"
+        },
+        {
+         "id": "university",
+         "text": "Изучаю в вузе"
+        },
+        {
+         "id": "courses",
+         "text": "Курсы, репетитор"
+        },
+        {
+         "id": "exam",
+         "text": "Экзамен, сертификат"
+        },
+        {
+         "id": "abroad",
+         "text": "Учёба или стажировка за рубежом"
+        },
+        {
+         "id": "env",
+         "text": "Жил(а) в языковой среде"
+        },
+        {
+         "id": "work",
+         "text": "Использую в работе"
+        },
+        {
+         "id": "native",
+         "text": "Общаюсь с носителями"
+        },
+        {
+         "id": "second",
+         "text": "Второй родной язык"
+        }
+       ]
+      },
+      {
+       "id": "school_kind",
+       "label": "Как изучали в школе",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "regular",
+         "text": "Обычная программа"
+        },
+        {
+         "id": "advanced",
+         "text": "Углублённое изучение (языковая школа, гимназия)"
+        }
+       ],
+       "showIf": {
+        "field": "practice",
+        "in": [
+         "school"
+        ]
+       }
+      },
+      {
+       "id": "courses_what",
+       "label": "Какие курсы или репетитор",
+       "type": "text",
+       "required": true,
+       "llm": true,
+       "showIf": {
+        "field": "practice",
+        "in": [
+         "courses"
+        ]
+       }
+      },
+      {
+       "id": "courses_time",
+       "label": "Сколько занимались",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "y1",
+         "text": "До года"
+        },
+        {
+         "id": "y13",
+         "text": "1–3 года"
+        },
+        {
+         "id": "y3",
+         "text": "Больше 3 лет"
+        }
+       ],
+       "showIf": {
+        "field": "practice",
+        "in": [
+         "courses"
+        ]
+       }
+      },
+      {
+       "id": "exam",
+       "label": "Экзамен",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "ref": "exams",
+       "showIf": {
+        "field": "practice",
+        "in": [
+         "exam"
+        ]
+       }
+      },
+      {
+       "id": "exam_other",
+       "label": "Название другого экзамена",
+       "type": "text",
+       "required": true,
+       "llm": true,
+       "showIf": {
+        "field": "exam",
+        "in": [
+         "other"
+        ]
+       }
+      },
+      {
+       "id": "exam_result",
+       "label": "Результат или уровень",
+       "type": "text",
+       "required": true,
+       "llm": true,
+       "showIf": {
+        "field": "practice",
+        "in": [
+         "exam"
+        ]
+       }
+      },
+      {
+       "id": "exam_year",
+       "label": "Год сдачи",
+       "type": "year",
+       "required": true,
+       "llm": true,
+       "showIf": {
+        "field": "practice",
+        "in": [
+         "exam"
+        ]
+       }
+      },
+      {
+       "id": "abroad_country",
+       "label": "Страна учёбы или стажировки",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "ref": "countries",
+       "showIf": {
+        "field": "practice",
+        "in": [
+         "abroad"
+        ]
+       }
+      },
+      {
+       "id": "abroad_time",
+       "label": "Сколько длилась учёба или стажировка",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "m1",
+         "text": "До месяца"
+        },
+        {
+         "id": "m6",
+         "text": "До полугода"
+        },
+        {
+         "id": "y1",
+         "text": "До года"
+        },
+        {
+         "id": "y1p",
+         "text": "Больше года"
+        }
+       ],
+       "showIf": {
+        "field": "practice",
+        "in": [
+         "abroad"
+        ]
+       }
+      },
+      {
+       "id": "env_country",
+       "label": "Страна, где жили",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "ref": "countries",
+       "showIf": {
+        "field": "practice",
+        "in": [
+         "env"
+        ]
+       }
+      },
+      {
+       "id": "env_years",
+       "label": "Сколько лет",
+       "type": "text",
+       "required": true,
+       "llm": true,
+       "maxLength": 30,
+       "showIf": {
+        "field": "practice",
+        "in": [
+         "env"
+        ]
+       }
+      },
+      {
+       "id": "work_use",
+       "label": "В какой работе и для чего",
+       "type": "text",
+       "required": true,
+       "llm": true,
+       "showIf": {
+        "field": "practice",
+        "in": [
+         "work"
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "family",
+   "title": "Семейное положение",
+   "fields": [
+    {
+     "id": "marital",
+     "label": "Семейное положение",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "single",
+       "text": "Холост"
+      },
+      {
+       "id": "married",
+       "text": "Женат"
+      },
+      {
+       "id": "divorced",
+       "text": "Разведён"
+      }
+     ]
+    },
+    {
+     "id": "spouse_last",
+     "label": "Фамилия супруги",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "marital",
+      "in": [
+       "married"
+      ]
+     }
+    },
+    {
+     "id": "spouse_maiden",
+     "label": "Девичья фамилия супруги",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "marital",
+      "in": [
+       "married"
+      ]
+     }
+    },
+    {
+     "id": "spouse_first",
+     "label": "Имя супруги",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "marital",
+      "in": [
+       "married"
+      ]
+     }
+    },
+    {
+     "id": "spouse_middle",
+     "label": "Отчество супруги",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "marital",
+      "in": [
+       "married"
+      ]
+     }
+    },
+    {
+     "id": "spouse_birth",
+     "label": "Дата рождения супруги",
+     "type": "date",
+     "required": true,
+     "showIf": {
+      "field": "marital",
+      "in": [
+       "married"
+      ]
+     }
+    },
+    {
+     "id": "spouse_birthplace",
+     "label": "Место рождения супруги",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "marital",
+      "in": [
+       "married"
+      ]
+     }
+    },
+    {
+     "id": "spouse_job",
+     "label": "Место работы и должность супруги",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "marital",
+      "in": [
+       "married"
+      ]
+     }
+    },
+    {
+     "id": "spouse_with_me",
+     "label": "Супруга живёт с вами?",
+     "type": "choice",
+     "required": true,
+     "options": [
+      {
+       "id": "yes",
+       "text": "Да"
+      },
+      {
+       "id": "no",
+       "text": "Нет"
+      }
+     ],
+     "showIf": {
+      "field": "marital",
+      "in": [
+       "married"
+      ]
+     }
+    },
+    {
+     "id": "spouse_address",
+     "label": "Адрес супруги",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "spouse_with_me",
+      "in": [
+       "no"
+      ]
+     }
+    },
+    {
+     "id": "cert_number",
+     "label": "Серия и номер свидетельства о браке",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "marital",
+      "in": [
+       "married"
+      ]
+     }
+    },
+    {
+     "id": "cert_issued_by",
+     "label": "Кем выдано свидетельство",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "marital",
+      "in": [
+       "married"
+      ]
+     }
+    },
+    {
+     "id": "cert_date",
+     "label": "Дата выдачи свидетельства",
+     "type": "date",
+     "required": true,
+     "showIf": {
+      "field": "marital",
+      "in": [
+       "married"
+      ]
+     }
+    },
+    {
+     "id": "children_has",
+     "label": "Есть ли у вас дети?",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "no",
+       "text": "Нет"
+      },
+      {
+       "id": "yes",
+       "text": "Да"
+      }
+     ]
+    },
+    {
+     "id": "children_list",
+     "label": "Дети",
+     "type": "group",
+     "required": true,
+     "showIf": {
+      "field": "children_has",
+      "in": [
+       "yes"
+      ]
+     },
+     "min": 1,
+     "max": 15,
+     "addLabel": "Добавить ребёнка",
+     "fields": [
+      {
+       "id": "child_name",
+       "label": "Имя",
+       "type": "text",
+       "required": true
+      },
+      {
+       "id": "child_birth",
+       "label": "Дата рождения",
+       "type": "date",
+       "required": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "relatives",
+   "title": "Близкие родственники",
+   "fields": [
+    {
+     "id": "upbringing",
+     "label": "Кто вас воспитывал",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "both",
+       "text": "Оба родителя"
+      },
+      {
+       "id": "mother",
+       "text": "Мать"
+      },
+      {
+       "id": "father",
+       "text": "Отец"
+      },
+      {
+       "id": "guardians",
+       "text": "Опекуны или приёмная семья"
+      },
+      {
+       "id": "relatives",
+       "text": "Бабушка, дедушка или другие родственники"
+      },
+      {
+       "id": "orphanage",
+       "text": "Детский дом или интернат"
+      }
+     ]
+    },
+    {
+     "id": "rel_has",
+     "label": "Есть ли у вас близкие родственники?",
+     "type": "choice",
+     "hint": "Укажите отца, мать, родных братьев и сестёр. Если их нет — тех, кого считаете близкими.",
+     "required": true,
+     "options": [
+      {
+       "id": "yes",
+       "text": "Есть, укажу"
+      },
+      {
+       "id": "no",
+       "text": "Близких родственников нет"
+      }
+     ]
+    },
+    {
+     "id": "rel_list",
+     "label": "Близкие родственники",
+     "type": "group",
+     "required": true,
+     "showIf": {
+      "field": "rel_has",
+      "in": [
+       "yes"
+      ]
+     },
+     "min": 1,
+     "max": 20,
+     "addLabel": "Добавить родственника",
+     "fields": [
+      {
+       "id": "kind",
+       "label": "Кем приходится",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "father",
+         "text": "Отец"
+        },
+        {
+         "id": "mother",
+         "text": "Мать"
+        },
+        {
+         "id": "brother",
+         "text": "Брат"
+        },
+        {
+         "id": "sister",
+         "text": "Сестра"
+        },
+        {
+         "id": "guardian",
+         "text": "Опекун, приёмный родитель"
+        },
+        {
+         "id": "grandmother",
+         "text": "Бабушка"
+        },
+        {
+         "id": "grandfather",
+         "text": "Дедушка"
+        },
+        {
+         "id": "other",
+         "text": "Другой близкий"
+        }
+       ]
+      },
+      {
+       "id": "known",
+       "label": "Сведения",
+       "type": "choice",
+       "required": true,
+       "options": [
+        {
+         "id": "yes",
+         "text": "Есть сведения"
+        },
+        {
+         "id": "no",
+         "text": "Сведений не имею"
+        }
+       ]
+      },
+      {
+       "id": "name",
+       "label": "ФИО",
+       "type": "text",
+       "required": true,
+       "showIf": {
+        "field": "known",
+        "in": [
+         "yes"
+        ]
+       }
+      },
+      {
+       "id": "birth",
+       "label": "Дата рождения",
+       "type": "date",
+       "required": true,
+       "showIf": {
+        "field": "known",
+        "in": [
+         "yes"
+        ]
+       }
+      },
+      {
+       "id": "alive",
+       "label": "Жив(а)",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "yes",
+         "text": "Да"
+        },
+        {
+         "id": "no",
+         "text": "Нет"
+        }
+       ],
+       "showIf": {
+        "field": "known",
+        "in": [
+         "yes"
+        ]
+       }
+      },
+      {
+       "id": "death_year",
+       "label": "Год смерти",
+       "type": "year",
+       "required": true,
+       "showIf": {
+        "field": "alive",
+        "in": [
+         "no"
+        ]
+       }
+      },
+      {
+       "id": "work",
+       "label": "Занятость",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "works",
+         "text": "Работает или служит"
+        },
+        {
+         "id": "pensioner",
+         "text": "Пенсионер"
+        },
+        {
+         "id": "student",
+         "text": "Учится"
+        },
+        {
+         "id": "none",
+         "text": "Не работает"
+        }
+       ],
+       "showIf": {
+        "field": "alive",
+        "in": [
+         "yes"
+        ]
+       }
+      },
+      {
+       "id": "org",
+       "label": "Организация",
+       "type": "text",
+       "required": true,
+       "showIf": {
+        "field": "work",
+        "in": [
+         "works"
+        ]
+       }
+      },
+      {
+       "id": "sphere",
+       "label": "Сфера",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "ref": "spheres",
+       "showIf": {
+        "field": "work",
+        "in": [
+         "works"
+        ]
+       }
+      },
+      {
+       "id": "position",
+       "label": "Должность",
+       "type": "text",
+       "required": true,
+       "llm": true,
+       "showIf": {
+        "field": "work",
+        "in": [
+         "works"
+        ]
+       }
+      },
+      {
+       "id": "with_me",
+       "label": "Живёт с вами?",
+       "type": "choice",
+       "required": true,
+       "options": [
+        {
+         "id": "yes",
+         "text": "Да"
+        },
+        {
+         "id": "no",
+         "text": "Нет"
+        }
+       ],
+       "showIf": {
+        "field": "alive",
+        "in": [
+         "yes"
+        ]
+       }
+      },
+      {
+       "id": "address",
+       "label": "Адрес",
+       "type": "text",
+       "required": true,
+       "showIf": {
+        "field": "with_me",
+        "in": [
+         "no"
+        ]
+       }
+      },
+      {
+       "id": "foreign",
+       "label": "Иностранное гражданство",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "no",
+         "text": "Нет"
+        },
+        {
+         "id": "yes",
+         "text": "Да"
+        }
+       ],
+       "showIf": {
+        "field": "alive",
+        "in": [
+         "yes"
+        ]
+       }
+      },
+      {
+       "id": "foreign_country",
+       "label": "Страна гражданства",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "ref": "countries",
+       "showIf": {
+        "field": "foreign",
+        "in": [
+         "yes"
+        ]
+       }
+      },
+      {
+       "id": "crim",
+       "label": "Привлекался(лась) к уголовной ответственности",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "no",
+         "text": "Нет"
+        },
+        {
+         "id": "yes",
+         "text": "Да"
+        }
+       ],
+       "showIf": {
+        "field": "known",
+        "in": [
+         "yes"
+        ]
+       }
+      },
+      {
+       "id": "crim_year",
+       "label": "Год",
+       "type": "year",
+       "required": true,
+       "showIf": {
+        "field": "crim",
+        "in": [
+         "yes"
+        ]
+       }
+      },
+      {
+       "id": "crim_what",
+       "label": "За что",
+       "type": "text",
+       "required": true,
+       "llm": true,
+       "showIf": {
+        "field": "crim",
+        "in": [
+         "yes"
+        ]
+       }
+      },
+      {
+       "id": "crim_measure",
+       "label": "Мера наказания",
+       "type": "text",
+       "required": true,
+       "showIf": {
+        "field": "crim",
+        "in": [
+         "yes"
+        ]
+       }
+      },
+      {
+       "id": "crim_grave",
+       "label": "Тяжкое или особо тяжкое преступление",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "yes",
+         "text": "Да"
+        },
+        {
+         "id": "no",
+         "text": "Нет"
+        },
+        {
+         "id": "unknown",
+         "text": "Не знаю"
+        }
+       ],
+       "showIf": {
+        "field": "crim",
+        "in": [
+         "yes"
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "special",
+   "title": "Особые сведения",
+   "fields": [
+    {
+     "id": "trips_has",
+     "label": "Были ли вы за границей?",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "no",
+       "text": "Нет"
+      },
+      {
+       "id": "yes",
+       "text": "Да"
+      }
+     ]
+    },
+    {
+     "id": "trips_list",
+     "label": "Поездки",
+     "type": "group",
+     "required": true,
+     "showIf": {
+      "field": "trips_has",
+      "in": [
+       "yes"
+      ]
+     },
+     "min": 1,
+     "max": 20,
+     "addLabel": "Добавить поездку",
+     "fields": [
+      {
+       "id": "country",
+       "label": "Страна",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "ref": "countries"
+      },
+      {
+       "id": "year",
+       "label": "Год",
+       "type": "year",
+       "required": true,
+       "llm": true
+      },
+      {
+       "id": "purpose",
+       "label": "Цель",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "tourism",
+         "text": "Туризм"
+        },
+        {
+         "id": "study",
+         "text": "Учёба, стажировка"
+        },
+        {
+         "id": "work",
+         "text": "Работа"
+        },
+        {
+         "id": "relatives",
+         "text": "К родственникам"
+        },
+        {
+         "id": "sport",
+         "text": "Соревнования"
+        },
+        {
+         "id": "lived",
+         "text": "Жил(а) постоянно"
+        },
+        {
+         "id": "other",
+         "text": "Другое"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "crim_has",
+     "label": "Привлекались ли вы к уголовной ответственности?",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "no",
+       "text": "Нет"
+      },
+      {
+       "id": "yes",
+       "text": "Да"
+      }
+     ]
+    },
+    {
+     "id": "crim_year",
+     "label": "Год",
+     "type": "year",
+     "required": true,
+     "showIf": {
+      "field": "crim_has",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "crim_what",
+     "label": "За что",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "crim_has",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "crim_measure",
+     "label": "Мера наказания",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "crim_has",
+      "in": [
+       "yes"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "awards",
+   "title": "Государственные награды",
+   "fields": [
+    {
+     "id": "awards_has",
+     "label": "Есть ли у вас государственные награды?",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "no",
+       "text": "Нет"
+      },
+      {
+       "id": "yes",
+       "text": "Да"
+      }
+     ]
+    },
+    {
+     "id": "awards_list",
+     "label": "Награды",
+     "type": "group",
+     "required": true,
+     "showIf": {
+      "field": "awards_has",
+      "in": [
+       "yes"
+      ]
+     },
+     "min": 1,
+     "max": 20,
+     "addLabel": "Добавить награду",
+     "fields": [
+      {
+       "id": "award_name",
+       "label": "Название",
+       "type": "text",
+       "required": true,
+       "llm": true
+      },
+      {
+       "id": "award_year",
+       "label": "Год",
+       "type": "year",
+       "required": true,
+       "llm": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "address",
+   "title": "Адрес",
+   "fields": [
+    {
+     "id": "reg_region",
+     "label": "Регион постоянной регистрации",
+     "type": "choice",
+     "required": true,
+     "ref": "regions"
+    },
+    {
+     "id": "reg_address",
+     "label": "Адрес постоянной регистрации",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "lives_at_reg",
+     "label": "Живёте ли вы по этому адресу?",
+     "type": "choice",
+     "required": true,
+     "options": [
+      {
+       "id": "yes",
+       "text": "Да"
+      },
+      {
+       "id": "no",
+       "text": "Нет"
+      }
+     ]
+    },
+    {
+     "id": "live_kind",
+     "label": "Где живёте",
+     "type": "choice",
+     "required": true,
+     "options": [
+      {
+       "id": "dorm",
+       "text": "Общежитие"
+      },
+      {
+       "id": "rent",
+       "text": "Съёмное жильё"
+      },
+      {
+       "id": "relatives",
+       "text": "У родственников"
+      }
+     ],
+     "showIf": {
+      "field": "lives_at_reg",
+      "in": [
+       "no"
+      ]
+     }
+    },
+    {
+     "id": "live_address",
+     "label": "Адрес проживания",
+     "type": "text",
+     "required": true,
+     "showIf": {
+      "field": "lives_at_reg",
+      "in": [
+       "no"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "sport",
+   "title": "Спорт",
+   "fields": [
+    {
+     "id": "sport_has",
+     "label": "Занимаетесь или занимались спортом?",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "no",
+       "text": "Нет"
+      },
+      {
+       "id": "yes",
+       "text": "Да"
+      }
+     ]
+    },
+    {
+     "id": "sport_list",
+     "label": "Виды спорта",
+     "type": "group",
+     "llm": true,
+     "showIf": {
+      "field": "sport_has",
+      "in": [
+       "yes"
+      ]
+     },
+     "max": 10,
+     "addLabel": "Добавить вид спорта",
+     "fields": [
+      {
+       "id": "sport_kind",
+       "label": "Вид спорта",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "ref": "sports"
+      },
+      {
+       "id": "sport_kind_other",
+       "label": "Какой именно вид спорта",
+       "type": "text",
+       "required": true,
+       "llm": true,
+       "showIf": {
+        "field": "sport_kind",
+        "in": [
+         "other"
+        ]
+       }
+      },
+      {
+       "id": "sport_now",
+       "label": "Сейчас",
+       "type": "choice",
+       "llm": true,
+       "options": [
+        {
+         "id": "now",
+         "text": "Занимаюсь"
+        },
+        {
+         "id": "before",
+         "text": "Занимался(лась) раньше"
+        }
+       ]
+      },
+      {
+       "id": "sport_years",
+       "label": "Стаж",
+       "type": "choice",
+       "llm": true,
+       "options": [
+        {
+         "id": "y1",
+         "text": "До года"
+        },
+        {
+         "id": "y13",
+         "text": "1–3 года"
+        },
+        {
+         "id": "y35",
+         "text": "3–5 лет"
+        },
+        {
+         "id": "y5",
+         "text": "Больше 5 лет"
+        }
+       ]
+      },
+      {
+       "id": "sport_rank",
+       "label": "Разряд",
+       "type": "choice",
+       "llm": true,
+       "options": [
+        {
+         "id": "none",
+         "text": "Нет"
+        },
+        {
+         "id": "junior",
+         "text": "Юношеский"
+        },
+        {
+         "id": "r3",
+         "text": "III"
+        },
+        {
+         "id": "r2",
+         "text": "II"
+        },
+        {
+         "id": "r1",
+         "text": "I"
+        },
+        {
+         "id": "kms",
+         "text": "КМС"
+        },
+        {
+         "id": "ms",
+         "text": "МС"
+        },
+        {
+         "id": "msmk",
+         "text": "МСМК"
+        }
+       ]
+      },
+      {
+       "id": "sport_level",
+       "label": "Уровень соревнований",
+       "type": "choice",
+       "llm": true,
+       "options": [
+        {
+         "id": "none",
+         "text": "Не участвовал(а)"
+        },
+        {
+         "id": "school",
+         "text": "Школа или вуз"
+        },
+        {
+         "id": "city",
+         "text": "Город или район"
+        },
+        {
+         "id": "region",
+         "text": "Регион"
+        },
+        {
+         "id": "russia",
+         "text": "Россия"
+        },
+        {
+         "id": "world",
+         "text": "Международные"
+        }
+       ]
+      },
+      {
+       "id": "sport_ach",
+       "label": "Достижения",
+       "type": "textarea",
+       "llm": true
+      }
+     ]
+    },
+    {
+     "id": "gto",
+     "label": "Знак ГТО",
+     "type": "choice",
+     "llm": true,
+     "options": [
+      {
+       "id": "none",
+       "text": "Нет"
+      },
+      {
+       "id": "bronze",
+       "text": "Бронза"
+      },
+      {
+       "id": "silver",
+       "text": "Серебро"
+      },
+      {
+       "id": "gold",
+       "text": "Золото"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "creative",
+   "title": "Музыка и творчество",
+   "fields": [
+    {
+     "id": "creative_has",
+     "label": "Занимаетесь или занимались музыкой и творчеством?",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "no",
+       "text": "Нет"
+      },
+      {
+       "id": "yes",
+       "text": "Да"
+      }
+     ]
+    },
+    {
+     "id": "creative_list",
+     "label": "Направления",
+     "type": "group",
+     "llm": true,
+     "showIf": {
+      "field": "creative_has",
+      "in": [
+       "yes"
+      ]
+     },
+     "max": 10,
+     "addLabel": "Добавить направление",
+     "fields": [
+      {
+       "id": "direction",
+       "label": "Направление",
+       "type": "choice",
+       "required": true,
+       "llm": true,
+       "options": [
+        {
+         "id": "instrument",
+         "text": "Музыкальный инструмент"
+        },
+        {
+         "id": "vocal",
+         "text": "Вокал"
+        },
+        {
+         "id": "dance",
+         "text": "Танцы"
+        },
+        {
+         "id": "theatre",
+         "text": "Театр"
+        },
+        {
+         "id": "art",
+         "text": "Изобразительное искусство, дизайн"
+        },
+        {
+         "id": "writing",
+         "text": "Литературное творчество"
+        },
+        {
+         "id": "media",
+         "text": "Фото и видео"
+        },
+        {
+         "id": "kvn",
+         "text": "КВН, ведение мероприятий"
+        },
+        {
+         "id": "other",
+         "text": "Другое"
+        }
+       ]
+      },
+      {
+       "id": "detail",
+       "label": "Уточнение",
+       "type": "text",
+       "hint": "Какой инструмент, жанр.",
+       "llm": true
+      },
+      {
+       "id": "learning",
+       "label": "Обучение",
+       "type": "choice",
+       "llm": true,
+       "options": [
+        {
+         "id": "self",
+         "text": "Самостоятельно"
+        },
+        {
+         "id": "studio",
+         "text": "Кружок, студия"
+        },
+        {
+         "id": "art_school_done",
+         "text": "Школа искусств — окончил(а)"
+        },
+        {
+         "id": "art_school_not",
+         "text": "Школа искусств — не окончил(а)"
+        },
+        {
+         "id": "college",
+         "text": "Колледж"
+        }
+       ]
+      },
+      {
+       "id": "level",
+       "label": "Уровень конкурсов",
+       "type": "choice",
+       "llm": true,
+       "options": [
+        {
+         "id": "none",
+         "text": "Не участвовал(а)"
+        },
+        {
+         "id": "school",
+         "text": "Школа или вуз"
+        },
+        {
+         "id": "city",
+         "text": "Город или район"
+        },
+        {
+         "id": "region",
+         "text": "Регион"
+        },
+        {
+         "id": "russia",
+         "text": "Россия"
+        },
+        {
+         "id": "world",
+         "text": "Международные"
+        }
+       ]
+      },
+      {
+       "id": "ach",
+       "label": "Достижения",
+       "type": "textarea",
+       "llm": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "patriotic",
+   "title": "Военно-патриотическая деятельность",
+   "fields": [
+    {
+     "id": "patriot_has",
+     "label": "Участвовали ли вы в военно-патриотической деятельности?",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "no",
+       "text": "Нет"
+      },
+      {
+       "id": "yes",
+       "text": "Да"
+      }
+     ]
+    },
+    {
+     "id": "patriot_what",
+     "label": "В чём участвовали",
+     "type": "multi",
+     "llm": true,
+     "options": [
+      {
+       "id": "yunarmia",
+       "text": "«Юнармия»"
+      },
+      {
+       "id": "zarnitsa",
+       "text": "«Зарница», «Зарница 2.0»"
+      },
+      {
+       "id": "first",
+       "text": "«Движение первых»"
+      },
+      {
+       "id": "cadet_class",
+       "text": "Кадетский класс"
+      },
+      {
+       "id": "club",
+       "text": "Военно-патриотический или военно-спортивный клуб"
+      },
+      {
+       "id": "camps",
+       "text": "Военно-спортивные сборы: центр «Воин», «Авангард» и подобные"
+      },
+      {
+       "id": "dosaaf",
+       "text": "ДОСААФ: стрельба, парашют, вождение, радиоспорт"
+      },
+      {
+       "id": "school_camps",
+       "text": "Учебные военные сборы в школе или колледже"
+      },
+      {
+       "id": "search",
+       "text": "Поисковый отряд, «Вахта памяти»"
+      },
+      {
+       "id": "honor",
+       "text": "Почётный караул, «Пост № 1»"
+      },
+      {
+       "id": "games",
+       "text": "Спартакиада допризывной молодёжи, военно-спортивные соревнования"
+      },
+      {
+       "id": "reenact",
+       "text": "Военно-историческая реконструкция"
+      },
+      {
+       "id": "other",
+       "text": "Другое"
+      }
+     ],
+     "showIf": {
+      "field": "patriot_has",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "patriot_other",
+     "label": "Что именно",
+     "type": "text",
+     "required": true,
+     "llm": true,
+     "showIf": {
+      "field": "patriot_what",
+      "in": [
+       "other"
+      ]
+     }
+    },
+    {
+     "id": "patriot_role",
+     "label": "Роль",
+     "type": "choice",
+     "llm": true,
+     "options": [
+      {
+       "id": "member",
+       "text": "Участник"
+      },
+      {
+       "id": "leader",
+       "text": "Командир отделения или отряда"
+      },
+      {
+       "id": "organizer",
+       "text": "Организатор, инструктор"
+      }
+     ],
+     "showIf": {
+      "field": "patriot_has",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "patriot_term",
+     "label": "Как долго",
+     "type": "choice",
+     "llm": true,
+     "options": [
+      {
+       "id": "once",
+       "text": "Разово"
+      },
+      {
+       "id": "y1",
+       "text": "До года"
+      },
+      {
+       "id": "y13",
+       "text": "1–3 года"
+      },
+      {
+       "id": "y3",
+       "text": "Больше 3 лет"
+      }
+     ],
+     "showIf": {
+      "field": "patriot_has",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "patriot_level",
+     "label": "Уровень",
+     "type": "choice",
+     "llm": true,
+     "options": [
+      {
+       "id": "school",
+       "text": "Школа"
+      },
+      {
+       "id": "city",
+       "text": "Город или район"
+      },
+      {
+       "id": "region",
+       "text": "Регион"
+      },
+      {
+       "id": "russia",
+       "text": "Россия"
+      }
+     ],
+     "showIf": {
+      "field": "patriot_has",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "patriot_skills",
+     "label": "Полученные навыки",
+     "type": "multi",
+     "llm": true,
+     "options": [
+      {
+       "id": "fire",
+       "text": "Огневая подготовка"
+      },
+      {
+       "id": "drill",
+       "text": "Строевая"
+      },
+      {
+       "id": "medicine",
+       "text": "Первая помощь, тактическая медицина"
+      },
+      {
+       "id": "drones",
+       "text": "Управление беспилотниками"
+      },
+      {
+       "id": "topography",
+       "text": "Топография и ориентирование"
+      },
+      {
+       "id": "comms",
+       "text": "Связь"
+      },
+      {
+       "id": "parachute",
+       "text": "Парашютные прыжки"
+      },
+      {
+       "id": "driving",
+       "text": "Вождение"
+      }
+     ],
+     "showIf": {
+      "field": "patriot_has",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "patriot_ach",
+     "label": "Достижения",
+     "type": "textarea",
+     "llm": true,
+     "showIf": {
+      "field": "patriot_has",
+      "in": [
+       "yes"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "science",
+   "title": "Наука",
+   "fields": [
+    {
+     "id": "science_has",
+     "label": "Занимались ли вы наукой?",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "no",
+       "text": "Нет"
+      },
+      {
+       "id": "yes",
+       "text": "Да"
+      }
+     ]
+    },
+    {
+     "id": "science_forms",
+     "label": "Формы",
+     "type": "multi",
+     "llm": true,
+     "options": [
+      {
+       "id": "society",
+       "text": "Научное общество, кружок"
+      },
+      {
+       "id": "olympiads",
+       "text": "Олимпиады"
+      },
+      {
+       "id": "conferences",
+       "text": "Конференции и конкурсы проектов"
+      },
+      {
+       "id": "publications",
+       "text": "Публикации"
+      },
+      {
+       "id": "lab",
+       "text": "Лаборатория или научный проект в вузе"
+      },
+      {
+       "id": "tech",
+       "text": "Технические кружки (робототехника, программирование)"
+      }
+     ],
+     "showIf": {
+      "field": "science_has",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "science_area",
+     "label": "Область",
+     "type": "choice",
+     "llm": true,
+     "options": [
+      {
+       "id": "math",
+       "text": "Математика"
+      },
+      {
+       "id": "it",
+       "text": "ИТ"
+      },
+      {
+       "id": "physics",
+       "text": "Физика и техника"
+      },
+      {
+       "id": "natural",
+       "text": "Естественные науки"
+      },
+      {
+       "id": "humanities",
+       "text": "Гуманитарные науки"
+      },
+      {
+       "id": "social",
+       "text": "Социально-экономические науки"
+      },
+      {
+       "id": "other",
+       "text": "Другое"
+      }
+     ],
+     "showIf": {
+      "field": "science_has",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "science_level",
+     "label": "Уровень",
+     "type": "choice",
+     "llm": true,
+     "options": [
+      {
+       "id": "school",
+       "text": "Школа или вуз"
+      },
+      {
+       "id": "city",
+       "text": "Город"
+      },
+      {
+       "id": "region",
+       "text": "Регион"
+      },
+      {
+       "id": "russia",
+       "text": "Россия"
+      },
+      {
+       "id": "world",
+       "text": "Международный"
+      }
+     ],
+     "showIf": {
+      "field": "science_has",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "science_result",
+     "label": "Результат",
+     "type": "choice",
+     "llm": true,
+     "options": [
+      {
+       "id": "member",
+       "text": "Участник"
+      },
+      {
+       "id": "prize",
+       "text": "Призёр"
+      },
+      {
+       "id": "winner",
+       "text": "Победитель"
+      }
+     ],
+     "showIf": {
+      "field": "science_has",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "science_ach",
+     "label": "Достижения",
+     "type": "textarea",
+     "llm": true,
+     "showIf": {
+      "field": "science_has",
+      "in": [
+       "yes"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "volunteering",
+   "title": "Волонтёрство",
+   "fields": [
+    {
+     "id": "vol_has",
+     "label": "Занимались ли вы волонтёрством?",
+     "type": "choice",
+     "required": true,
+     "llm": true,
+     "options": [
+      {
+       "id": "no",
+       "text": "Нет"
+      },
+      {
+       "id": "yes",
+       "text": "Да"
+      }
+     ]
+    },
+    {
+     "id": "vol_dirs",
+     "label": "Направления",
+     "type": "multi",
+     "llm": true,
+     "options": [
+      {
+       "id": "social",
+       "text": "Социальное (пожилые, дети, люди с инвалидностью)"
+      },
+      {
+       "id": "events",
+       "text": "Событийное (мероприятия, форумы)"
+      },
+      {
+       "id": "patriotic",
+       "text": "Патриотическое (помощь ветеранам, акции памяти, «Волонтёры Победы»)"
+      },
+      {
+       "id": "svo",
+       "text": "Помощь участникам СВО и их семьям, гуманитарные сборы"
+      },
+      {
+       "id": "eco",
+       "text": "Экологическое"
+      },
+      {
+       "id": "rescue",
+       "text": "Поисково-спасательное"
+      },
+      {
+       "id": "animals",
+       "text": "Помощь животным"
+      },
+      {
+       "id": "donor",
+       "text": "Донорство"
+      },
+      {
+       "id": "medical",
+       "text": "Медицинское"
+      },
+      {
+       "id": "other",
+       "text": "Другое"
+      }
+     ],
+     "showIf": {
+      "field": "vol_has",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "vol_other",
+     "label": "Что именно",
+     "type": "text",
+     "required": true,
+     "llm": true,
+     "showIf": {
+      "field": "vol_dirs",
+      "in": [
+       "other"
+      ]
+     }
+    },
+    {
+     "id": "vol_term",
+     "label": "Как долго",
+     "type": "choice",
+     "llm": true,
+     "options": [
+      {
+       "id": "once",
+       "text": "Разово"
+      },
+      {
+       "id": "y1",
+       "text": "До года"
+      },
+      {
+       "id": "y13",
+       "text": "1–3 года"
+      },
+      {
+       "id": "y3",
+       "text": "Больше 3 лет"
+      }
+     ],
+     "showIf": {
+      "field": "vol_has",
+      "in": [
+       "yes"
+      ]
+     }
+    },
+    {
+     "id": "vol_role",
+     "label": "Роль",
+     "type": "choice",
+     "llm": true,
+     "options": [
+      {
+       "id": "member",
+       "text": "Участник"
+      },
+      {
+       "id": "coordinator",
+       "text": "Координатор, организатор"
+      }
+     ],
+     "showIf": {
+      "field": "vol_has",
+      "in": [
+       "yes"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "hobbies",
+   "title": "Другие увлечения",
+   "fields": [
+    {
+     "id": "hobbies",
+     "label": "Увлечения",
+     "type": "multi",
+     "hint": "Можно выбрать несколько.",
+     "llm": true,
+     "options": [
+      {
+       "id": "reading",
+       "text": "Чтение"
+      },
+      {
+       "id": "tech",
+       "text": "Техника, авто и мото"
+      },
+      {
+       "id": "coding",
+       "text": "Программирование"
+      },
+      {
+       "id": "games",
+       "text": "Компьютерные игры, киберспорт"
+      },
+      {
+       "id": "hiking",
+       "text": "Туризм, походы"
+      },
+      {
+       "id": "hunting",
+       "text": "Охота, рыбалка"
+      },
+      {
+       "id": "chess",
+       "text": "Шахматы и настольные игры"
+      },
+      {
+       "id": "history",
+       "text": "История"
+      },
+      {
+       "id": "radio",
+       "text": "Моделирование, радиотехника"
+      },
+      {
+       "id": "cooking",
+       "text": "Кулинария"
+      },
+      {
+       "id": "collecting",
+       "text": "Коллекционирование"
+      }
+     ]
+    },
+    {
+     "id": "hobby_own",
+     "label": "Своё",
+     "type": "text",
+     "llm": true
+    }
+   ]
+  }
+ ]
+}
