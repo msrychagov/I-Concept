@@ -9,7 +9,7 @@ func TestParseAttachesOnlyUsedReferences(t *testing.T) {
 	files := fstest.MapFS{
 		"demo.json": {Data: []byte(`{"id":"demo","version":"1","sections":[{"id":"s","title":"S","fields":[
 			{"id":"a","label":"A","type":"choice","ref":"colors"},
-			{"id":"g","label":"G","type":"group","fields":[{"id":"b","label":"B","type":"choice","ref":"sizes"}]}]}]}`)},
+			{"id":"g","label":"G","type":"group","max":2,"fields":[{"id":"b","label":"B","type":"choice","ref":"sizes"}]}]}]}`)},
 		"refs/colors.json": {Data: []byte(`[{"id":"red","text":"Красный"}]`)},
 		"refs/sizes.json":  {Data: []byte(`[{"id":"big","text":"Большой"}]`)},
 		"refs/unused.json": {Data: []byte(`[{"id":"x","text":"X"}]`)},

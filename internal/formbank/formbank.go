@@ -37,6 +37,9 @@ func Parse(files fs.FS) ([]model.Form, error) {
 			}
 			form.Refs[ref] = list
 		}
+		if err = Validate(form); err != nil {
+			return nil, err
+		}
 		forms = append(forms, form)
 	}
 	return forms, nil
