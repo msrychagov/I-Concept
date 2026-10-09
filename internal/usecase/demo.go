@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 	"vucdiagnostic/internal/domain/model"
@@ -10,7 +11,7 @@ import (
 func (a *Service) ResetDemo() (string, error) {
 	now := time.Now().UTC()
 	created := now.Add(-72 * time.Hour).Format(time.RFC3339)
-	db := model.Database{Students: []model.Account{}, Assignments: []model.Assignment{}, Logins: []model.Login{}, Profiles: []model.Profile{}, Sessions: []model.SessionRecord{}}
+	db := model.Database{Students: []model.Account{}, Assignments: []model.Assignment{}, Logins: []model.Login{}, Profiles: []model.Profile{}, Sessions: []model.SessionRecord{}, Submissions: []model.FormSubmission{}}
 	full := a.emptyProfile()
 	full.ID = uuid()
 	full.Name = "Полная диагностика"
@@ -67,5 +68,49 @@ func (a *Service) ResetDemo() (string, error) {
 			db.Sessions = append(db.Sessions, model.SessionRecord{TokenHash: hash(token()), Session: s})
 		}
 	}
+	if err := a.addDemoAutobiography(&db, created, now); err != nil {
+		return "", err
+	}
 	return a.repo.ReplaceWithBackup(db)
+}
+
+// addDemoAutobiography assigns the autobiography to platoon 101: the first
+// student of the platoon has submitted it, the second has filled a few sections.
+func (a *Service) addDemoAutobiography(db *model.Database, created string, now time.Time) error {
+	form, ok := a.forms["autobiography"]
+	if !ok {
+		return nil
+	}
+	as := model.Assignment{ID: uuid(), Title: "Автобиография", Platoon: "101", FormID: form.ID, Active: true, Created: created}
+	db.Assignments = append(db.Assignments, as)
+	answers, err := sampleAnswers(form, map[string]bool{"work": true, "languages": true, "relatives": true, "sport": true, "science": true}, now)
+	if err != nil {
+		return err
+	}
+	students := []model.Account{}
+	for _, account := range db.Students {
+		if account.Role == "student" && assignmentApplies(as, account) {
+			students = append(students, account)
+		}
+	}
+	for n, student := range students[:min(2, len(students))] {
+		submission := model.FormSubmission{ID: uuid(), FormID: form.ID, FormVersion: form.Version, StudentID: student.ID, AssignmentID: as.ID, Created: created, Updated: now.Add(-time.Duration(n+1) * time.Hour).Format(time.RFC3339), Consent: true, ConsentAt: created, SavedSections: []string{}, Answers: map[string]json.RawMessage{}}
+		for i, section := range form.Sections {
+			if n == 1 && i >= 4 {
+				break
+			}
+			submission.SavedSections = append(submission.SavedSections, section.ID)
+			for _, field := range section.Fields {
+				if value, ok := answers[field.ID]; ok {
+					submission.Answers[field.ID] = value
+				}
+			}
+		}
+		if n == 0 {
+			submission.Completed = true
+			submission.CompletedAt = submission.Updated
+		}
+		db.Submissions = append(db.Submissions, submission)
+	}
+	return nil
 }

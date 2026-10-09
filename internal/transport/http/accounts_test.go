@@ -140,7 +140,7 @@ func TestDemoBackup(t *testing.T) {
 		t.Fatalf("backup failed %s %v", backup, err)
 	}
 	db := a.repo.Snapshot()
-	if len(db.Students) != 10 || len(db.Assignments) != 3 || len(db.Profiles) != 2 {
+	if len(db.Students) != 10 || len(db.Assignments) != 4 || len(db.Profiles) != 2 || len(db.Submissions) != 2 {
 		t.Fatal("demo incomplete")
 	}
 	old, err := jsonfile.Open(backup)
