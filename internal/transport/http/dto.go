@@ -29,6 +29,7 @@ type passwordRequest struct {
 type assignmentRequest struct {
 	Title      string `json:"title"`
 	ProfileID  string `json:"profileId"`
+	FormID     string `json:"formId"`
 	Platoon    string `json:"platoon"`
 	Activity   bool   `json:"activity"`
 	Motivation bool   `json:"motivation"`
@@ -48,6 +49,13 @@ type answerRequest struct {
 type completionRequest struct {
 	AllowPartial bool `json:"allowPartial"`
 	Revision     *int `json:"revision"`
+}
+type sectionRequest struct {
+	Answers  map[string]json.RawMessage `json:"answers"`
+	Revision *int                       `json:"revision"`
+}
+type formCompletionRequest struct {
+	Revision *int `json:"revision"`
 }
 type planRequest struct {
 	Plan []model.PlanItem `json:"plan"`
