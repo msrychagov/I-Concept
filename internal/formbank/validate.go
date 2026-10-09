@@ -62,7 +62,7 @@ func validateFields(form model.Form, fields, outer []model.FormField, where stri
 				return fmt.Errorf("form %s: %s depends on %s, which is not a choice", form.ID, at, source.ID)
 			}
 			for _, value := range field.ShowIf.In {
-				if !slices.ContainsFunc(optionsOf(form, source), func(o model.FormOption) bool { return o.ID == value }) {
+				if !slices.ContainsFunc(form.Options(source), func(o model.FormOption) bool { return o.ID == value }) {
 					return fmt.Errorf("form %s: %s depends on value %q that %s does not have", form.ID, at, value, source.ID)
 				}
 			}
@@ -97,7 +97,7 @@ func validateOptions(form model.Form, field model.FormField, at string) error {
 		return fmt.Errorf("form %s: %s needs either options or a reference list", form.ID, at)
 	}
 	seen := map[string]bool{}
-	for _, option := range optionsOf(form, field) {
+	for _, option := range form.Options(field) {
 		if option.ID == "" || option.Text == "" || seen[option.ID] {
 			return fmt.Errorf("form %s: %s has an empty or repeated option %q", form.ID, at, option.ID)
 		}
@@ -116,12 +116,4 @@ func lookup(fields []model.FormField, id string) (model.FormField, bool) {
 		}
 	}
 	return model.FormField{}, false
-}
-
-// optionsOf returns the values of a choice field, from the field or its list.
-func optionsOf(form model.Form, field model.FormField) []model.FormOption {
-	if field.Ref != "" {
-		return form.Refs[field.Ref]
-	}
-	return field.Options
 }

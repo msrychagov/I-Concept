@@ -12,6 +12,14 @@ type Form struct {
 	Refs     map[string][]FormOption `json:"refs,omitempty"`
 }
 
+// Options returns the values a choice field can take: its own or its list's.
+func (f Form) Options(field FormField) []FormOption {
+	if field.Ref != "" {
+		return f.Refs[field.Ref]
+	}
+	return field.Options
+}
+
 type FormSection struct {
 	ID     string      `json:"id"`
 	Title  string      `json:"title"`
