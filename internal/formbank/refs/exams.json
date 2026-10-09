@@ -1,0 +1,34 @@
+[
+ {
+  "id": "ielts",
+  "text": "IELTS"
+ },
+ {
+  "id": "toefl",
+  "text": "TOEFL"
+ },
+ {
+  "id": "cambridge",
+  "text": "Cambridge (FCE, CAE, CPE)"
+ },
+ {
+  "id": "hsk",
+  "text": "HSK"
+ },
+ {
+  "id": "delf",
+  "text": "DELF, DALF"
+ },
+ {
+  "id": "goethe",
+  "text": "Goethe-Zertifikat, TestDaF"
+ },
+ {
+  "id": "dele",
+  "text": "DELE"
+ },
+ {
+  "id": "other",
+  "text": "Другой экзамен"
+ }
+]

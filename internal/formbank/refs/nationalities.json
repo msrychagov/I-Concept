@@ -1,0 +1,410 @@
+[
+ {
+  "id": "abaziny",
+  "text": "Абазины"
+ },
+ {
+  "id": "abkhazy",
+  "text": "Абхазы"
+ },
+ {
+  "id": "avartsy",
+  "text": "Аварцы"
+ },
+ {
+  "id": "aguly",
+  "text": "Агулы"
+ },
+ {
+  "id": "adygeytsy",
+  "text": "Адыгейцы"
+ },
+ {
+  "id": "azerbaydzhantsy",
+  "text": "Азербайджанцы"
+ },
+ {
+  "id": "altaytsy",
+  "text": "Алтайцы"
+ },
+ {
+  "id": "amerikantsy",
+  "text": "Американцы"
+ },
+ {
+  "id": "anglichane",
+  "text": "Англичане"
+ },
+ {
+  "id": "araby",
+  "text": "Арабы"
+ },
+ {
+  "id": "armyane",
+  "text": "Армяне"
+ },
+ {
+  "id": "assiriytsy",
+  "text": "Ассирийцы"
+ },
+ {
+  "id": "afgantsy",
+  "text": "Афганцы"
+ },
+ {
+  "id": "afroamerikantsy",
+  "text": "Афроамериканцы"
+ },
+ {
+  "id": "balkartsy",
+  "text": "Балкарцы"
+ },
+ {
+  "id": "bashkiry",
+  "text": "Башкиры"
+ },
+ {
+  "id": "belorusy",
+  "text": "Белорусы"
+ },
+ {
+  "id": "bolgary",
+  "text": "Болгары"
+ },
+ {
+  "id": "buryaty",
+  "text": "Буряты"
+ },
+ {
+  "id": "vengry",
+  "text": "Венгры"
+ },
+ {
+  "id": "vepsy",
+  "text": "Вепсы"
+ },
+ {
+  "id": "vetnamtsy",
+  "text": "Вьетнамцы"
+ },
+ {
+  "id": "gorskie_evrei",
+  "text": "Горские евреи"
+ },
+ {
+  "id": "greki",
+  "text": "Греки"
+ },
+ {
+  "id": "gruziny",
+  "text": "Грузины"
+ },
+ {
+  "id": "dargintsy",
+  "text": "Даргинцы"
+ },
+ {
+  "id": "dolgany",
+  "text": "Долганы"
+ },
+ {
+  "id": "evrei",
+  "text": "Евреи"
+ },
+ {
+  "id": "ezidy",
+  "text": "Езиды"
+ },
+ {
+  "id": "ingushi",
+  "text": "Ингуши"
+ },
+ {
+  "id": "indiytsy",
+  "text": "Индийцы"
+ },
+ {
+  "id": "ispantsy",
+  "text": "Испанцы"
+ },
+ {
+  "id": "italyantsy",
+  "text": "Итальянцы"
+ },
+ {
+  "id": "kabardintsy",
+  "text": "Кабардинцы"
+ },
+ {
+  "id": "kazakhi",
+  "text": "Казахи"
+ },
+ {
+  "id": "kalmyki",
+  "text": "Калмыки"
+ },
+ {
+  "id": "karaimy",
+  "text": "Караимы"
+ },
+ {
+  "id": "karachaevtsy",
+  "text": "Карачаевцы"
+ },
+ {
+  "id": "karely",
+  "text": "Карелы"
+ },
+ {
+  "id": "kirgizy",
+  "text": "Киргизы"
+ },
+ {
+  "id": "kitaytsy",
+  "text": "Китайцы"
+ },
+ {
+  "id": "komi",
+  "text": "Коми"
+ },
+ {
+  "id": "koreytsy",
+  "text": "Корейцы"
+ },
+ {
+  "id": "koryaki",
+  "text": "Коряки"
+ },
+ {
+  "id": "krymskie_tatary",
+  "text": "Крымские татары"
+ },
+ {
+  "id": "krymchaki",
+  "text": "Крымчаки"
+ },
+ {
+  "id": "kumyki",
+  "text": "Кумыки"
+ },
+ {
+  "id": "kurdy",
+  "text": "Курды"
+ },
+ {
+  "id": "laktsy",
+  "text": "Лакцы"
+ },
+ {
+  "id": "latyshi",
+  "text": "Латыши"
+ },
+ {
+  "id": "lezginy",
+  "text": "Лезгины"
+ },
+ {
+  "id": "litovtsy",
+  "text": "Литовцы"
+ },
+ {
+  "id": "mansi",
+  "text": "Манси"
+ },
+ {
+  "id": "mariytsy",
+  "text": "Марийцы"
+ },
+ {
+  "id": "moldavane",
+  "text": "Молдаване"
+ },
+ {
+  "id": "mongoly",
+  "text": "Монголы"
+ },
+ {
+  "id": "mordva",
+  "text": "Мордва"
+ },
+ {
+  "id": "nanaytsy",
+  "text": "Нанайцы"
+ },
+ {
+  "id": "nemtsy",
+  "text": "Немцы"
+ },
+ {
+  "id": "nentsy",
+  "text": "Ненцы"
+ },
+ {
+  "id": "nogaytsy",
+  "text": "Ногайцы"
+ },
+ {
+  "id": "osetiny",
+  "text": "Осетины"
+ },
+ {
+  "id": "persy",
+  "text": "Персы"
+ },
+ {
+  "id": "polyaki",
+  "text": "Поляки"
+ },
+ {
+  "id": "rumyny",
+  "text": "Румыны"
+ },
+ {
+  "id": "russkie",
+  "text": "Русские"
+ },
+ {
+  "id": "rutultsy",
+  "text": "Рутульцы"
+ },
+ {
+  "id": "saamy",
+  "text": "Саамы"
+ },
+ {
+  "id": "serby",
+  "text": "Сербы"
+ },
+ {
+  "id": "slovaki",
+  "text": "Словаки"
+ },
+ {
+  "id": "tabasarany",
+  "text": "Табасараны"
+ },
+ {
+  "id": "tadzhiki",
+  "text": "Таджики"
+ },
+ {
+  "id": "tatary",
+  "text": "Татары"
+ },
+ {
+  "id": "tati",
+  "text": "Тати"
+ },
+ {
+  "id": "teleuty",
+  "text": "Телеуты"
+ },
+ {
+  "id": "tofalary",
+  "text": "Тофалары"
+ },
+ {
+  "id": "tuvintsy",
+  "text": "Тувинцы"
+ },
+ {
+  "id": "turki",
+  "text": "Турки"
+ },
+ {
+  "id": "turki_meskhetintsy",
+  "text": "Турки-месхетинцы"
+ },
+ {
+  "id": "turkmeny",
+  "text": "Туркмены"
+ },
+ {
+  "id": "udmurty",
+  "text": "Удмурты"
+ },
+ {
+  "id": "uzbeki",
+  "text": "Узбеки"
+ },
+ {
+  "id": "ukraintsy",
+  "text": "Украинцы"
+ },
+ {
+  "id": "finny",
+  "text": "Финны"
+ },
+ {
+  "id": "frantsuzy",
+  "text": "Французы"
+ },
+ {
+  "id": "khakasy",
+  "text": "Хакасы"
+ },
+ {
+  "id": "khanty",
+  "text": "Ханты"
+ },
+ {
+  "id": "khorvaty",
+  "text": "Хорваты"
+ },
+ {
+  "id": "tsakhury",
+  "text": "Цахуры"
+ },
+ {
+  "id": "tsygane",
+  "text": "Цыгане"
+ },
+ {
+  "id": "cherkesy",
+  "text": "Черкесы"
+ },
+ {
+  "id": "chekhi",
+  "text": "Чехи"
+ },
+ {
+  "id": "chechentsy",
+  "text": "Чеченцы"
+ },
+ {
+  "id": "chuvashi",
+  "text": "Чуваши"
+ },
+ {
+  "id": "chukchi",
+  "text": "Чукчи"
+ },
+ {
+  "id": "shortsy",
+  "text": "Шорцы"
+ },
+ {
+  "id": "evenki",
+  "text": "Эвенки"
+ },
+ {
+  "id": "eveny",
+  "text": "Эвены"
+ },
+ {
+  "id": "estontsy",
+  "text": "Эстонцы"
+ },
+ {
+  "id": "yakuty",
+  "text": "Якуты"
+ },
+ {
+  "id": "yapontsy",
+  "text": "Японцы"
+ },
+ {
+  "id": "other",
+  "text": "Другая"
+ }
+]
