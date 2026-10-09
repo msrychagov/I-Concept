@@ -13,6 +13,9 @@ func (a *Service) TeachingState() (any, error) {
 	}
 	assignments := []map[string]any{}
 	for _, as := range db.Assignments {
+		if as.FormID != "" {
+			continue
+		}
 		assignments = append(assignments, map[string]any{"id": as.ID, "title": as.Title, "platoon": as.Platoon, "active": as.Active, "created": as.Created, "profileName": as.Profile.Name})
 	}
 	sessions := []map[string]any{}
