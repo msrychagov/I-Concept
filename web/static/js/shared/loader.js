@@ -1,0 +1,4 @@
+window.pageLoader={show(text='Загрузка…'){let el=document.querySelector('#page-loader');if(!el){el=document.createElement('div');el.id='page-loader';el.className='page-loader';el.setAttribute('role','status');el.innerHTML='<span class="loader-ring" aria-hidden="true"></span><span class="loader-text"></span>';document.body.append(el)}el.querySelector('.loader-text').textContent=text;el.hidden=false},hide(){const el=document.querySelector('#page-loader');if(el)el.hidden=true}};
+if(!document.querySelector('link[href="/assets/css/portal.css"]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/assets/css/portal.css';document.head.append(link)}
+window.pageLoader.show();
+window.addEventListener('load',()=>{if(!document.body.dataset.managedLoader)window.pageLoader.hide()});

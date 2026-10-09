@@ -1,0 +1,7 @@
+data
+source/web/node_modules
+source/web/.next
+source/web/dist
+*.exe
+materials
+versions

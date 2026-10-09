@@ -1,0 +1,17 @@
+.editor-status{display:flex;justify-content:space-between;gap:1rem;color:#627687;font-size:.9rem}.editor-filters{display:grid;grid-template-columns:2fr 1fr 1fr;gap:1rem}.editor-question{display:flex;justify-content:space-between;gap:1.5rem;padding:1.3rem 0;border-top:1px solid #dce5ec}.editor-question p{margin:.5rem 0;max-width:850px}.editor-question-actions{display:flex;align-items:center;gap:.8rem;flex-shrink:0}.editor-badge{display:inline-block;background:#eef4f8;color:#456579;border-radius:5px;padding:.2rem .5rem;font-size:.78rem}.indicator-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}.indicator-choice{display:flex;gap:.8rem;align-items:flex-start;padding:1rem;border:1px solid #dce5ec;border-radius:8px;margin:0;font-weight:400}.indicator-choice input{margin-top:.2rem}.question-dialog{width:min(760px,95vw);max-height:90vh;overflow:auto;border:1px solid #bccbd7;border-radius:14px;padding:2rem;color:#18324a;box-shadow:0 20px 80px #112f4f40}.question-dialog::backdrop{background:#112f4f80}.question-dialog .check{margin:1rem 0}.question-dialog h2{margin:0 0 1rem}.question-dialog .section-title{align-items:flex-start}#question-panel[hidden],#indicator-panel[hidden]{display:none}@media(max-width:850px){.editor-filters,.indicator-grid{grid-template-columns:1fr}.editor-question{flex-direction:column;gap:.8rem}.editor-question-actions{justify-content:flex-end}.editor-status{flex-direction:column}.question-dialog{padding:1.2rem}}
+
+/* Keep question content and navigation within the available column. */
+.editor-filters{grid-template-columns:minmax(0,2fr) repeat(2,minmax(0,1fr))}
+.editor-question>div:first-child,.indicator-choice span{min-width:0;overflow-wrap:anywhere}
+.editor-question-actions{flex-wrap:wrap}
+.editor-question{border-color:var(--line)}
+.editor-badge{background:var(--green-soft);color:var(--green)}
+.indicator-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.indicator-choice{border-color:var(--line)}
+.question-dialog{max-width:calc(100% - 2rem);max-height:calc(100dvh - 2rem);color:var(--ink);overscroll-behavior:contain}
+.question-dialog .section-title{display:flex}
+.question-dialog .section-title button{flex-shrink:0}
+.editor-empty{padding:2rem 0;color:var(--muted)}
+@media(max-width:1000px){.editor-question{flex-direction:column;gap:.8rem}.editor-question-actions{justify-content:flex-start}}
+@media(max-width:850px){.editor-filters,.indicator-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:480px){.editor-question-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.editor-status{font-size:.82rem}.question-dialog{padding:1rem}}
