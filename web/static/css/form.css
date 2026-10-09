@@ -39,3 +39,17 @@
  .month-pick{max-width:none}
  .record{padding:.8rem}
 }
+
+/* Teacher views of answers and questions */
+.answers-section{margin:1.4rem 0}
+.answers-section h3{margin:0 0 .6rem;padding-bottom:.3rem;border-bottom:1px solid var(--line)}
+.answers-list{display:grid;grid-template-columns:minmax(160px,2fr) minmax(0,3fr);gap:.35rem 1.2rem;margin:0}
+.answers-list dt{color:var(--muted);font-size:.92rem}
+.answers-list dd{margin:0;overflow-wrap:anywhere}
+.answer-record{border-left:3px solid var(--gold,#ad9653);padding:.2rem 0 .2rem .8rem;margin-bottom:.6rem;display:grid;grid-template-columns:auto minmax(0,1fr);gap:.6rem}
+.answer-record .answers-list{grid-template-columns:minmax(120px,2fr) minmax(0,3fr)}
+.question-list{margin:.4rem 0;padding-left:1.2rem;display:grid;gap:.5rem}
+.question-list .question-list{margin-top:.5rem}
+.question-list .req{color:#b4452f}
+.draft-note{padding:.6rem 1rem;border-radius:7px;background:#fcf8ec;border:1px solid #e6cf9a;color:#655627}
+@media (max-width:760px){.answers-list,.answer-record .answers-list{grid-template-columns:1fr}.answers-list dd{margin-bottom:.5rem}}
