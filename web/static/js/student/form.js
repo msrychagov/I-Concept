@@ -157,7 +157,7 @@
    return;
   }
   if (!s.consent) {
-   app.innerHTML = `<div class="student-layout"><header class="student-header"><a href="/student">← Личный кабинет</a><span>${esc(data.form.title)}</span></header><main class="consent"><div class="eyebrow">Перед началом</div><h1>${esc(data.form.title)}</h1><p>${esc(data.form.intro)}</p><p>Участие добровольное. Ответы будут связаны с вашей учётной записью, сохранены на сервере и доступны преподавателям.</p><button id="consent" type="button">Согласен(на) заполнять автобиографию и сохранять сведения</button><div id="err"></div></main></div>`;
+   app.innerHTML = `<div class="student-layout"><header class="student-header"><a href="/student">← Личный кабинет</a><span>${esc(data.form.title)}</span></header><main class="consent"><div class="eyebrow">Перед началом</div><h1>${esc(data.form.title)}</h1><p>${esc(data.form.intro)}</p><button id="consent" type="button">Согласен(на) заполнять автобиографию и сохранять сведения</button><div id="err"></div></main></div>`;
    app.querySelector('#consent').onclick = giveConsent;
    return;
   }
