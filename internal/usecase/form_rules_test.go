@@ -193,3 +193,34 @@ func TestSectionIsCompleteOnlyAfterItWasSaved(t *testing.T) {
 		t.Fatalf("saved but empty section reported complete: %+v", empty)
 	}
 }
+
+func TestDeceasedRelativeNeedsOnlyNameBirthAndYearOfDeath(t *testing.T) {
+	form := autobiography(t)
+	relative := obj{"kind": "father", "known": "yes", "name": "Иванов Иван", "birth": "1960-05-01", "alive": "no"}
+	answers := map[string]json.RawMessage{"upbringing": raw(t, "both"), "rel_has": raw(t, "yes"), "rel_list": raw(t, []obj{relative})}
+	if gaps := formMissing(form, answers)["relatives"]; !slices.Equal(gaps, []string{"rel_list.0.death_year"}) {
+		t.Fatalf("gaps: %v", gaps)
+	}
+	relative["death_year"] = "2015"
+	answers["rel_list"] = raw(t, []obj{relative})
+	if gaps := formMissing(form, answers)["relatives"]; gaps != nil {
+		t.Fatalf("a deceased relative with a year of death is incomplete: %v", gaps)
+	}
+	// Everything else a student may have typed before switching to "no" is dropped.
+	relative["work"], relative["crim"], relative["foreign"], relative["with_me"] = "works", "yes", "yes", "no"
+	got, err := clean(t, "relatives", obj{"upbringing": "both", "rel_has": "yes", "rel_list": []obj{relative}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved []map[string]json.RawMessage
+	_ = json.Unmarshal(got["rel_list"], &saved)
+	if len(saved[0]) != 6 {
+		t.Fatalf("kept fields: %v", saved[0])
+	}
+	relative["alive"] = "yes"
+	delete(relative, "death_year")
+	answers["rel_list"] = raw(t, []obj{relative})
+	if gaps := formMissing(form, answers)["relatives"]; !slices.Contains(gaps, "rel_list.0.crim_year") {
+		t.Fatalf("a living relative with a conviction needs details: %v", gaps)
+	}
+}

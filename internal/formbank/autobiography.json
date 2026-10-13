@@ -1643,7 +1643,7 @@
         }
        ],
        "showIf": {
-        "field": "known",
+        "field": "alive",
         "in": [
          "yes"
         ]
