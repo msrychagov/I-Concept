@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 	"vucdiagnostic/internal/domain/model"
+	"vucdiagnostic/internal/formbank"
 	"vucdiagnostic/internal/questionbank"
 	"vucdiagnostic/internal/repository/jsonfile"
 )
@@ -22,7 +23,13 @@ func testApp(t *testing.T) *Service {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return New(bank, repo, previous...)
+	forms, err := formbank.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	service := New(bank, repo, previous...)
+	service.RegisterForms(forms...)
+	return service
 }
 func TestBankAndModuleSelection(t *testing.T) {
 	a := testApp(t)

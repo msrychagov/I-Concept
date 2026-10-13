@@ -1,0 +1,55 @@
+/* Student questionnaire (autobiography). Builds on the survey layout classes. */
+.form-section-title{margin:0 0 .3rem}
+.form-field{border:0;padding:0;margin:0 0 1.4rem;min-width:0}
+.form-field>legend,.form-field>.field-label{display:block;padding:0;margin:0 0 .5rem;font-weight:600;color:var(--ink)}
+.form-field .req{color:#b4452f;margin-left:.25rem}
+.form-field .hint{margin:-.2rem 0 .6rem;color:var(--muted);font-size:.9rem}
+.form-field .choice-list{display:grid;gap:.5rem;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.form-field .choice-list.compact{grid-template-columns:repeat(auto-fit,minmax(110px,max-content))}
+.form-field .choice-list .option{min-height:48px}
+.form-field select{margin-top:0}
+.form-field input[type=text],.form-field input[type=date],.form-field textarea{margin-top:0}
+.form-field.missing>legend,.form-field.missing>.field-label{color:#903927}
+.form-field.missing input[type=text],.form-field.missing input[type=date],.form-field.missing select,.form-field.missing textarea{border-color:#d9806e}
+.form-field .field-error{margin:.5rem 0 0;padding:.5rem .8rem;color:#903927;background:#fff0ec;border:1px solid #e8b1a7;border-radius:7px;font-size:.9rem}
+.month-pick{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:.5rem;max-width:420px}
+.record-list{display:grid;gap:1rem}
+.record{border:1px solid var(--line);border-left:4px solid var(--gold,#ad9653);border-radius:8px;padding:1rem 1.2rem;background:#fafbfa}
+.record-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1rem}
+.record-head b{font-size:.95rem}
+.record-head button{padding:.4rem .8rem;min-height:0;font-size:.85rem}
+.add-record{margin-top:.8rem}
+.form-nav .section-mark{font-size:.95rem;min-width:1.2em;text-align:right}
+.form-nav button.done .section-mark{color:#9be0b5}
+.form-nav button.gaps .section-mark{color:#ffcf8a}
+.form-nav button .section-name{flex:1}
+.form-nav .review-link{margin-top:.8rem;border-top:1px solid rgba(255,255,255,.2);border-radius:0;padding-top:1rem}
+.review-list{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.5rem}
+.review-list li{display:flex;gap:.8rem;align-items:flex-start;padding:.7rem 1rem;border:1px solid var(--line);border-radius:8px;background:#fff}
+.review-list li.done{border-color:#bcd8c6;background:#f1f7f3}
+.review-list li.gaps{border-color:#e6cf9a;background:#fcf8ec}
+.review-list .review-mark{font-weight:700;min-width:1.2em}
+.review-list ul{margin:.3rem 0 0;padding-left:1.1rem;color:var(--muted);font-size:.9rem}
+.review-list button.link{background:none;border:0;box-shadow:none;color:var(--green-2,#176347);padding:0;min-height:0;font-weight:600;text-align:left;text-decoration:underline}
+.confirm-line{display:flex;gap:.7rem;align-items:center;margin:1.2rem 0;font-weight:600}
+.confirm-line input{width:auto;min-height:0;margin:0}
+.form-status{min-height:1.2em}
+@media (max-width:760px){
+ .form-field .choice-list{grid-template-columns:1fr}
+ .month-pick{max-width:none}
+ .record{padding:.8rem}
+}
+
+/* Teacher views of answers and questions */
+.answers-section{margin:1.4rem 0}
+.answers-section h3{margin:0 0 .6rem;padding-bottom:.3rem;border-bottom:1px solid var(--line)}
+.answers-list{display:grid;grid-template-columns:minmax(160px,2fr) minmax(0,3fr);gap:.35rem 1.2rem;margin:0}
+.answers-list dt{color:var(--muted);font-size:.92rem}
+.answers-list dd{margin:0;overflow-wrap:anywhere}
+.answer-record{border-left:3px solid var(--gold,#ad9653);padding:.2rem 0 .2rem .8rem;margin-bottom:.6rem;display:grid;grid-template-columns:auto minmax(0,1fr);gap:.6rem}
+.answer-record .answers-list{grid-template-columns:minmax(120px,2fr) minmax(0,3fr)}
+.question-list{margin:.4rem 0;padding-left:1.2rem;display:grid;gap:.5rem}
+.question-list .question-list{margin-top:.5rem}
+.question-list .req{color:#b4452f}
+.draft-note{padding:.6rem 1rem;border-radius:7px;background:#fcf8ec;border:1px solid #e6cf9a;color:#655627}
+@media (max-width:760px){.answers-list,.answer-record .answers-list{grid-template-columns:1fr}.answers-list dd{margin-bottom:.5rem}}

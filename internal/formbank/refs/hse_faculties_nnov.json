@@ -1,0 +1,26 @@
+[
+ {
+  "id": "fakultet_informatiki_matematiki_i_kompyuternykh_nauk",
+  "text": "Факультет информатики, математики и компьютерных наук"
+ },
+ {
+  "id": "fakultet_gumanitarnykh_nauk",
+  "text": "Факультет гуманитарных наук"
+ },
+ {
+  "id": "fakultet_menedzhmenta",
+  "text": "Факультет менеджмента"
+ },
+ {
+  "id": "fakultet_prava",
+  "text": "Факультет права"
+ },
+ {
+  "id": "fakultet_ekonomiki",
+  "text": "Факультет экономики"
+ },
+ {
+  "id": "other",
+  "text": "Другое подразделение"
+ }
+]

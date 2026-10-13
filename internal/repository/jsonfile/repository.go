@@ -17,7 +17,7 @@ type Repository struct {
 }
 
 func Open(path string) (*Repository, error) {
-	r := &Repository{path: path, db: model.Database{Profiles: []model.Profile{}, Sessions: []model.SessionRecord{}}}
+	r := &Repository{path: path, db: model.Database{Profiles: []model.Profile{}, Sessions: []model.SessionRecord{}, Submissions: []model.FormSubmission{}}}
 	data, err := os.ReadFile(path)
 	if err == nil {
 		if err = json.Unmarshal(data, &r.db); err != nil {

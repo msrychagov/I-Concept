@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 	"vucdiagnostic/internal/domain/model"
+	"vucdiagnostic/internal/formbank"
 	"vucdiagnostic/internal/questionbank"
 	"vucdiagnostic/internal/repository/jsonfile"
 	"vucdiagnostic/internal/usecase"
@@ -139,7 +140,7 @@ func TestDemoBackup(t *testing.T) {
 		t.Fatalf("backup failed %s %v", backup, err)
 	}
 	db := a.repo.Snapshot()
-	if len(db.Students) != 10 || len(db.Assignments) != 3 || len(db.Profiles) != 2 {
+	if len(db.Students) != 10 || len(db.Assignments) != 4 || len(db.Profiles) != 2 || len(db.Submissions) != 2 {
 		t.Fatal("demo incomplete")
 	}
 	old, err := jsonfile.Open(backup)
@@ -167,7 +168,12 @@ func testApp(t *testing.T) *testApplication {
 	if err != nil {
 		t.Fatal(err)
 	}
+	forms, err := formbank.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
 	service := usecase.New(bank, repo, previous...)
+	service.RegisterForms(forms...)
 	return &testApplication{Handler: New(service, web.Files, Config{AdminUser: "admin", AdminPassword: "secret"}), repo: repo}
 }
 func (a *testApplication) emptyProfile() model.Profile {

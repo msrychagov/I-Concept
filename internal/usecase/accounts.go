@@ -151,6 +151,12 @@ func (a *Service) AccountState(loginToken, role string) (any, error) {
 	db := a.repo.Snapshot()
 	list := []map[string]any{}
 	for _, as := range db.Assignments {
+		if as.FormID != "" {
+			if entry, shown := a.formEntry(db, as, s); shown {
+				list = append(list, entry)
+			}
+			continue
+		}
 		var session *model.Session
 		for _, rec := range db.Sessions {
 			if rec.Session.StudentID == s.ID && rec.Session.AssignmentID == as.ID {
@@ -178,4 +184,36 @@ func (a *Service) AccountState(loginToken, role string) (any, error) {
 		list = append(list, entry)
 	}
 	return map[string]any{"student": PublicAccount(s), "assignments": list}, nil
+}
+
+// formEntry describes a questionnaire assignment in the student's cabinet.
+func (a *Service) formEntry(db model.Database, as model.Assignment, student model.Account) (map[string]any, bool) {
+	var submission *model.FormSubmission
+	for n := range db.Submissions {
+		if db.Submissions[n].StudentID == student.ID && db.Submissions[n].AssignmentID == as.ID {
+			submission = &db.Submissions[n]
+			break
+		}
+	}
+	if !assignmentApplies(as, student) && submission == nil {
+		return nil, false
+	}
+	entry := map[string]any{"id": as.ID, "title": as.Title, "created": as.Created, "active": as.Active, "completed": false, "status": "Не начато", "formId": as.FormID}
+	if submission == nil {
+		return entry, true
+	}
+	entry["completed"] = submission.Completed
+	entry["sessionId"] = submission.ID
+	if submission.Completed {
+		entry["status"] = "Завершено"
+		entry["finishedAt"] = submission.CompletedAt
+		return entry, true
+	}
+	entry["status"] = "В процессе"
+	if form, known := a.forms[submission.FormID]; known {
+		progress := formProgress(form, *submission)
+		entry["answered"] = len(progress.Complete)
+		entry["total"] = progress.Total
+	}
+	return entry, true
 }

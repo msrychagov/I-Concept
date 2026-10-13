@@ -9,7 +9,7 @@ import (
 
 func TestEmbeddedFrontendAssets(t *testing.T) {
 	a := testApp(t)
-	for _, route := range []string{"/", "/teacher", "/student", "/survey"} {
+	for _, route := range []string{"/", "/teacher", "/student", "/survey", "/autobiography"} {
 		requireCode(t, callAccount(t, a, route, nil, nil), 200)
 	}
 	if err := fs.WalkDir(web.Files, "static", func(path string, entry fs.DirEntry, err error) error {

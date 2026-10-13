@@ -4,6 +4,7 @@ package app
 
 import (
 	"net/http"
+	"vucdiagnostic/internal/formbank"
 	"vucdiagnostic/internal/questionbank"
 	"vucdiagnostic/internal/repository/jsonfile"
 	httptransport "vucdiagnostic/internal/transport/http"
@@ -32,7 +33,12 @@ func New(config Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	forms, err := formbank.Load()
+	if err != nil {
+		return nil, err
+	}
 	service := usecase.New(bank, repository, previous...)
+	service.RegisterForms(forms...)
 	handler := httptransport.New(service, web.Files, httptransport.Config{AdminUser: config.AdminUser, AdminPassword: config.AdminPassword})
 	return &App{Handler: handler, service: service}, nil
 }

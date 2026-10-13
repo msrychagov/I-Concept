@@ -33,6 +33,7 @@
   messages.innerHTML='';
   switch(tab){
    case 'overview':return window.teachingDashboard({view,state,api,esc});
+   case 'autobiography':return window.teacherAutobiography({view,api,esc});
    case 'profiles':return profiles();
    case 'settings':return window.teacherSettings({view,esc});
    case 'model':return window.teacherMethodology({view,state,esc});

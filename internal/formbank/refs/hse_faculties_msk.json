@@ -1,0 +1,90 @@
+[
+ {
+  "id": "fakultet_matematiki",
+  "text": "Факультет математики"
+ },
+ {
+  "id": "fakultet_ekonomicheskikh_nauk",
+  "text": "Факультет экономических наук"
+ },
+ {
+  "id": "moskovskiy_institut_elektroniki_i_matematiki_im_a_n_tikhonova",
+  "text": "Московский институт электроники и математики им. А.Н. Тихонова"
+ },
+ {
+  "id": "fakultet_kompyuternykh_nauk",
+  "text": "Факультет компьютерных наук"
+ },
+ {
+  "id": "vysshaya_shkola_biznesa",
+  "text": "Высшая школа бизнеса"
+ },
+ {
+  "id": "fakultet_prava",
+  "text": "Факультет права"
+ },
+ {
+  "id": "vysshaya_shkola_yurisprudentsii_i_administrirovaniya",
+  "text": "Высшая школа юриспруденции и администрирования"
+ },
+ {
+  "id": "fakultet_gumanitarnykh_nauk",
+  "text": "Факультет гуманитарных наук"
+ },
+ {
+  "id": "fakultet_sotsialnykh_nauk",
+  "text": "Факультет социальных наук"
+ },
+ {
+  "id": "fakultet_kreativnykh_industriy",
+  "text": "Факультет креативных индустрий"
+ },
+ {
+  "id": "fakultet_mirovoy_ekonomiki_i_mirovoy_politiki",
+  "text": "Факультет мировой экономики и мировой политики"
+ },
+ {
+  "id": "fakultet_fiziki",
+  "text": "Факультет физики"
+ },
+ {
+  "id": "mezhdunarodnyy_institut_ekonomiki_i_finansov",
+  "text": "Международный институт экономики и финансов"
+ },
+ {
+  "id": "fakultet_gorodskogo_i_regionalnogo_razvitiya",
+  "text": "Факультет городского и регионального развития"
+ },
+ {
+  "id": "fakultet_khimii",
+  "text": "Факультет химии"
+ },
+ {
+  "id": "fakultet_biologii_i_biotekhnologii",
+  "text": "Факультет биологии и биотехнологии"
+ },
+ {
+  "id": "fakultet_geografii_i_geoinformatsionnykh_tekhnologiy",
+  "text": "Факультет географии и геоинформационных технологий"
+ },
+ {
+  "id": "shkola_inostrannykh_yazykov",
+  "text": "Школа иностранных языков"
+ },
+ {
+  "id": "institut_statisticheskikh_issledovaniy_i_ekonomiki_znaniy",
+  "text": "Институт статистических исследований и экономики знаний"
+ },
+ {
+  "id": "bankovskiy_institut",
+  "text": "Банковский институт"
+ },
+ {
+  "id": "shkola_innovatiki_i_predprinimatelstva",
+  "text": "Школа инноватики и предпринимательства"
+ },
+ {
+  "id": "other",
+  "text": "Другое подразделение"
+ }
+]

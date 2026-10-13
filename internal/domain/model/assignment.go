@@ -5,6 +5,7 @@ type Assignment struct {
 	Title      string  `json:"title"`
 	Platoon    string  `json:"platoon"`
 	Profile    Profile `json:"profile"`
+	FormID     string  `json:"formId,omitempty"`
 	Activity   bool    `json:"activity"`
 	Motivation bool    `json:"motivation"`
 	Active     bool    `json:"active"`
