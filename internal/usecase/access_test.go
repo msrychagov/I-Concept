@@ -17,7 +17,7 @@ func TestNormalizeOwnershipAdoptsOnlyUnambiguousLegacyData(t *testing.T) {
 	if err := one.NormalizeOwnership(); err != nil {
 		t.Fatal(err)
 	}
-	db := one.repo.Snapshot()
+	db := mustSnapshot(t, one.repo)
 	if db.Students[1].OwnerID != "teacher-1" || db.Assignments[0].OwnerID != "teacher-1" {
 		t.Fatal("single-teacher legacy data was not adopted")
 	}
@@ -33,7 +33,7 @@ func TestNormalizeOwnershipAdoptsOnlyUnambiguousLegacyData(t *testing.T) {
 	if err := many.NormalizeOwnership(); err != nil {
 		t.Fatal(err)
 	}
-	db = many.repo.Snapshot()
+	db = mustSnapshot(t, many.repo)
 	if assignmentApplies(db.Assignments[0], db.Students[2]) || inTeacherScope(db.Assignments[0].OwnerID, "teacher-1") || inTeacherScope(db.Assignments[0].OwnerID, "teacher-2") {
 		t.Fatal("ambiguous legacy data was exposed to an arbitrary account")
 	}

@@ -20,19 +20,19 @@ window.templateEditor = function (ctx) {
     };
     const moduleOptions = value => Object.entries(state.bank.modules).map(([id, name]) => `<option value="${id}" ${id === value ? 'selected' : ''}>${esc(name)}</option>`).join('');
     const indicatorOptions = value => state.bank.indicators.filter(i => Object.hasOwn(p.values, i.id)).map(i => `<option value="${i.id}" ${i.id === value ? 'selected' : ''}>${i.id} · ${esc(i.name)}</option>`).join('');
-    const scored = i => i.scored || state.bank.indicators.some(ind => ind.items.includes(i.id));
+    const scored = i => !i.responseOnly && (i.scored || state.bank.indicators.some(ind => ind.items.includes(i.id)));
     const title = i => state.bank.indicators.find(x => x.id === i.indicator)?.name || i.indicator;
 
     function draw() {
         view.innerHTML = `<header class="page-heading"><div><div class="eyebrow">Конструктор тестирования</div><h1>${ctx.editingProfileId ? 'Редактирование шаблона' : 'Новый шаблон'}</h1></div><button id="save-template">Сохранить шаблон</button></header>
  <div class="editor-status"><span id="draft-status">${dirty ? 'Есть несохранённые изменения' : 'Все изменения применяются после сохранения'}</span><span id="editor-count"></span></div>
- <section class="surface"><div class="form-grid"><label>Название шаблона<input id="template-name" maxlength="150" value="${esc(p.name)}"></label><label>Автор<input id="template-author" value="${esc(p.author)}"></label><label>Этап (необязательно)<input id="template-wave" value="${esc(p.wave)}"></label></div></section>
+ <section class="surface"><div class="form-grid"><label>Название шаблона<input id="template-name" maxlength="150" value="${esc(p.name)}"></label><label>Автор<input id="template-author" value="${esc(p.author)}"></label></div></section>
  <div class="toolbar"><button id="questions-tab" class="${mode === 'questions' ? '' : 'secondary'}">Вопросы</button><button id="indicators-tab" class="${mode === 'indicators' ? '' : 'secondary'}">Показатели</button><button id="add-question" class="secondary">+ Добавить вопрос</button></div>
  <div id="editor-error" role="alert"></div><div id="undo-area"></div>
  <section class="surface" id="question-panel"><div class="editor-filters"><label>Поиск<input id="question-search" placeholder="Формулировка или код вопроса" value="${esc(search)}"></label><label>Раздел<select id="section-filter"><option value="">Все разделы</option>${moduleOptions(section)}</select></label><label>Показатель<select id="indicator-filter"><option value="">Все показатели</option>${indicatorOptions(indicator)}</select></label></div><div id="question-list"></div><nav id="question-pagination" class="question-pagination" aria-label="Страницы вопросов"></nav></section>
  <section class="surface" id="indicator-panel"><p>Исключение показателя убирает связанные вопросы из тестирования. Их можно вернуть вместе с показателем.</p><div id="indicator-list" class="indicator-grid"></div><nav id="indicator-pagination" class="list-pagination" aria-label="Страницы показателей"></nav></section>
  <section class="surface"><h2>Сохранённые шаблоны</h2>${state.profiles.map(t => `<div class="section-title"><p><b>${esc(t.name)}</b><small>${Object.keys(t.values || {}).length} показателей · ${esc(t.author)}</small></p><button class="secondary" data-edit-template="${esc(t.id)}">Редактировать</button></div>`).join('') || '<p>Пока нет сохранённых шаблонов.</p>'}${ctx.editingProfileId ? '<button id="new-template" class="secondary">Создать другой шаблон</button>' : ''}</section><dialog id="question-dialog" class="question-dialog"></dialog>`;
-        for (const [id, key] of [['template-name', 'name'], ['template-author', 'author'], ['template-wave', 'wave']]) view.querySelector('#' + id).oninput = e => {
+        for (const [id, key] of [['template-name', 'name'], ['template-author', 'author']]) view.querySelector('#' + id).oninput = e => {
             p[key] = e.target.value;
             mark()
         };
@@ -107,7 +107,7 @@ window.templateEditor = function (ctx) {
         indicatorPage = pagination.page;
         view.querySelector('#indicator-list').innerHTML = state.bank.indicators.slice(pagination.start, pagination.end).map(i => `<label class="indicator-choice"><input type="checkbox" data-indicator="${i.id}" ${Object.hasOwn(p.values, i.id) ? 'checked' : ''}><span><b>${i.id} · ${esc(i.name)}</b>${i.definition ? `<small>${esc(i.definition)}</small>` : ''}<small>${p.questions.filter(q => q.indicator === i.id).length} вопросов</small></span></label>`).join('') || '<p class="muted">Показателей пока нет.</p>';
         view.querySelectorAll('[data-indicator]').forEach(el => el.onchange = () => {
-            if (el.checked) p.values[el.dataset.indicator] = 5; else delete p.values[el.dataset.indicator];
+            if (el.checked) p.values[el.dataset.indicator] = state.bank.indicators.find(i=>i.id===el.dataset.indicator)?.descriptive ? null : 5; else delete p.values[el.dataset.indicator];
             mark();
             if (indicator && !Object.hasOwn(p.values, indicator)) indicator = '';
             const filter = view.querySelector('#indicator-filter');
@@ -159,7 +159,7 @@ window.templateEditor = function (ctx) {
     }
 
     function edit(original) {
-        const first = Object.keys(p.values)[0];
+        const first = section === 'PS' ? state.bank.indicators.find(i=>i.descriptive && Object.hasOwn(p.values,i.id))?.id : Object.keys(p.values)[0];
         if (!original && !first) {
             view.querySelector('#editor-error').innerHTML = '<p class="error">Сначала включите хотя бы один показатель.</p>';
             return
@@ -175,8 +175,13 @@ window.templateEditor = function (ctx) {
             max: 5,
             scored: true
         });
+        if (!original && state.bank.indicators.find(i=>i.id===item.indicator)?.descriptive) {
+            item.module='PS';item.section='PS';item.type='psychological';item.min=0;item.max=6;item.scored=false;item.responseOnly=true;item.timeWindow='За последние 4 недели';
+            item.options=structuredClone(state.bank.items.find(i=>i.id==='PS_EAT01').options);
+        }
         const dialog = view.querySelector('#question-dialog');
-        dialog.innerHTML = `<form id="question-form"><div class="section-title"><h2>${original ? 'Редактировать вопрос' : 'Добавить вопрос'}</h2><button type="button" class="secondary" id="close-question" aria-label="Закрыть редактор">×</button></div><label>Формулировка<textarea id="question-text" rows="5" required maxlength="12000">${esc(item.text)}</textarea></label><div class="form-grid"><label>Раздел в анкете<select id="question-section">${moduleOptions(item.section || item.module)}</select></label><label>Показатель<select id="question-indicator">${indicatorOptions(item.indicator)}</select></label></div><p class="muted">Раздел меняет расположение вопроса. Связь с расчётом и тип ответа сохраняются.</p>${!original || scored(item) ? `<label class="check"><input id="question-reverse" type="checkbox" ${item.reverse ? 'checked' : ''}> Обратное кодирование (6 − ответ)</label>` : ''}${item.options?.length ? `<details><summary>Варианты ответа (${item.options.length})</summary>${item.options.map((o, j) => `<label>Вариант ${j + 1}<textarea data-option="${j}" required>${esc(o.text)}</textarea></label>`).join('')}</details>` : `<p>Шкала ответа: ${item.min}–${item.max}.</p>`}<div class="toolbar"><button type="submit">Применить к шаблону</button><button type="button" class="secondary" id="cancel-question">Отмена</button></div></form>`;
+        dialog.innerHTML = `<form id="question-form"><div class="section-title"><h2>${original ? 'Редактировать вопрос' : 'Добавить вопрос'}</h2><button type="button" class="secondary" id="close-question" aria-label="Закрыть редактор">×</button></div><label>Формулировка<textarea id="question-text" rows="5" required maxlength="12000">${esc(item.text)}</textarea></label><div class="form-grid"><label>Раздел в анкете<select id="question-section">${moduleOptions(item.section || item.module)}</select></label><label>Показатель<select id="question-indicator">${indicatorOptions(item.indicator)}</select></label></div><p class="muted">Раздел меняет расположение вопроса. Связь с расчётом и тип ответа сохраняются.</p>${!item.responseOnly && (!original || scored(item)) ? `<label class="check"><input id="question-reverse" type="checkbox" ${item.reverse ? 'checked' : ''}> Обратное кодирование (6 − ответ)</label>` : ''}${item.options?.length ? `<details><summary>Варианты ответа (${item.options.length})</summary>${item.options.map((o, j) => `<label>Вариант ${j + 1}<textarea data-option="${j}" required>${esc(o.text)}</textarea></label>`).join('')}</details>` : `<p>Шкала ответа: ${item.min}–${item.max}.</p>`}<div class="toolbar"><button type="submit">Применить к шаблону</button><button type="button" class="secondary" id="cancel-question">Отмена</button></div></form>`;
+        if(item.responseOnly){dialog.querySelector('#question-section').disabled=true;dialog.querySelector('#question-indicator').disabled=true;}
         // Auxiliary items may have indicators outside the 39 primary indicators.
         const sel = dialog.querySelector('#question-indicator');
         if (original && !state.bank.indicators.some(i => i.id === item.indicator)) {

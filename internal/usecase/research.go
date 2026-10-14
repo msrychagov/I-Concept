@@ -30,6 +30,9 @@ func (a *Service) ResearchCommandFor(teacherID string, b Input, op string) (any,
 			if _, enabled := selected[indicator.ID]; enabled {
 				v := 5.0
 				p.Values[indicator.ID] = &v
+				if indicator.Descriptive {
+					p.Values[indicator.ID] = nil
+				}
 			}
 		}
 		p.Basis = ""
@@ -43,10 +46,20 @@ func (a *Service) ResearchCommandFor(teacherID string, b Input, op string) (any,
 		}
 		if op == "profile_update" {
 			oldFound := false
-			for _, old := range a.repo.Snapshot().Profiles {
+			db, err := a.repo.ReadSnapshot()
+			if err != nil {
+				return nil, err
+			}
+			for _, old := range db.Profiles {
 				if old.ID == p.ID && inTeacherScope(old.OwnerID, teacherID) {
 					p.Created = old.Created
 					p.BankVersion = old.BankVersion
+					for _, question := range p.Questions {
+						if question.ResponseOnly {
+							p.BankVersion = a.bank.Version
+							break
+						}
+					}
 					p.OwnerID = old.OwnerID
 					oldFound = true
 					break
@@ -70,13 +83,16 @@ func (a *Service) ResearchCommandFor(teacherID string, b Input, op string) (any,
 		return p, nil
 	case "rotate", "revoke", "reopen", "plan":
 		id := str(b, "id")
-		db := a.repo.Snapshot()
+		db, err := a.repo.ReadSnapshot()
+		if err != nil {
+			return nil, err
+		}
 		session, ok := a.sessionByID(id)
 		if !ok || !teacherOwnsSession(db, teacherID, session) {
 			return nil, problem(NotFound, "Сессия не найдена.")
 		}
 		var link string
-		err := a.mutateSession(id, func(rec *model.SessionRecord) error {
+		err = a.mutateSession(id, func(rec *model.SessionRecord) error {
 			switch op {
 			case "revoke":
 				rec.Session.Revoked = true

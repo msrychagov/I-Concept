@@ -22,7 +22,10 @@ func (a *Service) FormOverviewFor(teacherID, id string) (any, error) {
 	if !ok {
 		return nil, missingForm()
 	}
-	db := a.repo.Snapshot()
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return nil, err
+	}
 	students := []map[string]any{}
 	for _, account := range db.Students {
 		if account.Role == "student" && inTeacherScope(account.OwnerID, teacherID) {
@@ -62,7 +65,10 @@ func (a *Service) FormSubmissionDetail(id string) (any, error) {
 }
 
 func (a *Service) FormSubmissionDetailFor(teacherID, id string) (any, error) {
-	db := a.repo.Snapshot()
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return nil, err
+	}
 	for _, submission := range db.Submissions {
 		form, known := a.forms[submission.FormID]
 		if submission.ID != id || !known {

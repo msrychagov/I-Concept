@@ -187,7 +187,12 @@ input[type=checkbox], input[type=radio] {
 }
 
 .research-nav nav button[data-tab=overview]::before {
-    content: "⌂"
+    content: "";
+    width: 20px;
+    height: 20px;
+    background: currentColor;
+    -webkit-mask: url('/assets/images/home.png') center / contain no-repeat;
+    mask: url('/assets/images/home.png') center / contain no-repeat
 }
 
 .research-nav nav button[data-tab=profiles]::before {
@@ -200,11 +205,20 @@ input[type=checkbox], input[type=radio] {
 
 .research-nav nav button[data-tab=platoons]::before {
     content: "";
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     background: currentColor;
     -webkit-mask: url('/assets/images/platoon.svg') center / contain no-repeat;
     mask: url('/assets/images/platoon.svg') center / contain no-repeat
+}
+
+.research-nav nav button[data-tab=autobiography]::before {
+    content: "";
+    width: 20px;
+    height: 20px;
+    background: currentColor;
+    -webkit-mask: url('/assets/images/autobiography.png') center / contain no-repeat;
+    mask: url('/assets/images/autobiography.png') center / contain no-repeat
 }
 
 .research-nav nav button.active {
@@ -1188,7 +1202,12 @@ body.is-cabinet .portal {
 
 /* Teacher profile settings. */
 .research-nav nav button[data-tab=settings]::before {
-    content: "⚙"
+    content: "";
+    width: 20px;
+    height: 20px;
+    background: currentColor;
+    -webkit-mask: url('/assets/images/settings.png') center / contain no-repeat;
+    mask: url('/assets/images/settings.png') center / contain no-repeat
 }
 
 .settings-section {

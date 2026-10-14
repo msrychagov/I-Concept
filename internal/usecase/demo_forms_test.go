@@ -7,7 +7,7 @@ func TestDemoAutobiographyHasOneSubmittedAndOneStartedForm(t *testing.T) {
 	if _, err := s.ResetDemo(); err != nil {
 		t.Fatal(err)
 	}
-	db := s.repo.Snapshot()
+	db := mustSnapshot(t, s.repo)
 	if len(db.Assignments) != 4 || db.Assignments[3].FormID != "autobiography" || db.Assignments[3].Platoon != "101" {
 		t.Fatalf("assignments: %+v", db.Assignments)
 	}

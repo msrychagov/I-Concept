@@ -4484,6 +4484,9 @@
       "Indicator": {
         "type": "object",
         "properties": {
+          "descriptive": {
+            "type": "boolean"
+          },
           "definition": {
             "type": "string"
           },
@@ -4562,6 +4565,12 @@
       "Item": {
         "type": "object",
         "properties": {
+          "responseOnly": {
+            "type": "boolean"
+          },
+          "timeWindow": {
+            "type": "string"
+          },
           "keyStatus": {
             "type": "string"
           },
@@ -5985,6 +5994,12 @@
                 "text"
               ]
             }
+          },
+          "timeWindow": {
+            "type": "string"
+          },
+          "responseOnly": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false,
@@ -6194,6 +6209,12 @@
           "total": {
             "type": "integer"
           },
+          "psychological": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PsychologicalIndicator"
+            }
+          },
           "evidence": {
             "type": "array",
             "items": {
@@ -6304,6 +6325,67 @@
         "required": [
           "plan"
         ]
+      },
+      "PsychologicalAnswer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "timeWindow": {
+            "type": "string"
+          },
+          "selected": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "description": "Исходный код варианта, включая NA и SKIP; пустой при отсутствии ответа."
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PsychologicalIndicator": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "limitations": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "answered": {
+            "type": "integer"
+          },
+          "declined": {
+            "type": "integer"
+          },
+          "notApplicable": {
+            "type": "integer"
+          },
+          "unanswered": {
+            "type": "integer"
+          },
+          "answers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PsychologicalAnswer"
+            }
+          }
+        },
+        "additionalProperties": false
       },
       "EvidenceChoice": {
         "type": "object",

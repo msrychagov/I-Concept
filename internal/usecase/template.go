@@ -25,7 +25,7 @@ func (a *Service) forTemplate(p model.Profile) *Service {
 	for j, ind := range copyApp.bank.Indicators {
 		ids := []string{}
 		for _, item := range p.Questions {
-			if item.Indicator == ind.ID && (contains(ind.Items, item.ID) || item.Scored) {
+			if item.Indicator == ind.ID && (contains(ind.Items, item.ID) || item.Scored || ind.Descriptive && item.ResponseOnly) {
 				ids = append(ids, item.ID)
 			}
 		}
@@ -47,6 +47,14 @@ func (a *Service) validateQuestions(p model.Profile) error {
 			return fmt.Errorf("Повторяющийся или пустой код вопроса.")
 		}
 		seen[i.ID] = true
+		if i.ResponseOnly && (i.Scored || i.Reverse) {
+			return fmt.Errorf("Описательный вопрос %s нельзя включать в балльный расчёт.", i.ID)
+		}
+		for _, ind := range a.bank.Indicators {
+			if ind.ID == i.Indicator && ind.Descriptive != i.ResponseOnly {
+				return fmt.Errorf("Тип вопроса %s не соответствует показателю.", i.ID)
+			}
+		}
 		if strings.TrimSpace(i.Text) == "" || len(i.Text) > 12000 {
 			return fmt.Errorf("Заполните формулировку вопроса %s.", i.ID)
 		}
@@ -73,7 +81,7 @@ func (a *Service) validateQuestions(p model.Profile) error {
 	effective := a.forTemplate(p)
 	for _, ind := range effective.bank.Indicators {
 		if _, ok := p.Values[ind.ID]; ok && len(ind.Items) == 0 {
-			return fmt.Errorf("У показателя «%s» нет расчётных вопросов. Добавьте вопрос или исключите показатель.", ind.Name)
+			return fmt.Errorf("У показателя «%s» нет соответствующих вопросов. Добавьте вопрос или исключите показатель.", ind.Name)
 		}
 	}
 	return nil

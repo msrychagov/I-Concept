@@ -15,7 +15,11 @@ type LoginResult struct {
 }
 
 func (a *Service) CurrentAccount(loginToken, role string) (model.Account, bool) {
-	return accountIn(a.repo.Snapshot(), loginToken, role)
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return model.Account{}, false
+	}
+	return accountIn(db, loginToken, role)
 }
 func accountIn(db model.Database, loginToken, role string) (model.Account, bool) {
 	if loginToken == "" {
@@ -70,6 +74,10 @@ func (a *Service) Authenticate(role, op string, b Input) (LoginResult, error) {
 		return LoginResult{}, problem(Invalid, "Проверьте почту и пароль.")
 	}
 	var account model.Account
+	snapshot, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return LoginResult{}, err
+	}
 	if op == "register" {
 		name := strings.TrimSpace(str(b, "name"))
 		credential := normalizeInviteCode(str(b, "invite"))
@@ -82,7 +90,7 @@ func (a *Service) Authenticate(role, op string, b Input) (LoginResult, error) {
 		}
 		var invitation model.Invitation
 		now := time.Now().UTC()
-		for _, candidate := range a.repo.Snapshot().Invitations {
+		for _, candidate := range snapshot.Invitations {
 			valid := role == "teacher" && validTeacherInvitation(candidate, email, credential, now) || role == "student" && validStudentLink(candidate, credential, now)
 			if valid {
 				invitation = candidate
@@ -95,7 +103,7 @@ func (a *Service) Authenticate(role, op string, b Input) (LoginResult, error) {
 		salt := token()
 		account = model.Account{ID: uuid(), Role: role, Name: name, Platoon: invitation.Platoon, Email: email, Salt: salt, PasswordHash: passwordHash(password, salt), Created: now.Format(time.RFC3339), OwnerID: invitation.IssuerID}
 	} else if op == "login" {
-		for _, other := range a.repo.Snapshot().Students {
+		for _, other := range snapshot.Students {
 			if other.Email == email && other.Role == role {
 				account = other
 				break
@@ -113,7 +121,7 @@ func (a *Service) Authenticate(role, op string, b Input) (LoginResult, error) {
 		return LoginResult{}, problem(Invalid, "Неизвестное действие.")
 	}
 	result := LoginResult{Account: account, Token: token(), Expires: time.Now().Add(24 * time.Hour)}
-	err := a.repo.Update(func(db *model.Database) error {
+	err = a.repo.Update(func(db *model.Database) error {
 		if op == "register" {
 			for _, other := range db.Students {
 				if other.Email == email && other.Role == role {
@@ -184,7 +192,10 @@ func (a *Service) Authenticate(role, op string, b Input) (LoginResult, error) {
 	return result, err
 }
 func (a *Service) AssignedSession(loginToken, id string) (model.Session, bool) {
-	db := a.repo.Snapshot()
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return model.Session{}, false
+	}
 	student, ok := accountIn(db, loginToken, "student")
 	if !ok {
 		return model.Session{}, false
@@ -210,7 +221,10 @@ func (a *Service) AccountState(loginToken, role string) (any, error) {
 	if role == "teacher" {
 		return map[string]any{"teacher": PublicAccount(s)}, nil
 	}
-	db := a.repo.Snapshot()
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return nil, err
+	}
 	list := []map[string]any{}
 	for _, as := range db.Assignments {
 		if !assignmentOwnedByStudent(as, s) {

@@ -33,6 +33,8 @@ func (r *Repository) Snapshot() model.Database {
 	defer r.mu.RUnlock()
 	return model.Clone(r.db)
 }
+
+func (r *Repository) ReadSnapshot() (model.Database, error) { return r.Snapshot(), nil }
 func (r *Repository) Update(fn func(*model.Database) error) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

@@ -9,6 +9,12 @@ func (a *Service) publicItems(s model.Session) []map[string]any {
 	out := []map[string]any{}
 	for _, i := range a.itemsFor(s) {
 		m := map[string]any{"id": i.ID, "module": i.Module, "text": i.Text, "min": i.Min, "max": i.Max, "type": i.Type}
+		if i.TimeWindow != "" {
+			m["timeWindow"] = i.TimeWindow
+		}
+		if i.ResponseOnly {
+			m["responseOnly"] = true
+		}
 		if i.Section != "" {
 			m["module"] = i.Section
 		}
@@ -55,6 +61,9 @@ func (a *Service) groupReport(all []model.SessionRecord, group string) (any, err
 	for _, x := range gs {
 		rows := []map[string]any{}
 		for _, ind := range a.bank.Indicators {
+			if ind.Descriptive {
+				continue
+			}
 			enabled := false
 			for _, session := range x.People {
 				enabled = a.indicatorEnabled(session.Profile, ind.ID)

@@ -6,7 +6,7 @@ import (
 	"vucdiagnostic/internal/domain/model"
 )
 
-//go:embed bank.json pilot-2.0.json
+//go:embed bank.json pilot-2.0.json psychological.json
 var files embed.FS
 
 func Load() (model.Bank, error) {
@@ -16,7 +16,27 @@ func Load() (model.Bank, error) {
 	}
 	var bank model.Bank
 	err = json.Unmarshal(data, &bank)
-	return bank, err
+	if err != nil {
+		return bank, err
+	}
+	data, err = files.ReadFile("psychological.json")
+	if err != nil {
+		return bank, err
+	}
+	var addition model.Bank
+	if err = json.Unmarshal(data, &addition); err != nil {
+		return bank, err
+	}
+	bank.Version = "pilot-2.2"
+	for key, value := range addition.Modules {
+		bank.Modules[key] = value
+	}
+	for key, value := range addition.Instructions {
+		bank.Instructions[key] = value
+	}
+	bank.Indicators = append(bank.Indicators, addition.Indicators...)
+	bank.Items = append(bank.Items, addition.Items...)
+	return bank, nil
 }
 
 func Previous() ([]model.Bank, error) {
@@ -28,5 +48,13 @@ func Previous() ([]model.Bank, error) {
 	if err = json.Unmarshal(data, &bank); err != nil {
 		return nil, err
 	}
-	return []model.Bank{bank}, nil
+	data, err = files.ReadFile("bank.json")
+	if err != nil {
+		return nil, err
+	}
+	var recent model.Bank
+	if err = json.Unmarshal(data, &recent); err != nil {
+		return nil, err
+	}
+	return []model.Bank{bank, recent}, nil
 }

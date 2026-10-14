@@ -6,7 +6,18 @@ import "vucdiagnostic/internal/domain/model"
 // teacher, so the migration cannot guess and expose records in a multi-teacher
 // installation. Ambiguous legacy records remain inaccessible through scoped APIs.
 func (a *Service) NormalizeOwnership() error {
-	db := a.repo.Snapshot()
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return err
+	}
+	if !normalizeOwnership(&db) {
+		return nil
+	}
+	_, err = a.repo.ReplaceWithBackup(db)
+	return err
+}
+
+func normalizeOwnership(db *model.Database) bool {
 	teachers := []string{}
 	for _, account := range db.Students {
 		if account.Role == "teacher" {
@@ -14,7 +25,7 @@ func (a *Service) NormalizeOwnership() error {
 		}
 	}
 	if len(teachers) == 0 {
-		return nil
+		return false
 	}
 	owner := teachers[0]
 	ambiguous := len(teachers) > 1
@@ -59,11 +70,7 @@ func (a *Service) NormalizeOwnership() error {
 			changed = true
 		}
 	}
-	if !changed {
-		return nil
-	}
-	_, err := a.repo.ReplaceWithBackup(db)
-	return err
+	return changed
 }
 
 func inTeacherScope(ownerID, teacherID string) bool {

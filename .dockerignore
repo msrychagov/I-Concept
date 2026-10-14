@@ -4,3 +4,11 @@ source/web/dist
 *.exe
 materials
 versions
+
+.git
+.idea
+.env
+.env.*
+data
+vuc
+*.backup-*

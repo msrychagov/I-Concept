@@ -5,7 +5,10 @@ func (a *Service) TeachingState() (any, error) {
 }
 
 func (a *Service) TeachingStateFor(teacherID string) (any, error) {
-	db := a.repo.Snapshot()
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return nil, err
+	}
 	students := []map[string]any{}
 	for _, s := range db.Students {
 		if s.Role != "student" || !inTeacherScope(s.OwnerID, teacherID) {

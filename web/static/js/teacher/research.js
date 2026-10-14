@@ -45,8 +45,8 @@
         });
     }
 
-    function concept() {
-        view.innerHTML = '<header class="page-heading"><div><div class="eyebrow">Вид тестирования</div><h1>Я концепция</h1></div></header><div class="toolbar" aria-label="Разделы Я концепции"><button data-concept="testing">Назначения и результаты</button><button data-concept="templates">Шаблоны тестирования</button></div><div id="concept-content"></div>';
+    function concept(view) {
+        view.innerHTML = '<header class="page-heading"><div><div class="eyebrow">Вид тестирования</div><h1>Диагностическое тестирование</h1></div></header><div class="toolbar" aria-label="Разделы Я концепции"><button data-concept="testing">Назначения и результаты</button><button data-concept="templates">Шаблоны тестирования</button></div><div id="concept-content"></div>';
         const draw = () => {
             view.querySelectorAll('[data-concept]').forEach(b => {
                 b.classList.toggle('secondary', b.dataset.concept !== conceptTab);
@@ -71,19 +71,21 @@
 
     function render() {
         messages.innerHTML = '';
+        const section = document.createElement('div');
+        view.replaceChildren(section);
         switch (tab) {
             case 'overview':
-                return window.teachingDashboard({view, api, esc});
+                return window.teachingDashboard({view: section, api, esc});
             case 'autobiography':
-                return window.teacherAutobiography({view, api, esc});
+                return window.teacherAutobiography({view: section, api, esc});
             case 'profiles':
-                return concept();
+                return concept(section);
             case 'settings':
-                return window.teacherSettings({view, esc});
+                return window.teacherSettings({view: section, esc});
             case 'platoons':
-                return window.teacherPlatoons({view, api, esc});
+                return window.teacherPlatoons({view: section, api, esc});
             case 'model':
-                return window.teacherMethodology({view, state, esc});
+                return window.teacherMethodology({view: section, state, esc});
         }
     }
 

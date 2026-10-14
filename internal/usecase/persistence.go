@@ -11,7 +11,11 @@ func (a *Service) transaction(fn func(*model.Database) (any, error)) (any, error
 	return result, err
 }
 func (a *Service) sessionByID(id string) (model.Session, bool) {
-	for _, r := range a.repo.Snapshot().Sessions {
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return model.Session{}, false
+	}
+	for _, r := range db.Sessions {
 		if r.Session.ID == id {
 			return r.Session, true
 		}

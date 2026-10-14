@@ -31,10 +31,14 @@ func (a *Service) CreateVUC(name string) (any, error) {
 	})
 }
 
-func (a *Service) ListVUCs() any {
-	list := a.repo.Snapshot().VUCs
+func (a *Service) ListVUCs() (any, error) {
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return nil, err
+	}
+	list := db.VUCs
 	if list == nil {
 		list = []model.VUC{}
 	}
-	return map[string]any{"vucs": list}
+	return map[string]any{"vucs": list}, nil
 }

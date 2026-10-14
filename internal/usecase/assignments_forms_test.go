@@ -15,7 +15,7 @@ func TestFormAssignmentNeedsNoTemplateButTestsStillDo(t *testing.T) {
 	if _, err := s.AssignmentCommand(formAssignmentInput(t, "101"), "assignment"); err != nil {
 		t.Fatal(err)
 	}
-	stored := s.repo.Snapshot().Assignments
+	stored := mustSnapshot(t, s.repo).Assignments
 	if len(stored) != 1 || stored[0].FormID != "autobiography" || !stored[0].Active || stored[0].Platoon != "101" || stored[0].Profile.ID != "" {
 		t.Fatalf("assignment: %+v", stored)
 	}
@@ -39,7 +39,7 @@ func TestFormAssignmentNeedsNoTemplateButTestsStillDo(t *testing.T) {
 	if _, err := s.AssignmentCommand(Input{"title": raw(t, "Тест"), "profileId": raw(t, "template")}, "assignment"); err != nil {
 		t.Fatal(err)
 	}
-	if got := s.repo.Snapshot().Assignments[1]; got.FormID != "" || got.Profile.ID != "template" {
+	if got := mustSnapshot(t, s.repo).Assignments[1]; got.FormID != "" || got.Profile.ID != "template" {
 		t.Fatalf("test assignment: %+v", got)
 	}
 }
@@ -50,7 +50,7 @@ func TestStartingAFormTwiceReturnsTheSameSubmission(t *testing.T) {
 	if _, err := s.AssignmentCommandFor(login.Account.OwnerID, formAssignmentInput(t, "101"), "assignment"); err != nil {
 		t.Fatal(err)
 	}
-	id := s.repo.Snapshot().Assignments[0].ID
+	id := mustSnapshot(t, s.repo).Assignments[0].ID
 	first, err := s.StartAssignment(login.Account, id)
 	if err != nil {
 		t.Fatal(err)
@@ -60,11 +60,11 @@ func TestStartingAFormTwiceReturnsTheSameSubmission(t *testing.T) {
 		t.Fatalf("url %s", url)
 	}
 	second, _ := s.StartAssignment(login.Account, id)
-	if second.(map[string]any)["url"] != url || len(s.repo.Snapshot().Submissions) != 1 {
+	if second.(map[string]any)["url"] != url || len(mustSnapshot(t, s.repo).Submissions) != 1 {
 		t.Fatal("second start created another submission")
 	}
-	stored := s.repo.Snapshot().Submissions[0]
-	if stored.StudentID != login.Account.ID || stored.AssignmentID != id || stored.FormVersion != "1.0" || stored.Consent || len(s.repo.Snapshot().Sessions) != 0 {
+	stored := mustSnapshot(t, s.repo).Submissions[0]
+	if stored.StudentID != login.Account.ID || stored.AssignmentID != id || stored.FormVersion != "1.0" || stored.Consent || len(mustSnapshot(t, s.repo).Sessions) != 0 {
 		t.Fatalf("submission: %+v", stored)
 	}
 }
@@ -76,7 +76,7 @@ func TestStartingAFormRespectsPlatoonAndAccess(t *testing.T) {
 	if _, err := s.AssignmentCommandFor(mine.Account.OwnerID, formAssignmentInput(t, "101"), "assignment"); err != nil {
 		t.Fatal(err)
 	}
-	id := s.repo.Snapshot().Assignments[0].ID
+	id := mustSnapshot(t, s.repo).Assignments[0].ID
 	if _, err := s.StartAssignment(other.Account, id); kind(err) != Forbidden {
 		t.Fatalf("another platoon started it: %v", err)
 	}

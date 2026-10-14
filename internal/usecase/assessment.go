@@ -88,7 +88,7 @@ func (a *Service) mean(s model.Session, ids []string) *float64 {
 			return nil
 		}
 		i, ok := a.engineFor(s).item(id)
-		if !ok || v < i.Min || v > i.Max || (len(i.Options) > 0 && v >= len(i.Options)) {
+		if !ok || i.ResponseOnly || v < i.Min || v > i.Max || (len(i.Options) > 0 && v >= len(i.Options)) {
 			return nil
 		}
 		n += score(i, v)
@@ -102,6 +102,9 @@ func (a *Service) emptyProfile() model.Profile {
 	for _, i := range a.bank.Indicators {
 		target := 5.0
 		v[i.ID] = &target
+		if i.Descriptive {
+			v[i.ID] = nil
+		}
 	}
 	return model.Profile{Name: "Шаблон диагностики", Values: v, Approved: true, BankVersion: a.bank.Version}
 }
@@ -120,14 +123,22 @@ func (a *Service) validateProfile(p model.Profile) error {
 	}
 	for id, v := range p.Values {
 		known := false
+		descriptive := false
 		for _, i := range a.bank.Indicators {
 			if i.ID == id {
 				known = true
+				descriptive = i.Descriptive
 				break
 			}
 		}
 		if !known {
 			return fmt.Errorf("неизвестный показатель %s", id)
+		}
+		if descriptive {
+			if v != nil {
+				return fmt.Errorf("у описательного показателя %s не должно быть балльного ориентира", id)
+			}
+			continue
 		}
 		if v == nil || *v != 5 {
 			return fmt.Errorf("ориентир %s должен быть равен 5", id)
@@ -176,11 +187,17 @@ func diff(target, actual *float64) *float64 {
 	return &v
 }
 func (a *Service) analyze(s model.Session, all []model.SessionRecord) map[string]any {
-	return a.engineFor(s).analyzeSnapshot(s, all)
+	engine := a.engineFor(s)
+	result := engine.analyzeSnapshot(s, all)
+	result["psychological"] = engine.psychologicalReport(s)
+	return result
 }
 func (a *Service) analyzeSnapshot(s model.Session, all []model.SessionRecord) map[string]any {
 	rows := []reportRow{}
 	for _, i := range a.bank.Indicators {
+		if i.Descriptive {
+			continue
+		}
 		if !a.indicatorEnabled(s.Profile, i.ID) {
 			continue
 		}
@@ -423,7 +440,7 @@ func (a *Service) writeCSV(w io.Writer, sessions []model.SessionRecord) error {
 		_, err := io.WriteString(w, "\r\n")
 		return err
 	}
-	if err := write([]string{"session_id", "participant", "group", "wave", "kind", "observer", "bank_version", "profile_id", "item_id", "module", "indicator", "raw", "scored", "level", "note"}); err != nil {
+	if err := write([]string{"session_id", "participant", "group", "wave", "kind", "observer", "bank_version", "profile_id", "item_id", "module", "indicator", "raw", "scored", "level", "note", "option_id", "answer_text"}); err != nil {
 		return err
 	}
 	for _, r := range sessions {
@@ -433,12 +450,18 @@ func (a *Service) writeCSV(w io.Writer, sessions []model.SessionRecord) error {
 			rv, sv, level := "", "", ""
 			if ok {
 				rv = strconv.Itoa(raw)
-				sv = strconv.FormatFloat(score(i, raw), 'f', -1, 64)
+				if !i.ResponseOnly {
+					sv = strconv.FormatFloat(score(i, raw), 'f', -1, 64)
+				}
 				if len(i.Options) > raw {
 					level = i.Options[raw].Level
 				}
 			}
-			if err := write([]string{s.ID, s.Participant, s.Group, s.Wave, s.Kind, s.Observer, s.BankVersion, s.Profile.ID, i.ID, i.Module, i.Indicator, rv, sv, level, s.Notes[i.ID]}); err != nil {
+			optionID, answerText := "", ""
+			if ok && raw >= 0 && raw < len(i.Options) {
+				optionID, answerText = i.Options[raw].ID, i.Options[raw].Text
+			}
+			if err := write([]string{s.ID, s.Participant, s.Group, s.Wave, s.Kind, s.Observer, s.BankVersion, s.Profile.ID, i.ID, i.Module, i.Indicator, rv, sv, level, s.Notes[i.ID], optionID, answerText}); err != nil {
 				return err
 			}
 		}

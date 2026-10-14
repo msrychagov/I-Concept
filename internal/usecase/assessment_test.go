@@ -31,19 +31,28 @@ func testApp(t *testing.T) *Service {
 	service.RegisterForms(forms...)
 	return service
 }
+
+func mustSnapshot(t *testing.T, repo Repository) model.Database {
+	t.Helper()
+	db, err := repo.ReadSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return db
+}
 func TestBankAndModuleSelection(t *testing.T) {
 	a := testApp(t)
-	if got := len(a.bank.Indicators); got != 39 {
-		t.Fatalf("indicators=%d, want 39", got)
+	if got := len(a.bank.Indicators); got != 67 {
+		t.Fatalf("indicators=%d, want 67", got)
 	}
 	base := model.Session{Kind: "student"}
-	if got := len(a.itemsFor(base)); got != 237 {
-		t.Fatalf("base items=%d, want 237", got)
+	if got := len(a.itemsFor(base)); got != 386 {
+		t.Fatalf("base items=%d, want 386", got)
 	}
 	base.Activity = true
 	base.Motivation = true
-	if got := len(a.itemsFor(base)); got != 255 {
-		t.Fatalf("extended items=%d, want 255", got)
+	if got := len(a.itemsFor(base)); got != 404 {
+		t.Fatalf("extended items=%d, want 404", got)
 	}
 	if got := len(a.itemsFor(model.Session{Kind: "observer"})); got != 8 {
 		t.Fatalf("observer items=%d, want 8", got)
@@ -55,8 +64,8 @@ func TestTemplateControlsQuestionAndReportComposition(t *testing.T) {
 	p := a.emptyProfile()
 	delete(p.Values, "Q01")
 	s := model.Session{Kind: "student", Profile: p, Answers: map[string]int{}, Notes: map[string]string{}}
-	if got := len(a.itemsFor(s)); got != 228 {
-		t.Fatalf("items after excluding Q01=%d, want 228", got)
+	if got := len(a.itemsFor(s)); got != 377 {
+		t.Fatalf("items after excluding Q01=%d, want 377", got)
 	}
 	for _, item := range a.itemsFor(s) {
 		if item.Indicator == "Q01" {
@@ -87,6 +96,16 @@ func TestScoringAndIncompleteMean(t *testing.T) {
 	s.Answers["I003"] = 3
 	if got := *a.mean(s, []string{"I001", "I002", "I003"}); got != 13.0/3.0 {
 		t.Fatalf("mean=%v", got)
+	}
+	s.Answers["PS_EAT01"] = 0
+	s.Answers["PS_EAT02"] = 5 // NA is distinct from never and from refusal.
+	s.Answers["PS_EAT03"] = 6 // SKIP
+	if a.mean(s, []string{"PS_EAT01"}) != nil {
+		t.Fatal("psychological answer entered pedagogical scoring")
+	}
+	group := a.psychologicalReport(s)[0]
+	if group["answered"] != 1 || group["notApplicable"] != 1 || group["declined"] != 1 || group["unanswered"] != 2 {
+		t.Fatalf("psychological answer states collapsed: %+v", group)
 	}
 }
 

@@ -6,7 +6,7 @@ import "vucdiagnostic/internal/domain/model"
 // leave both the persisted database and subsequent snapshots unchanged.
 // The callback must not call back into the repository.
 type Repository interface {
-	Snapshot() model.Database
+	ReadSnapshot() (model.Database, error)
 	Update(func(*model.Database) error) error
 	ReplaceWithBackup(model.Database) (string, error)
 }

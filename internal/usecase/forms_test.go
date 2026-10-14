@@ -22,7 +22,7 @@ type formFixture struct {
 
 func signUp(t *testing.T, s *Service, role, email, platoon string) LoginResult {
 	t.Helper()
-	if _, exists := vucIn(s.repo.Snapshot(), "Тестовый ВУЦ"); !exists {
+	if _, exists := vucIn(mustSnapshot(t, s.repo), "Тестовый ВУЦ"); !exists {
 		if _, err := s.CreateVUC("Тестовый ВУЦ"); err != nil {
 			t.Fatal(err)
 		}
@@ -174,7 +174,7 @@ func TestFormSectionsNeedConsentAndReplaceOnlyTheirOwnAnswers(t *testing.T) {
 	if _, err := f.save("about", map[string]json.RawMessage{"name_changed": raw(t, "no")}); err != nil {
 		t.Fatal(err)
 	}
-	stored := f.service.repo.Snapshot().Submissions[0]
+	stored := mustSnapshot(t, f.service.repo).Submissions[0]
 	if stored.Answers["prev_names"] != nil || stored.Answers["sport_has"] == nil {
 		t.Fatalf("answers: %v", stored.Answers)
 	}
@@ -214,7 +214,7 @@ func TestFormCompletionNeedsEverySection(t *testing.T) {
 	if !slices.Contains(sections, "sport") || !slices.Contains(sections, "about") || len(sections) != 17 || len(missing["about"]) == 0 {
 		t.Fatalf("details: %v", e.Details)
 	}
-	if f.service.repo.Snapshot().Submissions[0].Completed {
+	if mustSnapshot(t, f.service.repo).Submissions[0].Completed {
 		t.Fatal("completed with gaps")
 	}
 }
@@ -227,7 +227,7 @@ func TestFormCompletionClosesTheSubmission(t *testing.T) {
 	if err != nil || result.(map[string]any)["completed"] != true {
 		t.Fatalf("completion: %v %v", result, err)
 	}
-	stored := f.service.repo.Snapshot().Submissions[0]
+	stored := mustSnapshot(t, f.service.repo).Submissions[0]
 	if !stored.Completed || stored.CompletedAt == "" {
 		t.Fatal("completion not stored")
 	}

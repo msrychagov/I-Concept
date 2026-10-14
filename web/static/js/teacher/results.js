@@ -14,12 +14,13 @@ window.teacherResult = async function ({view, api, esc, id}) {
         const rows = r.evidence || [];
         const answered = rows.reduce((sum, row) => sum + row.coverage, 0);
         const total = rows.reduce((sum, row) => sum + row.total, 0);
-        const statements = data.items.filter(item => item.scored || ['B', 'C', 'D'].includes(item.module));
+        const statements = data.items.filter(item => !item.responseOnly && (item.scored || ['B', 'C', 'D'].includes(item.module)));
         dialog.innerHTML = `<div class="section-title"><div><h2>${esc(s.participant)}</h2><p>Взвод ${esc(s.group)} · ${esc(s.wave)}</p></div><button class="secondary" id="close-result">Закрыть</button></div>
    <p>${s.completed ? 'Прохождение завершено' : 'Прохождение в процессе'} · ответов на утверждения ${answered} из ${total}</p>
    <h3>Отчёт по утверждениям</h3><p class="muted">Средний балл по показателю рассчитывается по шкале 1–5 с учётом обратных утверждений. При неполном наборе ответов балл не рассчитывается; пропуски не заменяются нулём.</p>
    <section><div id="evidence-list"></div><nav class="list-pagination" id="evidence-pagination" aria-label="Страницы диагностических показателей"></nav></section>
    <details><summary>Ответы на утверждения и комментарии</summary>${statements.map(item => `<article class="bank-item"><b>${esc(item.text)}</b><p>${s.answers[item.id] === undefined ? 'Нет ответа' : esc(item.options?.[s.answers[item.id]]?.text ?? s.answers[item.id])}</p><small>${esc(s.notes[item.id] || '')}</small></article>`).join('')}</details>
+   ${(r.psychological||[]).length?`<section class="surface"><h3>Мое самочувстсвие</h3><p class="muted">Ответы представлены по направлениям без диагностических порогов и без включения в педагогические баллы. Отказ, неприменимость и отсутствие ответа учитываются отдельно.</p>${r.psychological.map(group=>`<details class="evidence-card"><summary><b>${esc(group.name)}</b><span>${group.answered} ответов · ${group.total} вопросов</span></summary><p class="muted">${esc(group.limitations)}</p><p>Не относится: ${group.notApplicable} · Отказ: ${group.declined} · Без ответа: ${group.unanswered}</p>${group.answers.map(answer=>`<article class="bank-item"><small>${esc(answer.id)} · ${esc(answer.timeWindow)}</small><b>${esc(answer.text)}</b><p>${esc(answer.selected)}</p>${answer.note?`<small>${esc(answer.note)}</small>`:''}</article>`).join('')}</details>`).join('')}</section>`:''}
    <a class="button secondary" href="/api/v1/sessions/${encodeURIComponent(id)}/export">Экспорт сессии</a>`;
         dialog.querySelector('#close-result').onclick = () => dialog.close();
         list();

@@ -75,6 +75,10 @@ func (a *Service) AssignmentCommandFor(teacherID string, b Input, op string) (an
 			if p.Questions == nil {
 				p.Questions = clone(a.engineFor(model.Session{Profile: p, BankVersion: p.BankVersion}).bank.Items)
 			}
+			p.Questions = a.assignmentQuestions(p, boolean(b, "activity"), boolean(b, "motivation"))
+			if len(p.Questions) == 0 {
+				return nil, failure(Invalid, map[string]any{"error": "В выбранном шаблоне нет доступных вопросов."})
+			}
 			as := model.Assignment{ID: uuid(), Title: title, Platoon: platoon, Profile: clone(p), Activity: boolean(b, "activity"), Motivation: boolean(b, "motivation"), Active: true, Created: time.Now().UTC().Format(time.RFC3339), OwnerID: teacherID}
 			db.Assignments = append(db.Assignments, as)
 

@@ -1,40 +1,77 @@
+x-database-environment: &database-environment
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_USER: app
+  DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+  DB_NAME: app_db
+  DB_SSLMODE: disable
+
+x-application: &application
+  image: i-concept:${IMAGE_TAG:-local}
+  build:
+    context: .
+    dockerfile: Dockerfile
+
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: go-app
+    <<: *application
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${APP_PORT:-8080}:8080"
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: app
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: app_db
-      DB_SSLMODE: disable
+      <<: *database-environment
+      VUC_ADMIN_USER: ${VUC_ADMIN_USER:-admin}
+      VUC_ADMIN_PASSWORD: ${VUC_ADMIN_PASSWORD:-}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    <<: *application
+    entrypoint: ["migrate"]
+    command: []
+    restart: "no"
+    environment: *database-environment
     depends_on:
       postgres:
         condition: service_healthy
 
+  seed:
+    <<: *application
+    profiles: ["tools"]
+    entrypoint: ["seed"]
+    command: []
+    environment: *database-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  importdata:
+    <<: *application
+    profiles: ["tools"]
+    entrypoint: ["importdata"]
+    command: ["-file", "/import/vuc.json"]
+    environment: *database-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   postgres:
     image: postgres:17-alpine
-    container_name: postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: app
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       POSTGRES_DB: app_db
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U app -d app_db" ]
+      test: ["CMD-SHELL", "pg_isready -U app -d app_db"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 12
 
 volumes:
   postgres_data:

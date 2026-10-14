@@ -147,6 +147,11 @@ for path in ['/reports/groups','/exports/answers.csv']:
 endpoint('/openapi.json','get','getOpenAPI','Документация','Описание OpenAPI',{'type':'object','additionalProperties':True},auth='auth')
 S['Bank']['properties']['instructions']={'type':'object','additionalProperties':string()}
 S['Survey']['properties']['instructions']={'type':'object','additionalProperties':string()}
+S['PublicQuestion']['properties']['timeWindow']=string()
+S['PublicQuestion']['properties']['responseOnly']=boolean()
+S['PsychologicalAnswer']=obj({'id':string(),'text':string(),'timeWindow':string(),'selected':string(),'code':string(description='Исходный код варианта, включая NA и SKIP; пустой при отсутствии ответа.'),'note':string()})
+S['PsychologicalIndicator']=obj({'id':string(),'name':string(),'limitations':string(),'total':integer(),'answered':integer(),'declined':integer(),'notApplicable':integer(),'unanswered':integer(),'answers':arr(ref('PsychologicalAnswer'))})
+S['Report']['properties']['psychological']=arr(ref('PsychologicalIndicator'))
 S['EvidenceChoice']=obj({'id':string(),'text':string(),'selected':string(),'interpretation':string()})
 S['EvidenceTrend']=obj({'available':boolean(),'reason':string(),'previous':number(nullable=True),'delta':number(nullable=True),'previousDate':string(),'previousSessionId':string()})
 S['EvidenceRow']=obj({'id':string(),'name':string(),'block':string(),'definition':string(),'limitations':string(),'selfImage':integer(nullable=True),'statements':number(nullable=True),'coverage':integer(),'total':integer(),'choices':arr(ref('EvidenceChoice')),'trend':ref('EvidenceTrend')})

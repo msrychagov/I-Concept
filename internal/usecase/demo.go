@@ -9,6 +9,37 @@ import (
 
 // ResetDemo is an explicit maintenance command; never runs on normal startup.
 func (a *Service) ResetDemo() (string, error) {
+	db, err := a.demoDatabase()
+	if err != nil {
+		return "", err
+	}
+	return a.repo.ReplaceWithBackup(db)
+}
+
+// SeedDemo only fills an empty repository, even with concurrent writers.
+func (a *Service) SeedDemo() error {
+	db, err := a.demoDatabase()
+	if err != nil {
+		return err
+	}
+	return a.ImportData(db)
+}
+
+func (a *Service) ImportData(db model.Database) error {
+	if db.Empty() {
+		return fmt.Errorf("source data is empty")
+	}
+	normalizeOwnership(&db)
+	return a.repo.Update(func(current *model.Database) error {
+		if !current.Empty() {
+			return fmt.Errorf("target database is not empty; import/seed cancelled")
+		}
+		*current = model.Clone(db)
+		return nil
+	})
+}
+
+func (a *Service) demoDatabase() (model.Database, error) {
 	now := time.Now().UTC()
 	created := now.Add(-72 * time.Hour).Format(time.RFC3339)
 	db := model.Database{Students: []model.Account{}, Assignments: []model.Assignment{}, Logins: []model.Login{}, Profiles: []model.Profile{}, Sessions: []model.SessionRecord{}, Submissions: []model.FormSubmission{}}
@@ -85,9 +116,9 @@ func (a *Service) ResetDemo() (string, error) {
 		}
 	}
 	if err := a.addDemoAutobiography(&db, created, now, teacherID); err != nil {
-		return "", err
+		return model.Database{}, err
 	}
-	return a.repo.ReplaceWithBackup(db)
+	return db, nil
 }
 
 // addDemoAutobiography assigns the autobiography to platoon 101: the first

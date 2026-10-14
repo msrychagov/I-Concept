@@ -13,7 +13,10 @@ func (a *Service) ResearchQueryFor(teacherID, op, id, group string) (any, error)
 	if op == "teaching" {
 		return a.TeachingStateFor(teacherID)
 	}
-	db := a.repo.Snapshot()
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return nil, err
+	}
 	switch op {
 	case "state":
 		profiles := []model.Profile{}
@@ -71,7 +74,10 @@ func (a *Service) ExportCSV(w io.Writer, group string) error {
 }
 
 func (a *Service) ExportCSVFor(teacherID string, w io.Writer, group string) error {
-	db := a.repo.Snapshot()
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return err
+	}
 	list := filterRecords(db.Sessions, func(s model.Session) bool { return s.Kind != "observer" && teacherOwnsSession(db, teacherID, s) })
 	if group != "" {
 		list = filterRecords(list, func(s model.Session) bool { return s.Group == group })

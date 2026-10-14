@@ -9,6 +9,7 @@ type Bank struct {
 }
 
 type Indicator struct {
+	Descriptive bool     `json:"descriptive,omitempty"`
 	Definition  string   `json:"definition,omitempty"`
 	Limitations string   `json:"limitations,omitempty"`
 	TargetText  string   `json:"targetText,omitempty"`
@@ -30,18 +31,20 @@ type Option struct {
 }
 
 type Item struct {
-	KeyStatus string   `json:"keyStatus,omitempty"`
-	Section   string   `json:"section,omitempty"`
-	Scored    bool     `json:"scored,omitempty"`
-	ID        string   `json:"id"`
-	Module    string   `json:"module"`
-	Text      string   `json:"text"`
-	Min       int      `json:"min"`
-	Max       int      `json:"max"`
-	Type      string   `json:"type"`
-	Indicator string   `json:"indicator"`
-	Secondary []string `json:"secondary,omitempty"`
-	Reverse   bool     `json:"reverse,omitempty"`
-	Source    string   `json:"source,omitempty"`
-	Options   []Option `json:"options,omitempty"`
+	ResponseOnly bool     `json:"responseOnly,omitempty"`
+	TimeWindow   string   `json:"timeWindow,omitempty"`
+	KeyStatus    string   `json:"keyStatus,omitempty"`
+	Section      string   `json:"section,omitempty"`
+	Scored       bool     `json:"scored,omitempty"`
+	ID           string   `json:"id"`
+	Module       string   `json:"module"`
+	Text         string   `json:"text"`
+	Min          int      `json:"min"`
+	Max          int      `json:"max"`
+	Type         string   `json:"type"`
+	Indicator    string   `json:"indicator"`
+	Secondary    []string `json:"secondary,omitempty"`
+	Reverse      bool     `json:"reverse,omitempty"`
+	Source       string   `json:"source,omitempty"`
+	Options      []Option `json:"options,omitempty"`
 }

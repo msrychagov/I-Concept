@@ -43,7 +43,10 @@ func (a *Service) studentForm(db *model.Database, loginToken, id string) (*model
 
 // FormOpen returns the student's draft with the form description and progress.
 func (a *Service) FormOpen(loginToken, id string) (any, error) {
-	db := a.repo.Snapshot()
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return nil, err
+	}
 	submission, form, err := a.studentForm(&db, loginToken, id)
 	if err != nil {
 		return nil, err

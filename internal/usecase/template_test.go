@@ -44,7 +44,7 @@ func TestEditableQuestionsSnapshotAndScoring(t *testing.T) {
 	if s.Profile.Questions[0].Text == p.Questions[0].Text {
 		t.Fatal("snapshot changed")
 	}
-	old := model.Session{Kind: "student", Answers: map[string]int{}}
+	old := model.Session{Kind: "student", BankVersion: "pilot-2.1", Answers: map[string]int{}}
 	if len(a.itemsFor(old)) != 237 {
 		t.Fatal("legacy questionnaire changed")
 	}

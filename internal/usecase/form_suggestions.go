@@ -13,7 +13,10 @@ const maxSuggestions = 10
 // FormSuggestions offers values that other students already entered into a
 // text field marked for suggestions.
 func (a *Service) FormSuggestions(loginToken, id, fieldID, query string) (any, error) {
-	db := a.repo.Snapshot()
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return nil, err
+	}
 	own, form, err := a.studentForm(&db, loginToken, id)
 	if err != nil {
 		return nil, err

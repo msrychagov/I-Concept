@@ -2,3 +2,7 @@
 /vuc
 *.tmp
 .idea
+
+.env
+.env.*
+!.env.example

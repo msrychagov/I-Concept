@@ -30,7 +30,10 @@ func platoonIn(db model.Database, id, vuc string) (model.Platoon, bool) {
 }
 
 func (a *Service) PlatoonManagement(teacherID string) (any, error) {
-	db := a.repo.Snapshot()
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return nil, err
+	}
 	t, err := managementTeacher(db, teacherID)
 	if err != nil {
 		return nil, err

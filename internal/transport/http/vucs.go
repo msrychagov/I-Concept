@@ -18,5 +18,6 @@ func (h *Handler) createVUC(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) listVUCs(w http.ResponseWriter, r *http.Request) {
-	h.reply(w, h.service.ListVUCs(), http.StatusOK)
+	value, err := h.service.ListVUCs()
+	h.respond(w, value, err)
 }

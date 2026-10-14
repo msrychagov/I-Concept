@@ -1,13 +1,18 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"flag"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"vucdiagnostic/internal/app"
+	"vucdiagnostic/internal/platform/database"
 )
 
 func main() {
@@ -24,12 +29,14 @@ func main() {
 
 	a, err := app.New(app.Config{
 		DataFile:      *data,
+		DatabaseURL:   database.URLFromEnv(),
 		AdminUser:     env("VUC_ADMIN_USER", "admin"),
 		AdminPassword: env("VUC_ADMIN_PASSWORD", ""),
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer a.Close()
 	if *demo {
 		backup, err := a.ResetDemo()
 		if err != nil {
@@ -61,7 +68,24 @@ func main() {
 	}
 	log.Printf("VUC web application: %s", base)
 	log.Printf("Research cabinet: %s/research", base)
-	log.Fatal(srv.ListenAndServe())
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	shutdownDone := make(chan struct{})
+	go func() {
+		defer close(shutdownDone)
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			log.Printf("HTTP shutdown: %v", err)
+			_ = srv.Close()
+		}
+	}()
+	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		log.Printf("HTTP server: %v", err)
+	}
+	stop()
+	<-shutdownDone
 }
 
 func env(key, fallback string) string {

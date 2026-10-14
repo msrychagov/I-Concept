@@ -38,7 +38,7 @@ window.teachingDashboard = async function ({view, api, esc}) {
         root.innerHTML = `<header class="page-heading"><div><div class="eyebrow">Кабинет преподавателя</div><h1>Главная</h1><p class="muted">Общая статистика по вашим назначениям и студентам</p></div><button id="refresh-overview" class="secondary">Обновить</button></header>
    <div id="overview-error" role="alert"></div>
    <div class="dashboard-metrics"><article><strong>${shownStudents.length}</strong>Студентов</article><article><strong>${shownPlatoons.filter(Boolean).length}</strong>Взводов</article><article><strong>${assignments.length}</strong>Активных тестирований</article><article><strong>${all.done} / ${all.total}</strong>Пройдено назначений</article></div>
-   <section class="surface testing-summary"><div class="section-title"><div><div class="eyebrow">Два вида тестирования</div><h2>Общая картина прохождения</h2></div></div>
+   <section class="surface testing-summary"><div class="section-title"><div><h2>Общая картина прохождения</h2></div></div>
    <div class="toolbar testing-filters"><label>Назначения<select id="overview-scope"><option value="all" ${scope === 'all' ? 'selected' : ''}>Все, включая закрытые</option><option value="active" ${scope === 'active' ? 'selected' : ''}>Только активные</option></select></label><label>Взвод<select id="overview-platoon"><option value="">Все взводы</option>${platoons.filter(Boolean).map(p => `<option value="${esc(p)}" ${p === platoon ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></label></div>
    <div class="testing-legend"><span><i class="testing-done"></i>Завершено</span><span><i class="testing-started"></i>В процессе</span><span><i class="testing-waiting"></i>Не начато</span></div>
    <div class="testing-type-grid">${datasets.map((d, i) => {
@@ -46,7 +46,7 @@ window.teachingDashboard = async function ({view, api, esc}) {
                 started = s.total ? (s.done + s.started) / s.total * 100 : 0;
             return `<article class="testing-type-card"><div class="testing-type-heading"><span class="testing-type-number">0${i + 1}</span><h3>${esc(d.name)}</h3></div><div class="testing-type-body"><div class="testing-ring" style="--done:${done}%;--started:${started}%" role="img" aria-label="${esc(d.name)}: завершено ${s.done} из ${s.total}"><div><strong>${s.total ? percent(s.done, s.total) + '%' : '—'}</strong><span>${s.total ? 'завершено' : 'нет назначений'}</span></div></div><dl class="testing-counts"><div><dt>Завершено</dt><dd>${s.done}</dd></div><div><dt>В процессе</dt><dd>${s.started}</dd></div><div><dt>Не начато</dt><dd>${s.waiting}</dd></div><div><dt>Всего назначено</dt><dd>${s.total}</dd></div></dl></div></article>`;
         }).join('')}</div>
-   <p class="muted testing-caption">Считаются пары «студент — назначение»: у одного студента может быть несколько тестирований. Проценты показывают прохождение, а не результаты диагностики. Назначить тестирование можно в разделах «Я концепция» и «Автобиография».</p></section>
+   <p class="muted testing-caption">Считаются пары «студент — назначение»: у одного студента может быть несколько тестирований. Проценты показывают прохождение, а не результаты диагностики. Назначить тестирование можно в разделах «Диагностическое тестирование» и «Автобиография».</p></section>
    <section class="surface"><div class="section-title"><div><div class="eyebrow">Сравнение взводов</div><h2>Прохождение по взводам</h2></div></div>
    <div class="testing-platoon-list">${shownPlatoons.map(p => `<article class="testing-platoon"><header><h3>${p ? 'Взвод ' + esc(p) : 'Без взвода'}</h3><span>${students.filter(s => s.platoon === p).length} студентов</span></header><div class="testing-platoon-types">${datasets.map((d, i) => {
             const s = stats(rows[i].filter(r => r.student.platoon === p));
@@ -76,7 +76,7 @@ window.teachingDashboard = async function ({view, api, esc}) {
     async function load() {
         const [concept, autobiography] = await Promise.all([api('/dashboard'), api('/forms/autobiography/overview')]);
         if (!root.isConnected) return;
-        datasets = [{...concept, name: 'Я концепция', records: concept.sessions}, {
+        datasets = [{...concept, name: 'Диагностическое тестирование', records: concept.sessions}, {
             ...autobiography,
             name: 'Автобиография',
             records: autobiography.submissions
