@@ -10,4 +10,5 @@ type Assignment struct {
 	Motivation bool    `json:"motivation"`
 	Active     bool    `json:"active"`
 	Created    string  `json:"created"`
+	OwnerID    string  `json:"ownerId,omitempty"`
 }

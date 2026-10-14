@@ -44,13 +44,25 @@ func loginToken(r *http.Request, role string) string {
 	}
 	return cookie.Value
 }
+func (h *Handler) teacherID(r *http.Request) string {
+	account, ok := h.service.CurrentAccount(loginToken(r, "teacher"), "teacher")
+	if !ok {
+		return "unauthenticated"
+	}
+	return account.ID
+}
 func (h *Handler) authorized(w http.ResponseWriter, r *http.Request) bool {
 	if _, ok := h.service.CurrentAccount(loginToken(r, "teacher"), "teacher"); ok {
 		return true
 	}
+	h.reply(w, map[string]any{"error": "Требуется вход преподавателя."}, 401)
+	return false
+}
+func (h *Handler) adminAuthorized(w http.ResponseWriter, r *http.Request) bool {
 	user, password, ok := r.BasicAuth()
 	if !ok || h.config.AdminPassword == "" || subtle.ConstantTimeCompare([]byte(user), []byte(h.config.AdminUser)) != 1 || subtle.ConstantTimeCompare([]byte(password), []byte(h.config.AdminPassword)) != 1 {
-		h.reply(w, map[string]any{"error": "Требуется вход исследователя."}, 401)
+		w.Header().Set("WWW-Authenticate", `Basic realm="VUC administration"`)
+		h.reply(w, map[string]any{"error": "Требуются учётные данные администратора."}, 401)
 		return false
 	}
 	return true

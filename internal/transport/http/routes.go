@@ -7,9 +7,18 @@ import (
 
 // Each operation has a method-specific route and a dedicated handler.
 func (h *Handler) apiRoutes() {
+	h.mux.HandleFunc("POST /api/v1/admin/vucs", h.adminOnly(h.createVUC))
+	h.mux.HandleFunc("GET /api/v1/admin/vucs", h.adminOnly(h.listVUCs))
+	h.mux.HandleFunc("PATCH /api/v1/admin/teachers/{id}/vuc", h.adminOnly(h.assignTeacherVUC))
+	h.mux.HandleFunc("GET /api/v1/teachers/me/platoons", h.teacherOnly(h.platoonManagement))
+	h.mux.HandleFunc("POST /api/v1/teachers/me/platoons", h.teacherOnly(h.savePlatoon))
+	h.mux.HandleFunc("PATCH /api/v1/teachers/me/platoons/{id}", h.teacherOnly(h.savePlatoon))
+	h.mux.HandleFunc("PATCH /api/v1/teachers/me/students/{id}", h.teacherOnly(h.manageStudent))
 	h.mux.HandleFunc("POST /api/v1/auth/{role}/register", h.register)
 	h.mux.HandleFunc("POST /api/v1/auth/{role}/login", h.login)
 	h.mux.HandleFunc("POST /api/v1/auth/{role}/logout", h.logout)
+	h.mux.HandleFunc("POST /api/v1/admin/invitations/teachers", h.adminOnly(h.createTeacherInvitation))
+	h.mux.HandleFunc("POST /api/v1/teachers/me/student-registration-links", h.teacherOnly(h.createStudentRegistrationLink))
 	h.mux.HandleFunc("GET /api/v1/teachers/me", h.teacherProfile)
 	h.mux.HandleFunc("PATCH /api/v1/teachers/me", h.updateTeacherProfile)
 	h.mux.HandleFunc("PUT /api/v1/teachers/me/password", h.changeTeacherPassword)
@@ -55,6 +64,14 @@ func (h *Handler) apiRoutes() {
 func (h *Handler) teacherOnly(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if h.authorized(w, r) {
+			next(w, r)
+		}
+	}
+}
+
+func (h *Handler) adminOnly(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if h.adminAuthorized(w, r) {
 			next(w, r)
 		}
 	}

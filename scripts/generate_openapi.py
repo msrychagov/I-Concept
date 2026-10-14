@@ -22,7 +22,7 @@ def go_type(value):
 # Domain schemas reuse the persisted model's JSON field names.
 for file in Path('internal/domain/model').glob('*.go'):
     for name, body in re.findall(r'type (\w+) struct \{(.*?)\n\}', file.read_text(), re.S):
-        if name in ['Account','Login','Database','SessionRecord']: continue
+        if name in ['Account','Login','Invitation','Database','SessionRecord']: continue
         props, required = {}, []
         for typ, tag in re.findall(r'\w+\s+([^\s]+)\s+`json:"([^"]+)"`', body):
             key = tag.split(',')[0]; props[key] = go_type(typ)
@@ -31,7 +31,7 @@ for file in Path('internal/domain/model').glob('*.go'):
 S['ProfileInput'] = obj(S['Profile']['properties'], ['name','author','values'])
 S['ProfileInput']['description'] = 'Полный шаблон. ID при создании назначает сервер, при обновлении берётся из URL. Ориентиры выбранных показателей фиксируются сервером как 5. Если questions не передан, используется полный банк.'
 S['ProfileInput']['example'] = {'name':'Короткий шаблон','author':'Иванов Иван','wave':'Входная диагностика','values':{'Q01':5}}
-S['PublicAccount'] = obj({'id':string(),'name':string(),'email':string(format='email'),'platoon':string()}, ['id','name','email','platoon'])
+S['PublicAccount'] = obj({'id':string(),'name':string(),'email':string(format='email'),'platoon':string(),'platoonId':string(),'vuc':string(),'disabled':boolean()}, ['id','name','email','platoon','platoonId','vuc','disabled'])
 S['AuthResponse'] = obj({'account':ref('PublicAccount')}, ['account'])
 S['TeacherResponse'] = obj({'teacher':ref('PublicAccount')}, ['teacher'])
 S['StudentResponse'] = obj({'student':ref('PublicAccount')}, ['student'])
@@ -39,7 +39,17 @@ S['OK'] = obj({'ok':boolean(example=True)}, ['ok'])
 S['Error'] = obj({'error':string(),'conflict':boolean(),'partial':boolean()}, ['error'])
 S['LoginInput'] = obj({'email':string(format='email',maxLength=254),'password':string(format='password',maxLength=256)}, ['email','password'])
 S['LoginInput']['example'] = {'email':'teacher@example.test','password':'TeacherDemo2026!'}
-S['RegisterInput'] = obj({'name':string(maxLength=200,description='Имя и фамилия, не менее двух слов.'),'email':string(format='email',maxLength=254),'password':string(format='password',minLength=10,maxLength=256),'platoon':string(maxLength=80,description='Обязательно для студента.')}, ['name','email','password'])
+S['RegisterInput'] = obj({'invite':string(minLength=10,maxLength=512,description='Для преподавателя — одноразовый код администратора; для студента — ссылка преподавателя или её ключ.'),'name':string(maxLength=200,description='Имя и фамилия, не менее двух слов.'),'email':string(format='email',maxLength=254),'password':string(format='password',minLength=10,maxLength=256)}, ['invite','name','email','password'])
+S['TeacherInvitationInput'] = obj({'email':string(format='email',maxLength=254),'vuc':string(minLength=1,maxLength=200)}, ['email','vuc'])
+S['TeacherInvitation'] = obj({'code':string(example='ABCDE-FGHJK'),'role':string(enum=['teacher']),'email':string(format='email'),'vuc':string(),'expires':string(format='date-time')}, ['code','role','email','vuc','expires'])
+S['StudentLinkInput'] = obj({'platoonId':string(minLength=1)}, ['platoonId'])
+S['StudentRegistrationLink'] = obj({'link':string(example='/student?invite=...'),'role':string(enum=['student']),'platoon':string(),'platoonId':string(),'vuc':string(),'expires':string(format='date-time')}, ['link','role','platoon','platoonId','vuc','expires'])
+S['PlatoonInput'] = obj({'name':string(minLength=1,maxLength=80)}, ['name'])
+S['VUCInput'] = obj({'vuc':string(minLength=1,maxLength=200)}, ['vuc'])
+S['CreateVUCInput'] = obj({'name':string(minLength=1,maxLength=200)}, ['name'])
+S['VUCList'] = obj({'vucs':arr(ref('VUC'))}, ['vucs'])
+S['PlatoonManagement'] = obj({'vuc':string(),'platoons':arr(ref('Platoon')),'students':arr(ref('PublicAccount'))}, ['vuc','platoons','students'])
+S['ManageStudentInput'] = obj({'action':string(enum=['move','remove','disable','enable']),'platoonId':string(description='Обязательно для move; взвод в том же ВУЦ.')}, ['action'])
 S['TeacherProfileInput'] = obj({'name':string(maxLength=200),'email':string(format='email',maxLength=254),'currentPassword':string(format='password',maxLength=256,description='Обязательно при изменении электронной почты.')}, ['name','email'])
 S['PasswordInput'] = obj({'currentPassword':string(format='password',maxLength=256),'newPassword':string(format='password',minLength=10,maxLength=256),'confirmPassword':string(format='password',minLength=10,maxLength=256)}, ['currentPassword','newPassword','confirmPassword'])
 S['AssignmentInput'] = obj({'title':string(maxLength=200),'profileId':string(description='Шаблон теста. Не передаётся, если указан formId.'),'formId':string(description='Фиксированная анкета, например autobiography. Тогда шаблон не нужен.'),'platoon':string(maxLength=80,description='Пустая строка — всем взводам.'),'activity':boolean(default=False),'motivation':boolean(default=False)}, ['title'])
@@ -72,7 +82,7 @@ S['PlanInput'] = obj({'plan':arr(ref('PlanItem'))}, ['plan']);S['PlanInput']['pr
 S['PlanItem']['properties']['status']['enum']=['planned','doing','done']
 paths={}
 errors={400:'Неверные поля или JSON.',401:'Требуется вход.',403:'Недостаточно прав, назначение закрыто или недопустимый Origin.',404:'Ресурс не найден.',409:'Конфликт: занятая почта, завершённая сессия или устаревшая revision.',413:'Превышен размер запроса.',415:'Ожидается application/json.',422:'Остались пропуски; повторите с allowPartial=true.',500:'Ошибка сохранения данных.'}
-security={'teacher':[{'teacherCookie':[]},{'basicAuth':[]}], 'profile':[{'teacherCookie':[]}], 'student':[{'studentCookie':[]}], 'auth':[]}
+security={'teacher':[{'teacherCookie':[]}], 'profile':[{'teacherCookie':[]}], 'student':[{'studentCookie':[]}], 'admin':[{'basicAuth':[]}], 'auth':[]}
 def endpoint(path,method,operation,tag,summary,response='OK',body=None,auth='teacher',status=200,description='',codes=()):
     operation_obj={'operationId':operation,'tags':[tag],'summary':summary,'security':security[auth],'responses':{str(status):{'description':'Успешно.','content':{'application/json':{'schema':ref(response) if isinstance(response,str) else response}}}}}
     if description:operation_obj['description']=description
@@ -89,13 +99,22 @@ def endpoint(path,method,operation,tag,summary,response='OK',body=None,auth='tea
     for code in sorted(default_codes|set(codes)):operation_obj['responses'][str(code)]={'description':errors[code],'content':{'application/json':{'schema':ref('Error')}}}
     paths.setdefault(path,{})[method]=operation_obj
     return operation_obj
+endpoint('/teachers/me/platoons','get','listPlatoons','Управление взводом','Взводы и студенты своего ВУЦ','PlatoonManagement',codes=[403])
+endpoint('/admin/vucs','get','listVUCs','Администрирование','Справочник ВУЦ','VUCList',auth='admin')
+endpoint('/admin/vucs','post','createVUC','Администрирование','Создать ВУЦ','VUC','CreateVUCInput','admin',status=201,codes=[409])
+endpoint('/teachers/me/platoons','post','createPlatoon','Управление взводом','Создать учебный взвод','Platoon','PlatoonInput',codes=[403,409])
+endpoint('/teachers/me/platoons/{id}','patch','renamePlatoon','Управление взводом','Переименовать взвод','Platoon','PlatoonInput',codes=[403,404,409])
+endpoint('/teachers/me/students/{id}','patch','manageStudent','Управление взводом','Изменить взвод или доступ студента','PublicAccount','ManageStudentInput',codes=[403,404])
+endpoint('/admin/teachers/{id}/vuc','patch','assignTeacherVUC','Администрирование','Назначить ВУЦ существующему преподавателю','PublicAccount','VUCInput','admin',description='Для преподавателей без ВУЦ. Переносит принадлежащих им студентов и взводы, отзывает старые ссылки. Повторное назначение запрещено.',codes=[404,409])
 for action,title,body,status in [('register','Регистрация','RegisterInput',201),('login','Вход','LoginInput',200)]:
-    op=endpoint('/auth/{role}/'+action,'post',action,'Авторизация',title,'AuthResponse',body,'auth',status,'Вход создаёт HttpOnly cookie vuc_teacher или vuc_student на 24 часа. Регистрация сразу выполняет вход. role=student требует platoon.',[401,404,409])
+    op=endpoint('/auth/{role}/'+action,'post',action,'Авторизация',title,'AuthResponse',body,'auth',status,'Вход создаёт HttpOnly cookie vuc_teacher или vuc_student на 24 часа. Преподаватель регистрируется по одноразовому коду администратора. Студент — по 48-часовой ссылке преподавателя; взвод берётся из ссылки.',[401,403,404,409])
     op['responses'][str(status)]['headers']={'Set-Cookie':{'description':'HttpOnly cookie; Secure при HTTPS; SameSite=Lax.','schema':string()}}
 endpoint('/auth/{role}/logout','post','logout','Авторизация','Выход',auth='auth',description='Удаляет текущий сеанс выбранной роли и очищает cookie. Тело не требуется.',codes=[404])
 endpoint('/teachers/me','get','getTeacherProfile','Профиль','Профиль преподавателя','TeacherResponse',auth='profile')
 endpoint('/teachers/me','patch','updateTeacherProfile','Профиль','Изменить ФИО и почту','TeacherResponse','TeacherProfileInput','profile',description='Оба поля name и email обязательны. Смена почты требует currentPassword.',codes=[409])
 endpoint('/teachers/me/password','put','changeTeacherPassword','Профиль','Сменить пароль','TeacherResponse','PasswordInput','profile',description='Сохраняет вход на текущем устройстве, завершает остальные сеансы преподавателя.')
+endpoint('/admin/invitations/teachers','post','inviteTeacher','Администрирование','Создать код преподавателя','TeacherInvitation','TeacherInvitationInput','admin',status=201,description='Требует Basic Auth администратора. Код действует 24 часа, привязан к почте и используется один раз.')
+endpoint('/teachers/me/student-registration-links','post','createStudentRegistrationLink','Профиль','Создать ссылку для студентов взвода','StudentRegistrationLink','StudentLinkInput','profile',status=201,description='Ссылка действует 48 часов и может зарегистрировать нескольких студентов. Все они закрепляются за преподавателем и указанным взводом. Новая ссылка для того же взвода отзывает предыдущую.')
 endpoint('/students/me','get','getStudentProfile','Студент','Профиль студента','StudentResponse',auth='student')
 endpoint('/students/me/assignments','get','getStudentAssignments','Студент','Назначения студента','StudentAssignments',auth='student',description='Включает доступные и закрытые назначения. Исходные ответы и расчёты не возвращаются.')
 endpoint('/students/me/assignments/{id}/session','post','startAssignment','Студент','Начать или продолжить тестирование','StartSession',auth='student',description='Без тела. Возвращает URL новой или существующей незавершённой сессии. Повторный запрос не создаёт новую попытку.',codes=[400,403,409])
@@ -156,6 +175,6 @@ suggest['parameters'].extend([{'name':'field','in':'query','required':True,'desc
 endpoint('/forms/{formId}','get','getForm','Анкеты','Описание анкеты','Form',description='Разделы, поля, развилки и справочники.',codes=[404])
 endpoint('/forms/{formId}/overview','get','getFormOverview','Анкеты','Обзор анкеты: студенты, назначения, сдача','FormOverview',codes=[404])
 endpoint('/submissions/{id}','get','getFormSubmissionDetail','Анкеты','Ответы студента на анкету','FormSubmissionDetail',description='Отдаётся и сданная, и начатая анкета.',codes=[404])
-spec={'openapi':'3.0.3','info':{'title':'API диагностической системы ВУЦ','version':'1.0.0','description':'Отдельные HTTP-маршруты для каждой операции. JSON-запросы требуют Content-Type: application/json; неизвестные поля отклоняются. Лимит обычных запросов 16 КиБ, шаблонов и импорта 3 МБ, плана 300 КБ.\n\nАвторизация: вызовите /auth/teacher/login или /auth/student/login (в том числе через Try it out), браузер сохранит HttpOnly cookie и отправит её в последующих запросах. В Swagger поле cookie вручную не вводится. Basic Auth доступен только для преподавательских ресурсов при явной настройке VUC_ADMIN_PASSWORD; настройки личного профиля требуют cookie преподавателя.\n\nОшибки возвращаются как {error, conflict?, partial?}. Изменения анкеты требуют актуальной revision. Старые маршруты /api/vuc, /api/account и /api/teacher удалены.'},'servers':[{'url':'/api/v1'}],'tags':[{'name':name} for name in ['Авторизация','Профиль','Студент','Анкета','Методика','Преподаватель','Шаблоны','Назначения','Результаты','Экспорт','Документация']],'paths':paths,'components':{'schemas':S,'securitySchemes':{'teacherCookie':{'type':'apiKey','in':'cookie','name':'vuc_teacher'},'studentCookie':{'type':'apiKey','in':'cookie','name':'vuc_student'},'basicAuth':{'type':'http','scheme':'basic','description':'Только если настроен VUC_ADMIN_PASSWORD.'}}}}
+spec={'openapi':'3.0.3','info':{'title':'API диагностической системы ВУЦ','version':'1.2.0','description':'Отдельные HTTP-маршруты для каждой операции. JSON-запросы требуют Content-Type: application/json; неизвестные поля отклоняются. Лимит обычных запросов 16 КиБ, шаблонов и импорта 3 МБ, плана 300 КБ.\n\nАвторизация: короткие коды преподавателей создаёт только администратор. Студенты регистрируются по 48-часовой ссылке конкретного взвода, созданной преподавателем. Вызовите /auth/teacher/login или /auth/student/login, браузер сохранит HttpOnly cookie. Basic Auth используется только административным маршрутом.\n\nОшибки возвращаются как {error, conflict?, partial?}. Изменения анкеты требуют актуальной revision.'},'servers':[{'url':'/api/v1'}],'tags':[{'name':name} for name in ['Авторизация','Администрирование','Профиль','Студент','Анкета','Методика','Преподаватель','Шаблоны','Назначения','Результаты','Экспорт','Документация']],'paths':paths,'components':{'schemas':S,'securitySchemes':{'teacherCookie':{'type':'apiKey','in':'cookie','name':'vuc_teacher'},'studentCookie':{'type':'apiKey','in':'cookie','name':'vuc_student'},'basicAuth':{'type':'http','scheme':'basic','description':'Только для административных маршрутов при настроенном VUC_ADMIN_PASSWORD.'}}}}
 Path('web/static/openapi.json').write_text(json.dumps(spec,ensure_ascii=False,indent=2)+'\n')
 print(f'OpenAPI: {sum(len(v) for v in paths.values())} operations, {len(S)} schemas')

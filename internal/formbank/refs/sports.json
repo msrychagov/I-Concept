@@ -1,502 +1,502 @@
 [
- {
-  "id": "aviamodelnyy_sport",
-  "text": "Авиамодельный спорт"
- },
- {
-  "id": "avtosport",
-  "text": "Автоспорт"
- },
- {
-  "id": "aykido",
-  "text": "Айкидо"
- },
- {
-  "id": "akademicheskaya_greblya",
-  "text": "Академическая гребля"
- },
- {
-  "id": "akrobatika",
-  "text": "Акробатика"
- },
- {
-  "id": "alpinizm",
-  "text": "Альпинизм"
- },
- {
-  "id": "armeyskiy_rukopashnyy_boy",
-  "text": "Армейский рукопашный бой"
- },
- {
-  "id": "armrestling",
-  "text": "Армрестлинг"
- },
- {
-  "id": "badminton",
-  "text": "Бадминтон"
- },
- {
-  "id": "basketbol",
-  "text": "Баскетбол"
- },
- {
-  "id": "batut",
-  "text": "Батут"
- },
- {
-  "id": "beysbol",
-  "text": "Бейсбол"
- },
- {
-  "id": "biatlon",
-  "text": "Биатлон"
- },
- {
-  "id": "bilyard",
-  "text": "Бильярд"
- },
- {
-  "id": "bobsley",
-  "text": "Бобслей"
- },
- {
-  "id": "bodibilding_i_fitnes",
-  "text": "Бодибилдинг и фитнес"
- },
- {
-  "id": "boks",
-  "text": "Бокс"
- },
- {
-  "id": "bolshoy_tennis",
-  "text": "Большой теннис"
- },
- {
-  "id": "bouling",
-  "text": "Боулинг"
- },
- {
-  "id": "bridzh",
-  "text": "Бридж"
- },
- {
-  "id": "velosport_mauntinbayk_bmx",
-  "text": "Велоспорт (маунтинбайк, BMX)"
- },
- {
-  "id": "velosport_shosse_trek",
-  "text": "Велоспорт (шоссе, трек)"
- },
- {
-  "id": "vodnoe_polo",
-  "text": "Водное поло"
- },
- {
-  "id": "vodnye_lyzhi",
-  "text": "Водные лыжи"
- },
- {
-  "id": "voenno_prikladnoe_mnogobore",
-  "text": "Военно-прикладное многоборье"
- },
- {
-  "id": "voleybol",
-  "text": "Волейбол"
- },
- {
-  "id": "volnaya_borba",
-  "text": "Вольная борьба"
- },
- {
-  "id": "vorkaut",
-  "text": "Воркаут"
- },
- {
-  "id": "gandbol",
-  "text": "Гандбол"
- },
- {
-  "id": "gimnastika_sportivnaya",
-  "text": "Гимнастика спортивная"
- },
- {
-  "id": "gimnastika_khudozhestvennaya",
-  "text": "Гимнастика художественная"
- },
- {
-  "id": "girevoy_sport",
-  "text": "Гиревой спорт"
- },
- {
-  "id": "go",
-  "text": "Го"
- },
- {
-  "id": "golf",
-  "text": "Гольф"
- },
- {
-  "id": "gornye_lyzhi",
-  "text": "Горные лыжи"
- },
- {
-  "id": "gornyy_turizm",
-  "text": "Горный туризм"
- },
- {
-  "id": "greblya_na_baydarkakh_i_kanoe",
-  "text": "Гребля на байдарках и каноэ"
- },
- {
-  "id": "grebnoy_slalom",
-  "text": "Гребной слалом"
- },
- {
-  "id": "greko_rimskaya_borba",
-  "text": "Греко-римская борьба"
- },
- {
-  "id": "dayving",
-  "text": "Дайвинг"
- },
- {
-  "id": "darts",
-  "text": "Дартс"
- },
- {
-  "id": "deltaplanerizm",
-  "text": "Дельтапланеризм"
- },
- {
-  "id": "dzhiu_dzhitsu",
-  "text": "Джиу-джитсу"
- },
- {
-  "id": "dzyudo",
-  "text": "Дзюдо"
- },
- {
-  "id": "yoga",
-  "text": "Йога"
- },
- {
-  "id": "karate",
-  "text": "Карате"
- },
- {
-  "id": "karting",
-  "text": "Картинг"
- },
- {
-  "id": "kekusinkay",
-  "text": "Кёкусинкай"
- },
- {
-  "id": "kerling",
-  "text": "Керлинг"
- },
- {
-  "id": "kibersport",
-  "text": "Киберспорт"
- },
- {
-  "id": "kikboksing",
-  "text": "Кикбоксинг"
- },
- {
-  "id": "konnyy_sport",
-  "text": "Конный спорт"
- },
- {
-  "id": "konkobezhnyy_sport",
-  "text": "Конькобежный спорт"
- },
- {
-  "id": "kross_i_beg_na_dlinnye_distantsii",
-  "text": "Кросс и бег на длинные дистанции"
- },
- {
-  "id": "krossfit",
-  "text": "Кроссфит"
- },
- {
-  "id": "kudo",
-  "text": "Кудо"
- },
- {
-  "id": "lapta",
-  "text": "Лапта"
- },
- {
-  "id": "legkaya_atletika",
-  "text": "Лёгкая атлетика"
- },
- {
-  "id": "lyzhnye_gonki",
-  "text": "Лыжные гонки"
- },
- {
-  "id": "mini_futbol",
-  "text": "Мини-футбол"
- },
- {
-  "id": "mnogobore_gto",
-  "text": "Многоборье ГТО"
- },
- {
-  "id": "motokross",
-  "text": "Мотокросс"
- },
- {
-  "id": "motosport",
-  "text": "Мотоспорт"
- },
- {
-  "id": "nastolnyy_tennis",
-  "text": "Настольный теннис"
- },
- {
-  "id": "parashyutnyy_sport",
-  "text": "Парашютный спорт"
- },
- {
-  "id": "parkur",
-  "text": "Паркур"
- },
- {
-  "id": "parusnyy_sport",
-  "text": "Парусный спорт"
- },
- {
-  "id": "pauerlifting",
-  "text": "Пауэрлифтинг"
- },
- {
-  "id": "peyntbol",
-  "text": "Пейнтбол"
- },
- {
-  "id": "plavanie",
-  "text": "Плавание"
- },
- {
-  "id": "plyazhnyy_voleybol",
-  "text": "Пляжный волейбол"
- },
- {
-  "id": "podvodnyy_sport",
-  "text": "Подводный спорт"
- },
- {
-  "id": "poliatlon",
-  "text": "Полиатлон"
- },
- {
-  "id": "prakticheskaya_strelba",
-  "text": "Практическая стрельба"
- },
- {
-  "id": "pryzhki_v_vodu",
-  "text": "Прыжки в воду"
- },
- {
-  "id": "pryzhki_na_lyzhakh_s_tramplina",
-  "text": "Прыжки на лыжах с трамплина"
- },
- {
-  "id": "pulevaya_strelba",
-  "text": "Пулевая стрельба"
- },
- {
-  "id": "radiosport",
-  "text": "Радиоспорт"
- },
- {
-  "id": "rafting",
-  "text": "Рафтинг"
- },
- {
-  "id": "regbi",
-  "text": "Регби"
- },
- {
-  "id": "rolikovye_konki",
-  "text": "Роликовые коньки"
- },
- {
-  "id": "rukopashnyy_boy",
-  "text": "Рукопашный бой"
- },
- {
-  "id": "sambo",
-  "text": "Самбо"
- },
- {
-  "id": "sannyy_sport",
-  "text": "Санный спорт"
- },
- {
-  "id": "serfing",
-  "text": "Серфинг"
- },
- {
-  "id": "silovoe_troebore",
-  "text": "Силовое троеборье"
- },
- {
-  "id": "skalolazanie",
-  "text": "Скалолазание"
- },
- {
-  "id": "skvosh",
-  "text": "Сквош"
- },
- {
-  "id": "skeytbording",
-  "text": "Скейтбординг"
- },
- {
-  "id": "skeleton",
-  "text": "Скелетон"
- },
- {
-  "id": "ski_alpinizm",
-  "text": "Ски-альпинизм"
- },
- {
-  "id": "sluzhebno_prikladnye_vidy_sporta",
-  "text": "Служебно-прикладные виды спорта"
- },
- {
-  "id": "smeshannye_edinoborstva_mma",
-  "text": "Смешанные единоборства (MMA)"
- },
- {
-  "id": "snoubord",
-  "text": "Сноуборд"
- },
- {
-  "id": "sovremennoe_pyatibore",
-  "text": "Современное пятиборье"
- },
- {
-  "id": "sportivnaya_aerobika",
-  "text": "Спортивная аэробика"
- },
- {
-  "id": "sportivnaya_rybalka",
-  "text": "Спортивная рыбалка"
- },
- {
-  "id": "sportivnaya_khodba",
-  "text": "Спортивная ходьба"
- },
- {
-  "id": "sportivnoe_orientirovanie",
-  "text": "Спортивное ориентирование"
- },
- {
-  "id": "sportivnoe_programmirovanie",
-  "text": "Спортивное программирование"
- },
- {
-  "id": "sportivnyy_turizm",
-  "text": "Спортивный туризм"
- },
- {
-  "id": "stendovaya_strelba",
-  "text": "Стендовая стрельба"
- },
- {
-  "id": "straykbol",
-  "text": "Страйкбол"
- },
- {
-  "id": "strelba_iz_luka",
-  "text": "Стрельба из лука"
- },
- {
-  "id": "sumo",
-  "text": "Сумо"
- },
- {
-  "id": "tayskiy_boks",
-  "text": "Тайский бокс"
- },
- {
-  "id": "tantsevalnyy_sport",
-  "text": "Танцевальный спорт"
- },
- {
-  "id": "triatlon",
-  "text": "Триатлон"
- },
- {
-  "id": "tkhekvondo",
-  "text": "Тхэквондо"
- },
- {
-  "id": "tyazhelaya_atletika",
-  "text": "Тяжёлая атлетика"
- },
- {
-  "id": "ushu",
-  "text": "Ушу"
- },
- {
-  "id": "fekhtovanie",
-  "text": "Фехтование"
- },
- {
-  "id": "figurnoe_katanie",
-  "text": "Фигурное катание"
- },
- {
-  "id": "florbol",
-  "text": "Флорбол"
- },
- {
-  "id": "fristayl",
-  "text": "Фристайл"
- },
- {
-  "id": "futbol",
-  "text": "Футбол"
- },
- {
-  "id": "khokkey_na_rolikakh",
-  "text": "Хоккей на роликах"
- },
- {
-  "id": "khokkey_na_trave",
-  "text": "Хоккей на траве"
- },
- {
-  "id": "khokkey_s_myachom",
-  "text": "Хоккей с мячом"
- },
- {
-  "id": "khokkey_s_shayboy",
-  "text": "Хоккей с шайбой"
- },
- {
-  "id": "chir_sport",
-  "text": "Чир-спорт"
- },
- {
-  "id": "shakhmaty",
-  "text": "Шахматы"
- },
- {
-  "id": "shashki",
-  "text": "Шашки"
- },
- {
-  "id": "short_trek",
-  "text": "Шорт-трек"
- },
- {
-  "id": "other",
-  "text": "Другой вид спорта"
- }
+  {
+    "id": "aviamodelnyy_sport",
+    "text": "Авиамодельный спорт"
+  },
+  {
+    "id": "avtosport",
+    "text": "Автоспорт"
+  },
+  {
+    "id": "aykido",
+    "text": "Айкидо"
+  },
+  {
+    "id": "akademicheskaya_greblya",
+    "text": "Академическая гребля"
+  },
+  {
+    "id": "akrobatika",
+    "text": "Акробатика"
+  },
+  {
+    "id": "alpinizm",
+    "text": "Альпинизм"
+  },
+  {
+    "id": "armeyskiy_rukopashnyy_boy",
+    "text": "Армейский рукопашный бой"
+  },
+  {
+    "id": "armrestling",
+    "text": "Армрестлинг"
+  },
+  {
+    "id": "badminton",
+    "text": "Бадминтон"
+  },
+  {
+    "id": "basketbol",
+    "text": "Баскетбол"
+  },
+  {
+    "id": "batut",
+    "text": "Батут"
+  },
+  {
+    "id": "beysbol",
+    "text": "Бейсбол"
+  },
+  {
+    "id": "biatlon",
+    "text": "Биатлон"
+  },
+  {
+    "id": "bilyard",
+    "text": "Бильярд"
+  },
+  {
+    "id": "bobsley",
+    "text": "Бобслей"
+  },
+  {
+    "id": "bodibilding_i_fitnes",
+    "text": "Бодибилдинг и фитнес"
+  },
+  {
+    "id": "boks",
+    "text": "Бокс"
+  },
+  {
+    "id": "bolshoy_tennis",
+    "text": "Большой теннис"
+  },
+  {
+    "id": "bouling",
+    "text": "Боулинг"
+  },
+  {
+    "id": "bridzh",
+    "text": "Бридж"
+  },
+  {
+    "id": "velosport_mauntinbayk_bmx",
+    "text": "Велоспорт (маунтинбайк, BMX)"
+  },
+  {
+    "id": "velosport_shosse_trek",
+    "text": "Велоспорт (шоссе, трек)"
+  },
+  {
+    "id": "vodnoe_polo",
+    "text": "Водное поло"
+  },
+  {
+    "id": "vodnye_lyzhi",
+    "text": "Водные лыжи"
+  },
+  {
+    "id": "voenno_prikladnoe_mnogobore",
+    "text": "Военно-прикладное многоборье"
+  },
+  {
+    "id": "voleybol",
+    "text": "Волейбол"
+  },
+  {
+    "id": "volnaya_borba",
+    "text": "Вольная борьба"
+  },
+  {
+    "id": "vorkaut",
+    "text": "Воркаут"
+  },
+  {
+    "id": "gandbol",
+    "text": "Гандбол"
+  },
+  {
+    "id": "gimnastika_sportivnaya",
+    "text": "Гимнастика спортивная"
+  },
+  {
+    "id": "gimnastika_khudozhestvennaya",
+    "text": "Гимнастика художественная"
+  },
+  {
+    "id": "girevoy_sport",
+    "text": "Гиревой спорт"
+  },
+  {
+    "id": "go",
+    "text": "Го"
+  },
+  {
+    "id": "golf",
+    "text": "Гольф"
+  },
+  {
+    "id": "gornye_lyzhi",
+    "text": "Горные лыжи"
+  },
+  {
+    "id": "gornyy_turizm",
+    "text": "Горный туризм"
+  },
+  {
+    "id": "greblya_na_baydarkakh_i_kanoe",
+    "text": "Гребля на байдарках и каноэ"
+  },
+  {
+    "id": "grebnoy_slalom",
+    "text": "Гребной слалом"
+  },
+  {
+    "id": "greko_rimskaya_borba",
+    "text": "Греко-римская борьба"
+  },
+  {
+    "id": "dayving",
+    "text": "Дайвинг"
+  },
+  {
+    "id": "darts",
+    "text": "Дартс"
+  },
+  {
+    "id": "deltaplanerizm",
+    "text": "Дельтапланеризм"
+  },
+  {
+    "id": "dzhiu_dzhitsu",
+    "text": "Джиу-джитсу"
+  },
+  {
+    "id": "dzyudo",
+    "text": "Дзюдо"
+  },
+  {
+    "id": "yoga",
+    "text": "Йога"
+  },
+  {
+    "id": "karate",
+    "text": "Карате"
+  },
+  {
+    "id": "karting",
+    "text": "Картинг"
+  },
+  {
+    "id": "kekusinkay",
+    "text": "Кёкусинкай"
+  },
+  {
+    "id": "kerling",
+    "text": "Керлинг"
+  },
+  {
+    "id": "kibersport",
+    "text": "Киберспорт"
+  },
+  {
+    "id": "kikboksing",
+    "text": "Кикбоксинг"
+  },
+  {
+    "id": "konnyy_sport",
+    "text": "Конный спорт"
+  },
+  {
+    "id": "konkobezhnyy_sport",
+    "text": "Конькобежный спорт"
+  },
+  {
+    "id": "kross_i_beg_na_dlinnye_distantsii",
+    "text": "Кросс и бег на длинные дистанции"
+  },
+  {
+    "id": "krossfit",
+    "text": "Кроссфит"
+  },
+  {
+    "id": "kudo",
+    "text": "Кудо"
+  },
+  {
+    "id": "lapta",
+    "text": "Лапта"
+  },
+  {
+    "id": "legkaya_atletika",
+    "text": "Лёгкая атлетика"
+  },
+  {
+    "id": "lyzhnye_gonki",
+    "text": "Лыжные гонки"
+  },
+  {
+    "id": "mini_futbol",
+    "text": "Мини-футбол"
+  },
+  {
+    "id": "mnogobore_gto",
+    "text": "Многоборье ГТО"
+  },
+  {
+    "id": "motokross",
+    "text": "Мотокросс"
+  },
+  {
+    "id": "motosport",
+    "text": "Мотоспорт"
+  },
+  {
+    "id": "nastolnyy_tennis",
+    "text": "Настольный теннис"
+  },
+  {
+    "id": "parashyutnyy_sport",
+    "text": "Парашютный спорт"
+  },
+  {
+    "id": "parkur",
+    "text": "Паркур"
+  },
+  {
+    "id": "parusnyy_sport",
+    "text": "Парусный спорт"
+  },
+  {
+    "id": "pauerlifting",
+    "text": "Пауэрлифтинг"
+  },
+  {
+    "id": "peyntbol",
+    "text": "Пейнтбол"
+  },
+  {
+    "id": "plavanie",
+    "text": "Плавание"
+  },
+  {
+    "id": "plyazhnyy_voleybol",
+    "text": "Пляжный волейбол"
+  },
+  {
+    "id": "podvodnyy_sport",
+    "text": "Подводный спорт"
+  },
+  {
+    "id": "poliatlon",
+    "text": "Полиатлон"
+  },
+  {
+    "id": "prakticheskaya_strelba",
+    "text": "Практическая стрельба"
+  },
+  {
+    "id": "pryzhki_v_vodu",
+    "text": "Прыжки в воду"
+  },
+  {
+    "id": "pryzhki_na_lyzhakh_s_tramplina",
+    "text": "Прыжки на лыжах с трамплина"
+  },
+  {
+    "id": "pulevaya_strelba",
+    "text": "Пулевая стрельба"
+  },
+  {
+    "id": "radiosport",
+    "text": "Радиоспорт"
+  },
+  {
+    "id": "rafting",
+    "text": "Рафтинг"
+  },
+  {
+    "id": "regbi",
+    "text": "Регби"
+  },
+  {
+    "id": "rolikovye_konki",
+    "text": "Роликовые коньки"
+  },
+  {
+    "id": "rukopashnyy_boy",
+    "text": "Рукопашный бой"
+  },
+  {
+    "id": "sambo",
+    "text": "Самбо"
+  },
+  {
+    "id": "sannyy_sport",
+    "text": "Санный спорт"
+  },
+  {
+    "id": "serfing",
+    "text": "Серфинг"
+  },
+  {
+    "id": "silovoe_troebore",
+    "text": "Силовое троеборье"
+  },
+  {
+    "id": "skalolazanie",
+    "text": "Скалолазание"
+  },
+  {
+    "id": "skvosh",
+    "text": "Сквош"
+  },
+  {
+    "id": "skeytbording",
+    "text": "Скейтбординг"
+  },
+  {
+    "id": "skeleton",
+    "text": "Скелетон"
+  },
+  {
+    "id": "ski_alpinizm",
+    "text": "Ски-альпинизм"
+  },
+  {
+    "id": "sluzhebno_prikladnye_vidy_sporta",
+    "text": "Служебно-прикладные виды спорта"
+  },
+  {
+    "id": "smeshannye_edinoborstva_mma",
+    "text": "Смешанные единоборства (MMA)"
+  },
+  {
+    "id": "snoubord",
+    "text": "Сноуборд"
+  },
+  {
+    "id": "sovremennoe_pyatibore",
+    "text": "Современное пятиборье"
+  },
+  {
+    "id": "sportivnaya_aerobika",
+    "text": "Спортивная аэробика"
+  },
+  {
+    "id": "sportivnaya_rybalka",
+    "text": "Спортивная рыбалка"
+  },
+  {
+    "id": "sportivnaya_khodba",
+    "text": "Спортивная ходьба"
+  },
+  {
+    "id": "sportivnoe_orientirovanie",
+    "text": "Спортивное ориентирование"
+  },
+  {
+    "id": "sportivnoe_programmirovanie",
+    "text": "Спортивное программирование"
+  },
+  {
+    "id": "sportivnyy_turizm",
+    "text": "Спортивный туризм"
+  },
+  {
+    "id": "stendovaya_strelba",
+    "text": "Стендовая стрельба"
+  },
+  {
+    "id": "straykbol",
+    "text": "Страйкбол"
+  },
+  {
+    "id": "strelba_iz_luka",
+    "text": "Стрельба из лука"
+  },
+  {
+    "id": "sumo",
+    "text": "Сумо"
+  },
+  {
+    "id": "tayskiy_boks",
+    "text": "Тайский бокс"
+  },
+  {
+    "id": "tantsevalnyy_sport",
+    "text": "Танцевальный спорт"
+  },
+  {
+    "id": "triatlon",
+    "text": "Триатлон"
+  },
+  {
+    "id": "tkhekvondo",
+    "text": "Тхэквондо"
+  },
+  {
+    "id": "tyazhelaya_atletika",
+    "text": "Тяжёлая атлетика"
+  },
+  {
+    "id": "ushu",
+    "text": "Ушу"
+  },
+  {
+    "id": "fekhtovanie",
+    "text": "Фехтование"
+  },
+  {
+    "id": "figurnoe_katanie",
+    "text": "Фигурное катание"
+  },
+  {
+    "id": "florbol",
+    "text": "Флорбол"
+  },
+  {
+    "id": "fristayl",
+    "text": "Фристайл"
+  },
+  {
+    "id": "futbol",
+    "text": "Футбол"
+  },
+  {
+    "id": "khokkey_na_rolikakh",
+    "text": "Хоккей на роликах"
+  },
+  {
+    "id": "khokkey_na_trave",
+    "text": "Хоккей на траве"
+  },
+  {
+    "id": "khokkey_s_myachom",
+    "text": "Хоккей с мячом"
+  },
+  {
+    "id": "khokkey_s_shayboy",
+    "text": "Хоккей с шайбой"
+  },
+  {
+    "id": "chir_sport",
+    "text": "Чир-спорт"
+  },
+  {
+    "id": "shakhmaty",
+    "text": "Шахматы"
+  },
+  {
+    "id": "shashki",
+    "text": "Шашки"
+  },
+  {
+    "id": "short_trek",
+    "text": "Шорт-трек"
+  },
+  {
+    "id": "other",
+    "text": "Другой вид спорта"
+  }
 ]

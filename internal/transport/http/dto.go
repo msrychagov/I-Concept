@@ -14,7 +14,14 @@ type registerRequest struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Platoon  string `json:"platoon,omitempty"`
+	Invite   string `json:"invite"`
+}
+type teacherInvitationRequest struct {
+	VUC   string `json:"vuc"`
+	Email string `json:"email"`
+}
+type studentRegistrationLinkRequest struct {
+	PlatoonID string `json:"platoonId"`
 }
 type profileRequest struct {
 	Name            string `json:"name"`

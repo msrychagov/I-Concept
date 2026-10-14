@@ -38,6 +38,7 @@ type Session struct {
 	Plan               []PlanItem        `json:"plan"`
 	Revision           int               `json:"revision"`
 	Revoked            bool              `json:"revoked"`
+	TeacherID          string            `json:"teacherId,omitempty"`
 }
 
 type SessionRecord struct {

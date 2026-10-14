@@ -5,6 +5,7 @@ import (
 	"errors"
 	"slices"
 	"testing"
+	"time"
 	"vucdiagnostic/internal/domain/model"
 )
 
@@ -21,7 +22,51 @@ type formFixture struct {
 
 func signUp(t *testing.T, s *Service, role, email, platoon string) LoginResult {
 	t.Helper()
-	body := Input{"name": raw(t, "Тестов Тест"), "email": raw(t, email), "password": raw(t, "TestPassword2026!"), "platoon": raw(t, platoon)}
+	if _, exists := vucIn(s.repo.Snapshot(), "Тестовый ВУЦ"); !exists {
+		if _, err := s.CreateVUC("Тестовый ВУЦ"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var code string
+	if role == "student" {
+		issuerID := "fixture-teacher"
+		if err := s.repo.Update(func(db *model.Database) error {
+			for _, account := range db.Students {
+				if account.ID == issuerID {
+					return nil
+				}
+			}
+			db.Students = append(db.Students, model.Account{ID: issuerID, Role: "teacher", Name: "Тестовый Преподаватель"})
+			return nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+		code = newStudentInviteToken()
+		now := time.Now().UTC()
+		if err := s.repo.Update(func(db *model.Database) error {
+			platoonID := "fixture-" + platoon
+			found := false
+			for _, p := range db.Platoons {
+				if p.ID == platoonID {
+					found = true
+				}
+			}
+			if !found {
+				db.Platoons = append(db.Platoons, model.Platoon{ID: platoonID, Name: platoon, VUC: "Тестовый ВУЦ"})
+			}
+			db.Invitations = append(db.Invitations, model.Invitation{VUC: "Тестовый ВУЦ", PlatoonID: platoonID, Hash: hash(code), Role: role, Platoon: platoon, IssuerID: issuerID, Created: now, Expires: now.Add(time.Hour)})
+			return nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		invite, err := s.CreateTeacherInvitation(Input{"email": raw(t, email), "vuc": raw(t, "Тестовый ВУЦ")})
+		if err != nil {
+			t.Fatal(err)
+		}
+		code = invite.(map[string]any)["code"].(string)
+	}
+	body := Input{"name": raw(t, "Тестов Тест"), "email": raw(t, email), "password": raw(t, "TestPassword2026!"), "invite": raw(t, code)}
 	result, err := s.Authenticate(role, "register", body)
 	if err != nil {
 		t.Fatal(err)
@@ -30,11 +75,11 @@ func signUp(t *testing.T, s *Service, role, email, platoon string) LoginResult {
 }
 
 // addFormAssignment stores a form assignment directly; the assignment scenarios have their own tests.
-func addFormAssignment(t *testing.T, s *Service, platoon string) string {
+func addFormAssignment(t *testing.T, s *Service, platoon, ownerID string) string {
 	t.Helper()
 	id := uuid()
 	err := s.repo.Update(func(db *model.Database) error {
-		db.Assignments = append(db.Assignments, model.Assignment{ID: id, Title: "Автобиография", Platoon: platoon, FormID: "autobiography", Active: true})
+		db.Assignments = append(db.Assignments, model.Assignment{ID: id, Title: "Автобиография", Platoon: platoon, FormID: "autobiography", Active: true, OwnerID: ownerID})
 		return nil
 	})
 	if err != nil {
@@ -60,7 +105,7 @@ func newFormFixture(t *testing.T) *formFixture {
 	t.Helper()
 	s := testApp(t)
 	login := signUp(t, s, "student", "first@example.test", "101")
-	assignment := addFormAssignment(t, s, "101")
+	assignment := addFormAssignment(t, s, "101", login.Account.OwnerID)
 	return &formFixture{t: t, service: s, form: autobiography(t), token: login.Token, student: login.Account, assignment: assignment, submission: addSubmission(t, s, login.Account.ID, assignment)}
 }
 

@@ -9,7 +9,7 @@ func (h *Handler) questionBank(w http.ResponseWriter, r *http.Request) {
 	h.reply(w, h.service.Bank(), 200)
 }
 func (h *Handler) templates(w http.ResponseWriter, r *http.Request) {
-	value, err := h.service.ResearchQuery("state", "", "")
+	value, err := h.service.ResearchQueryFor(h.teacherID(r), "state", "", "")
 	if err != nil {
 		h.respond(w, nil, err)
 		return
@@ -18,7 +18,7 @@ func (h *Handler) templates(w http.ResponseWriter, r *http.Request) {
 	h.reply(w, map[string]any{"profiles": state["profiles"], "emptyProfile": state["emptyProfile"]}, 200)
 }
 func (h *Handler) template(w http.ResponseWriter, r *http.Request) {
-	value, err := h.service.ResearchQuery("state", "", "")
+	value, err := h.service.ResearchQueryFor(h.teacherID(r), "state", "", "")
 	if err != nil {
 		h.respond(w, nil, err)
 		return
@@ -47,7 +47,7 @@ func (h *Handler) saveTemplate(w http.ResponseWriter, r *http.Request, update bo
 	} else {
 		profile.ID = ""
 	}
-	value, err := h.service.ResearchCommand(commandInput(map[string]any{"profile": profile}), operation)
+	value, err := h.service.ResearchCommandFor(h.teacherID(r), commandInput(map[string]any{"profile": profile}), operation)
 	if err != nil {
 		h.respond(w, nil, err)
 		return

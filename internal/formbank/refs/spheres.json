@@ -1,58 +1,58 @@
 [
- {
-  "id": "voennaya_sluzhba",
-  "text": "Военная служба"
- },
- {
-  "id": "pravookhranitelnye_organy_i_silovye_struktury",
-  "text": "Правоохранительные органы и силовые структуры"
- },
- {
-  "id": "gosudarstvennaya_i_munitsipalnaya_sluzhba",
-  "text": "Государственная и муниципальная служба"
- },
- {
-  "id": "obrazovanie_i_nauka",
-  "text": "Образование и наука"
- },
- {
-  "id": "meditsina",
-  "text": "Медицина"
- },
- {
-  "id": "promyshlennost_i_stroitelstvo",
-  "text": "Промышленность и строительство"
- },
- {
-  "id": "transport_i_svyaz",
-  "text": "Транспорт и связь"
- },
- {
-  "id": "it",
-  "text": "ИТ"
- },
- {
-  "id": "finansy_i_torgovlya",
-  "text": "Финансы и торговля"
- },
- {
-  "id": "selskoe_khozyaystvo",
-  "text": "Сельское хозяйство"
- },
- {
-  "id": "kultura_sport_smi",
-  "text": "Культура, спорт, СМИ"
- },
- {
-  "id": "sfera_uslug",
-  "text": "Сфера услуг"
- },
- {
-  "id": "sobstvennoe_delo",
-  "text": "Собственное дело"
- },
- {
-  "id": "other",
-  "text": "Другое"
- }
+  {
+    "id": "voennaya_sluzhba",
+    "text": "Военная служба"
+  },
+  {
+    "id": "pravookhranitelnye_organy_i_silovye_struktury",
+    "text": "Правоохранительные органы и силовые структуры"
+  },
+  {
+    "id": "gosudarstvennaya_i_munitsipalnaya_sluzhba",
+    "text": "Государственная и муниципальная служба"
+  },
+  {
+    "id": "obrazovanie_i_nauka",
+    "text": "Образование и наука"
+  },
+  {
+    "id": "meditsina",
+    "text": "Медицина"
+  },
+  {
+    "id": "promyshlennost_i_stroitelstvo",
+    "text": "Промышленность и строительство"
+  },
+  {
+    "id": "transport_i_svyaz",
+    "text": "Транспорт и связь"
+  },
+  {
+    "id": "it",
+    "text": "ИТ"
+  },
+  {
+    "id": "finansy_i_torgovlya",
+    "text": "Финансы и торговля"
+  },
+  {
+    "id": "selskoe_khozyaystvo",
+    "text": "Сельское хозяйство"
+  },
+  {
+    "id": "kultura_sport_smi",
+    "text": "Культура, спорт, СМИ"
+  },
+  {
+    "id": "sfera_uslug",
+    "text": "Сфера услуг"
+  },
+  {
+    "id": "sobstvennoe_delo",
+    "text": "Собственное дело"
+  },
+  {
+    "id": "other",
+    "text": "Другое"
+  }
 ]

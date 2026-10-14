@@ -63,10 +63,10 @@ func (h *Handler) formDescription(w http.ResponseWriter, r *http.Request) {
 	h.respond(w, value, err)
 }
 func (h *Handler) formOverview(w http.ResponseWriter, r *http.Request) {
-	value, err := h.service.FormOverview(r.PathValue("formId"))
+	value, err := h.service.FormOverviewFor(h.teacherID(r), r.PathValue("formId"))
 	h.respond(w, value, err)
 }
 func (h *Handler) formSubmissionDetail(w http.ResponseWriter, r *http.Request) {
-	value, err := h.service.FormSubmissionDetail(r.PathValue("id"))
+	value, err := h.service.FormSubmissionDetailFor(h.teacherID(r), r.PathValue("id"))
 	h.respond(w, value, err)
 }

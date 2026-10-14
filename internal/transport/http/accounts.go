@@ -100,3 +100,34 @@ func (h *Handler) changeTeacherPassword(w http.ResponseWriter, r *http.Request) 
 	value, err := h.service.UpdateTeacherAccount(loginToken(r, "teacher"), commandInput(body), "change_password")
 	h.respond(w, value, err)
 }
+
+func (h *Handler) createTeacherInvitation(w http.ResponseWriter, r *http.Request) {
+	var body teacherInvitationRequest
+	if !h.decodeBody(w, r, 16384, &body) {
+		return
+	}
+	value, err := h.service.CreateTeacherInvitation(commandInput(body))
+	if err != nil {
+		h.respond(w, nil, err)
+		return
+	}
+	h.reply(w, value, http.StatusCreated)
+}
+
+func (h *Handler) createStudentRegistrationLink(w http.ResponseWriter, r *http.Request) {
+	teacher, ok := h.service.CurrentAccount(loginToken(r, "teacher"), "teacher")
+	if !ok {
+		h.reply(w, map[string]any{"error": "Войдите в кабинет преподавателя."}, 401)
+		return
+	}
+	var body studentRegistrationLinkRequest
+	if !h.decodeBody(w, r, 16384, &body) {
+		return
+	}
+	value, err := h.service.CreateStudentRegistrationLink(teacher.ID, commandInput(body))
+	if err != nil {
+		h.respond(w, nil, err)
+		return
+	}
+	h.reply(w, value, http.StatusCreated)
+}

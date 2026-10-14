@@ -24,7 +24,7 @@ func accountIn(db model.Database, loginToken, role string) (model.Account, bool)
 	for _, login := range db.Logins {
 		if login.Hash == hash(loginToken) && time.Now().Before(login.Expires) {
 			for _, account := range db.Students {
-				if account.ID == login.StudentID && account.Role == role {
+				if account.ID == login.StudentID && account.Role == role && !account.Disabled {
 					return account, true
 				}
 			}
@@ -33,10 +33,19 @@ func accountIn(db model.Database, loginToken, role string) (model.Account, bool)
 	return model.Account{}, false
 }
 func PublicAccount(account model.Account) map[string]any {
-	return map[string]any{"id": account.ID, "name": account.Name, "email": account.Email, "platoon": account.Platoon}
+	return map[string]any{"id": account.ID, "name": account.Name, "email": account.Email, "platoon": account.Platoon, "platoonId": account.PlatoonID, "vuc": account.VUC, "disabled": account.Disabled}
 }
 func studentPublic(account model.Account) map[string]any { return PublicAccount(account) }
+func assignmentOwnedByStudent(as model.Assignment, account model.Account) bool {
+	return !account.Disabled && as.OwnerID == account.OwnerID
+}
 func assignmentApplies(as model.Assignment, account model.Account) bool {
+	if !assignmentOwnedByStudent(as, account) {
+		return false
+	}
+	if account.VUC != "" && account.PlatoonID == "" {
+		return false
+	}
 	return as.Platoon == "" || as.Platoon == account.Platoon
 }
 func (a *Service) Logout(loginToken string) error {
@@ -63,13 +72,28 @@ func (a *Service) Authenticate(role, op string, b Input) (LoginResult, error) {
 	var account model.Account
 	if op == "register" {
 		name := strings.TrimSpace(str(b, "name"))
-		platoon := strings.TrimSpace(str(b, "platoon"))
+		credential := normalizeInviteCode(str(b, "invite"))
+		if role == "student" {
+			credential = normalizeStudentInvite(str(b, "invite"))
+		}
 		address, err := mail.ParseAddress(email)
-		if err != nil || address.Address != email || len(strings.Fields(name)) < 2 || len(name) > 200 || (role == "student" && platoon == "") || len(platoon) > 80 || len(password) < 10 {
-			return LoginResult{}, problem(Invalid, "Заполните обязательные поля, корректную почту и пароль длиной не менее 10 символов.")
+		if err != nil || address.Address != email || len(strings.Fields(name)) < 2 || len(name) > 200 || credential == "" || len(password) < 10 {
+			return LoginResult{}, problem(Invalid, "Проверьте ФИО, почту, приглашение и пароль длиной не менее 10 символов.")
+		}
+		var invitation model.Invitation
+		now := time.Now().UTC()
+		for _, candidate := range a.repo.Snapshot().Invitations {
+			valid := role == "teacher" && validTeacherInvitation(candidate, email, credential, now) || role == "student" && validStudentLink(candidate, credential, now)
+			if valid {
+				invitation = candidate
+				break
+			}
+		}
+		if invitation.Hash == "" {
+			return LoginResult{}, problem(Forbidden, "Приглашение недействительно или срок его действия истёк.")
 		}
 		salt := token()
-		account = model.Account{ID: uuid(), Role: role, Name: name, Platoon: platoon, Email: email, Salt: salt, PasswordHash: passwordHash(password, salt), Created: time.Now().UTC().Format(time.RFC3339)}
+		account = model.Account{ID: uuid(), Role: role, Name: name, Platoon: invitation.Platoon, Email: email, Salt: salt, PasswordHash: passwordHash(password, salt), Created: now.Format(time.RFC3339), OwnerID: invitation.IssuerID}
 	} else if op == "login" {
 		for _, other := range a.repo.Snapshot().Students {
 			if other.Email == email && other.Role == role {
@@ -96,11 +120,49 @@ func (a *Service) Authenticate(role, op string, b Input) (LoginResult, error) {
 					return problem(Conflict, "Эта почта уже зарегистрирована. Войдите в кабинет.")
 				}
 			}
+			credential := normalizeInviteCode(str(b, "invite"))
+			if role == "student" {
+				credential = normalizeStudentInvite(str(b, "invite"))
+			}
+			now := time.Now().UTC()
+			consumed := false
+			for i := range db.Invitations {
+				valid := role == "teacher" && validTeacherInvitation(db.Invitations[i], email, credential, now) || role == "student" && validStudentLink(db.Invitations[i], credential, now)
+				if valid {
+					inv := db.Invitations[i]
+					if _, exists := vucIn(*db, inv.VUC); !exists {
+						return problem(Forbidden, "ВУЦ приглашения не существует. Обратитесь к администратору.")
+					}
+					if role == "teacher" && inv.VUC == "" {
+						return problem(Forbidden, "Запросите у администратора код с указанием ВУЦ.")
+					}
+					if role == "student" {
+						p, ok := platoonIn(*db, inv.PlatoonID, inv.VUC)
+						if !ok {
+							return problem(Forbidden, "Приглашение недействительно. Запросите новую ссылку.")
+						}
+						account.Platoon = p.Name
+					}
+					account.VUC, account.PlatoonID = inv.VUC, inv.PlatoonID
+					result.Account = account
+					if role == "teacher" {
+						db.Invitations[i].UsedAt = now
+						db.Invitations[i].AccountID = account.ID
+					} else {
+						db.Invitations[i].UseCount++
+					}
+					consumed = true
+					break
+				}
+			}
+			if !consumed {
+				return problem(Forbidden, "Приглашение недействительно или срок его действия истёк.")
+			}
 			db.Students = append(db.Students, account)
 		} else {
 			valid := false
 			for _, current := range db.Students {
-				if current.ID == account.ID && current.PasswordHash == account.PasswordHash && current.Email == email {
+				if current.ID == account.ID && current.PasswordHash == account.PasswordHash && current.Email == email && !current.Disabled {
 					valid = true
 					result.Account = current
 					break
@@ -151,6 +213,9 @@ func (a *Service) AccountState(loginToken, role string) (any, error) {
 	db := a.repo.Snapshot()
 	list := []map[string]any{}
 	for _, as := range db.Assignments {
+		if !assignmentOwnedByStudent(as, s) {
+			continue
+		}
 		if as.FormID != "" {
 			if entry, shown := a.formEntry(db, as, s); shown {
 				list = append(list, entry)
@@ -188,6 +253,9 @@ func (a *Service) AccountState(loginToken, role string) (any, error) {
 
 // formEntry describes a questionnaire assignment in the student's cabinet.
 func (a *Service) formEntry(db model.Database, as model.Assignment, student model.Account) (map[string]any, bool) {
+	if !assignmentOwnedByStudent(as, student) {
+		return nil, false
+	}
 	var submission *model.FormSubmission
 	for n := range db.Submissions {
 		if db.Submissions[n].StudentID == student.ID && db.Submissions[n].AssignmentID == as.ID {

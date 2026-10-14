@@ -14,7 +14,13 @@ func main() {
 	addr := flag.String("addr", env("VUC_ADDR", ":8080"), "HTTP address")
 	data := flag.String("data", env("VUC_DATA", "data/vuc.json"), "data file")
 	demo := flag.Bool("demo-reset", false, "back up existing data, replace with demo accounts and tests, then exit")
+	inviteTeacher := flag.String("invite-teacher", "", "create a one-use teacher invitation for this email, then exit")
+	vuc := flag.String("vuc", "", "military training center assigned by the administrator")
+	createVUC := flag.String("create-vuc", "", "create a military training center, then exit")
 	flag.Parse()
+	if *createVUC != "" && (*inviteTeacher != "" || *demo) {
+		log.Fatal("Use -create-vuc separately from -invite-teacher and -demo-reset")
+	}
 
 	a, err := app.New(app.Config{
 		DataFile:      *data,
@@ -30,6 +36,21 @@ func main() {
 			log.Fatal(err)
 		}
 		log.Printf("Demo data ready. Backup: %s", backup)
+		return
+	}
+	if *createVUC != "" {
+		if _, err := a.CreateVUC(*createVUC); err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("VUC created: %s", *createVUC)
+		return
+	}
+	if *inviteTeacher != "" {
+		invite, err := a.InviteTeacher(*inviteTeacher, *vuc)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("Teacher invitation for %s: %s (expires %s)", invite["email"], invite["code"], invite["expires"])
 		return
 	}
 

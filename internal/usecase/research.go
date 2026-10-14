@@ -9,6 +9,10 @@ import (
 )
 
 func (a *Service) ResearchCommand(b Input, op string) (any, error) {
+	return a.ResearchCommandFor("", b, op)
+}
+
+func (a *Service) ResearchCommandFor(teacherID string, b Input, op string) (any, error) {
 	if op == "invite" || op == "rotate" {
 		return nil, failure(Gone, map[string]any{"error": "Индивидуальные ссылки заменены назначениями взводам."})
 	}
@@ -40,9 +44,10 @@ func (a *Service) ResearchCommand(b Input, op string) (any, error) {
 		if op == "profile_update" {
 			oldFound := false
 			for _, old := range a.repo.Snapshot().Profiles {
-				if old.ID == p.ID {
+				if old.ID == p.ID && inTeacherScope(old.OwnerID, teacherID) {
 					p.Created = old.Created
 					p.BankVersion = old.BankVersion
+					p.OwnerID = old.OwnerID
 					oldFound = true
 					break
 				}
@@ -57,6 +62,7 @@ func (a *Service) ResearchCommand(b Input, op string) (any, error) {
 			p.ID = uuid()
 			p.Created = time.Now().UTC().Format(time.RFC3339)
 			p.BankVersion = a.bank.Version
+			p.OwnerID = teacherID
 			if err := a.addProfile(p); err != nil {
 				return nil, err
 			}
@@ -64,6 +70,11 @@ func (a *Service) ResearchCommand(b Input, op string) (any, error) {
 		return p, nil
 	case "rotate", "revoke", "reopen", "plan":
 		id := str(b, "id")
+		db := a.repo.Snapshot()
+		session, ok := a.sessionByID(id)
+		if !ok || !teacherOwnsSession(db, teacherID, session) {
+			return nil, problem(NotFound, "Сессия не найдена.")
+		}
 		var link string
 		err := a.mutateSession(id, func(rec *model.SessionRecord) error {
 			switch op {
@@ -111,6 +122,7 @@ func (a *Service) ResearchCommand(b Input, op string) (any, error) {
 		}
 		s.Revoked = true
 		s.Revision = 0
+		s.TeacherID = teacherID
 		if s.Answers == nil {
 			s.Answers = map[string]int{}
 		}

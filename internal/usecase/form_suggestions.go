@@ -31,6 +31,16 @@ func (a *Service) FormSuggestions(loginToken, id, fieldID, query string) (any, e
 		if other.FormID != form.ID || other.ID == own.ID {
 			continue
 		}
+		owned := false
+		for _, assignment := range db.Assignments {
+			if assignment.ID == other.AssignmentID && assignment.OwnerID == studentOwner(db, own.StudentID) {
+				owned = true
+				break
+			}
+		}
+		if !owned {
+			continue
+		}
 		for _, value := range fieldValues(form, other.Answers, fieldID) {
 			key := strings.ToLower(value)
 			if strings.Contains(key, query) {
@@ -48,6 +58,15 @@ func (a *Service) FormSuggestions(loginToken, id, fieldID, query string) (any, e
 		values = append(values, spelling[key])
 	}
 	return map[string]any{"values": values}, nil
+}
+
+func studentOwner(db model.Database, studentID string) string {
+	for _, account := range db.Students {
+		if account.ID == studentID {
+			return account.OwnerID
+		}
+	}
+	return ""
 }
 
 func hasSuggestions(form model.Form, fieldID string) bool {

@@ -1,318 +1,318 @@
 [
- {
-  "id": "azerbaydzhanskiy",
-  "text": "Азербайджанский"
- },
- {
-  "id": "albanskiy",
-  "text": "Албанский"
- },
- {
-  "id": "amkharskiy",
-  "text": "Амхарский"
- },
- {
-  "id": "angliyskiy",
-  "text": "Английский"
- },
- {
-  "id": "arabskiy",
-  "text": "Арабский"
- },
- {
-  "id": "armyanskiy",
-  "text": "Армянский"
- },
- {
-  "id": "afrikaans",
-  "text": "Африкаанс"
- },
- {
-  "id": "baskskiy",
-  "text": "Баскский"
- },
- {
-  "id": "belorusskiy",
-  "text": "Белорусский"
- },
- {
-  "id": "bengalskiy",
-  "text": "Бенгальский"
- },
- {
-  "id": "birmanskiy",
-  "text": "Бирманский"
- },
- {
-  "id": "bolgarskiy",
-  "text": "Болгарский"
- },
- {
-  "id": "bretonskiy",
-  "text": "Бретонский"
- },
- {
-  "id": "valliyskiy",
-  "text": "Валлийский"
- },
- {
-  "id": "vengerskiy",
-  "text": "Венгерский"
- },
- {
-  "id": "vetnamskiy",
-  "text": "Вьетнамский"
- },
- {
-  "id": "grecheskiy",
-  "text": "Греческий"
- },
- {
-  "id": "gruzinskiy",
-  "text": "Грузинский"
- },
- {
-  "id": "datskiy",
-  "text": "Датский"
- },
- {
-  "id": "ivrit",
-  "text": "Иврит"
- },
- {
-  "id": "indoneziyskiy",
-  "text": "Индонезийский"
- },
- {
-  "id": "irlandskiy",
-  "text": "Ирландский"
- },
- {
-  "id": "islandskiy",
-  "text": "Исландский"
- },
- {
-  "id": "ispanskiy",
-  "text": "Испанский"
- },
- {
-  "id": "italyanskiy",
-  "text": "Итальянский"
- },
- {
-  "id": "kazakhskiy",
-  "text": "Казахский"
- },
- {
-  "id": "katalanskiy",
-  "text": "Каталанский"
- },
- {
-  "id": "kirgizskiy",
-  "text": "Киргизский"
- },
- {
-  "id": "kitayskiy",
-  "text": "Китайский"
- },
- {
-  "id": "koreyskiy",
-  "text": "Корейский"
- },
- {
-  "id": "kurdskiy",
-  "text": "Курдский"
- },
- {
-  "id": "kkhmerskiy",
-  "text": "Кхмерский"
- },
- {
-  "id": "laosskiy",
-  "text": "Лаосский"
- },
- {
-  "id": "latinskiy",
-  "text": "Латинский"
- },
- {
-  "id": "latyshskiy",
-  "text": "Латышский"
- },
- {
-  "id": "litovskiy",
-  "text": "Литовский"
- },
- {
-  "id": "makedonskiy",
-  "text": "Македонский"
- },
- {
-  "id": "malagasiyskiy",
-  "text": "Малагасийский"
- },
- {
-  "id": "malayskiy",
-  "text": "Малайский"
- },
- {
-  "id": "maltiyskiy",
-  "text": "Мальтийский"
- },
- {
-  "id": "moldavskiy",
-  "text": "Молдавский"
- },
- {
-  "id": "mongolskiy",
-  "text": "Монгольский"
- },
- {
-  "id": "nemetskiy",
-  "text": "Немецкий"
- },
- {
-  "id": "nepalskiy",
-  "text": "Непальский"
- },
- {
-  "id": "niderlandskiy",
-  "text": "Нидерландский"
- },
- {
-  "id": "norvezhskiy",
-  "text": "Норвежский"
- },
- {
-  "id": "pendzhabi",
-  "text": "Пенджаби"
- },
- {
-  "id": "persidskiy",
-  "text": "Персидский"
- },
- {
-  "id": "polskiy",
-  "text": "Польский"
- },
- {
-  "id": "portugalskiy",
-  "text": "Португальский"
- },
- {
-  "id": "pushtu",
-  "text": "Пушту"
- },
- {
-  "id": "rumynskiy",
-  "text": "Румынский"
- },
- {
-  "id": "serbskiy",
-  "text": "Сербский"
- },
- {
-  "id": "singalskiy",
-  "text": "Сингальский"
- },
- {
-  "id": "slovatskiy",
-  "text": "Словацкий"
- },
- {
-  "id": "slovenskiy",
-  "text": "Словенский"
- },
- {
-  "id": "suakhili",
-  "text": "Суахили"
- },
- {
-  "id": "tadzhikskiy",
-  "text": "Таджикский"
- },
- {
-  "id": "tayskiy",
-  "text": "Тайский"
- },
- {
-  "id": "tamilskiy",
-  "text": "Тамильский"
- },
- {
-  "id": "tibetskiy",
-  "text": "Тибетский"
- },
- {
-  "id": "turetskiy",
-  "text": "Турецкий"
- },
- {
-  "id": "turkmenskiy",
-  "text": "Туркменский"
- },
- {
-  "id": "uzbekskiy",
-  "text": "Узбекский"
- },
- {
-  "id": "ukrainskiy",
-  "text": "Украинский"
- },
- {
-  "id": "urdu",
-  "text": "Урду"
- },
- {
-  "id": "filippinskiy",
-  "text": "Филиппинский"
- },
- {
-  "id": "finskiy",
-  "text": "Финский"
- },
- {
-  "id": "frantsuzskiy",
-  "text": "Французский"
- },
- {
-  "id": "khausa",
-  "text": "Хауса"
- },
- {
-  "id": "khindi",
-  "text": "Хинди"
- },
- {
-  "id": "khorvatskiy",
-  "text": "Хорватский"
- },
- {
-  "id": "cheshskiy",
-  "text": "Чешский"
- },
- {
-  "id": "shvedskiy",
-  "text": "Шведский"
- },
- {
-  "id": "esperanto",
-  "text": "Эсперанто"
- },
- {
-  "id": "estonskiy",
-  "text": "Эстонский"
- },
- {
-  "id": "yavanskiy",
-  "text": "Яванский"
- },
- {
-  "id": "yazyki_zhestov",
-  "text": "Языки жестов"
- },
- {
-  "id": "yaponskiy",
-  "text": "Японский"
- }
+  {
+    "id": "azerbaydzhanskiy",
+    "text": "Азербайджанский"
+  },
+  {
+    "id": "albanskiy",
+    "text": "Албанский"
+  },
+  {
+    "id": "amkharskiy",
+    "text": "Амхарский"
+  },
+  {
+    "id": "angliyskiy",
+    "text": "Английский"
+  },
+  {
+    "id": "arabskiy",
+    "text": "Арабский"
+  },
+  {
+    "id": "armyanskiy",
+    "text": "Армянский"
+  },
+  {
+    "id": "afrikaans",
+    "text": "Африкаанс"
+  },
+  {
+    "id": "baskskiy",
+    "text": "Баскский"
+  },
+  {
+    "id": "belorusskiy",
+    "text": "Белорусский"
+  },
+  {
+    "id": "bengalskiy",
+    "text": "Бенгальский"
+  },
+  {
+    "id": "birmanskiy",
+    "text": "Бирманский"
+  },
+  {
+    "id": "bolgarskiy",
+    "text": "Болгарский"
+  },
+  {
+    "id": "bretonskiy",
+    "text": "Бретонский"
+  },
+  {
+    "id": "valliyskiy",
+    "text": "Валлийский"
+  },
+  {
+    "id": "vengerskiy",
+    "text": "Венгерский"
+  },
+  {
+    "id": "vetnamskiy",
+    "text": "Вьетнамский"
+  },
+  {
+    "id": "grecheskiy",
+    "text": "Греческий"
+  },
+  {
+    "id": "gruzinskiy",
+    "text": "Грузинский"
+  },
+  {
+    "id": "datskiy",
+    "text": "Датский"
+  },
+  {
+    "id": "ivrit",
+    "text": "Иврит"
+  },
+  {
+    "id": "indoneziyskiy",
+    "text": "Индонезийский"
+  },
+  {
+    "id": "irlandskiy",
+    "text": "Ирландский"
+  },
+  {
+    "id": "islandskiy",
+    "text": "Исландский"
+  },
+  {
+    "id": "ispanskiy",
+    "text": "Испанский"
+  },
+  {
+    "id": "italyanskiy",
+    "text": "Итальянский"
+  },
+  {
+    "id": "kazakhskiy",
+    "text": "Казахский"
+  },
+  {
+    "id": "katalanskiy",
+    "text": "Каталанский"
+  },
+  {
+    "id": "kirgizskiy",
+    "text": "Киргизский"
+  },
+  {
+    "id": "kitayskiy",
+    "text": "Китайский"
+  },
+  {
+    "id": "koreyskiy",
+    "text": "Корейский"
+  },
+  {
+    "id": "kurdskiy",
+    "text": "Курдский"
+  },
+  {
+    "id": "kkhmerskiy",
+    "text": "Кхмерский"
+  },
+  {
+    "id": "laosskiy",
+    "text": "Лаосский"
+  },
+  {
+    "id": "latinskiy",
+    "text": "Латинский"
+  },
+  {
+    "id": "latyshskiy",
+    "text": "Латышский"
+  },
+  {
+    "id": "litovskiy",
+    "text": "Литовский"
+  },
+  {
+    "id": "makedonskiy",
+    "text": "Македонский"
+  },
+  {
+    "id": "malagasiyskiy",
+    "text": "Малагасийский"
+  },
+  {
+    "id": "malayskiy",
+    "text": "Малайский"
+  },
+  {
+    "id": "maltiyskiy",
+    "text": "Мальтийский"
+  },
+  {
+    "id": "moldavskiy",
+    "text": "Молдавский"
+  },
+  {
+    "id": "mongolskiy",
+    "text": "Монгольский"
+  },
+  {
+    "id": "nemetskiy",
+    "text": "Немецкий"
+  },
+  {
+    "id": "nepalskiy",
+    "text": "Непальский"
+  },
+  {
+    "id": "niderlandskiy",
+    "text": "Нидерландский"
+  },
+  {
+    "id": "norvezhskiy",
+    "text": "Норвежский"
+  },
+  {
+    "id": "pendzhabi",
+    "text": "Пенджаби"
+  },
+  {
+    "id": "persidskiy",
+    "text": "Персидский"
+  },
+  {
+    "id": "polskiy",
+    "text": "Польский"
+  },
+  {
+    "id": "portugalskiy",
+    "text": "Португальский"
+  },
+  {
+    "id": "pushtu",
+    "text": "Пушту"
+  },
+  {
+    "id": "rumynskiy",
+    "text": "Румынский"
+  },
+  {
+    "id": "serbskiy",
+    "text": "Сербский"
+  },
+  {
+    "id": "singalskiy",
+    "text": "Сингальский"
+  },
+  {
+    "id": "slovatskiy",
+    "text": "Словацкий"
+  },
+  {
+    "id": "slovenskiy",
+    "text": "Словенский"
+  },
+  {
+    "id": "suakhili",
+    "text": "Суахили"
+  },
+  {
+    "id": "tadzhikskiy",
+    "text": "Таджикский"
+  },
+  {
+    "id": "tayskiy",
+    "text": "Тайский"
+  },
+  {
+    "id": "tamilskiy",
+    "text": "Тамильский"
+  },
+  {
+    "id": "tibetskiy",
+    "text": "Тибетский"
+  },
+  {
+    "id": "turetskiy",
+    "text": "Турецкий"
+  },
+  {
+    "id": "turkmenskiy",
+    "text": "Туркменский"
+  },
+  {
+    "id": "uzbekskiy",
+    "text": "Узбекский"
+  },
+  {
+    "id": "ukrainskiy",
+    "text": "Украинский"
+  },
+  {
+    "id": "urdu",
+    "text": "Урду"
+  },
+  {
+    "id": "filippinskiy",
+    "text": "Филиппинский"
+  },
+  {
+    "id": "finskiy",
+    "text": "Финский"
+  },
+  {
+    "id": "frantsuzskiy",
+    "text": "Французский"
+  },
+  {
+    "id": "khausa",
+    "text": "Хауса"
+  },
+  {
+    "id": "khindi",
+    "text": "Хинди"
+  },
+  {
+    "id": "khorvatskiy",
+    "text": "Хорватский"
+  },
+  {
+    "id": "cheshskiy",
+    "text": "Чешский"
+  },
+  {
+    "id": "shvedskiy",
+    "text": "Шведский"
+  },
+  {
+    "id": "esperanto",
+    "text": "Эсперанто"
+  },
+  {
+    "id": "estonskiy",
+    "text": "Эстонский"
+  },
+  {
+    "id": "yavanskiy",
+    "text": "Яванский"
+  },
+  {
+    "id": "yazyki_zhestov",
+    "text": "Языки жестов"
+  },
+  {
+    "id": "yaponskiy",
+    "text": "Японский"
+  }
 ]

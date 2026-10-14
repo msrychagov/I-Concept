@@ -30,7 +30,7 @@ var sectionOrder = []string{"about", "education", "hse", "work", "military", "la
 
 func signupCookie(t *testing.T, a *testApplication, role, name, email, platoon string) *http.Cookie {
 	t.Helper()
-	w := callAccount(t, a, "/api/v1/auth/"+role+"/register", map[string]any{"name": name, "email": email, "platoon": platoon, "password": "TestPassword2026!"}, nil)
+	w := callAccount(t, a, "/api/v1/auth/"+role+"/register", map[string]any{"name": name, "email": email, "invite": testInvite(t, a, role, email, platoon), "password": "TestPassword2026!"}, nil)
 	requireCode(t, w, 201)
 	return w.Result().Cookies()[0]
 }

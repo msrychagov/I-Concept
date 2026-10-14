@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "API диагностической системы ВУЦ",
-    "version": "1.0.0",
-    "description": "Отдельные HTTP-маршруты для каждой операции. JSON-запросы требуют Content-Type: application/json; неизвестные поля отклоняются. Лимит обычных запросов 16 КиБ, шаблонов и импорта 3 МБ, плана 300 КБ.\n\nАвторизация: вызовите /auth/teacher/login или /auth/student/login (в том числе через Try it out), браузер сохранит HttpOnly cookie и отправит её в последующих запросах. В Swagger поле cookie вручную не вводится. Basic Auth доступен только для преподавательских ресурсов при явной настройке VUC_ADMIN_PASSWORD; настройки личного профиля требуют cookie преподавателя.\n\nОшибки возвращаются как {error, conflict?, partial?}. Изменения анкеты требуют актуальной revision. Старые маршруты /api/vuc, /api/account и /api/teacher удалены."
+    "version": "1.2.0",
+    "description": "Отдельные HTTP-маршруты для каждой операции. JSON-запросы требуют Content-Type: application/json; неизвестные поля отклоняются. Лимит обычных запросов 16 КиБ, шаблонов и импорта 3 МБ, плана 300 КБ.\n\nАвторизация: короткие коды преподавателей создаёт только администратор. Студенты регистрируются по 48-часовой ссылке конкретного взвода, созданной преподавателем. Вызовите /auth/teacher/login или /auth/student/login, браузер сохранит HttpOnly cookie. Basic Auth используется только административным маршрутом.\n\nОшибки возвращаются как {error, conflict?, partial?}. Изменения анкеты требуют актуальной revision."
   },
   "servers": [
     {
@@ -13,6 +13,9 @@
   "tags": [
     {
       "name": "Авторизация"
+    },
+    {
+      "name": "Администрирование"
     },
     {
       "name": "Профиль"
@@ -46,6 +49,688 @@
     }
   ],
   "paths": {
+    "/teachers/me/platoons": {
+      "get": {
+        "operationId": "listPlatoons",
+        "tags": [
+          "Управление взводом"
+        ],
+        "summary": "Взводы и студенты своего ВУЦ",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatoonManagement"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPlatoon",
+        "tags": [
+          "Управление взводом"
+        ],
+        "summary": "Создать учебный взвод",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Platoon"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверные поля или JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Конфликт: занятая почта, завершённая сессия или устаревшая revision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен размер запроса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Ожидается application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatoonInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/vucs": {
+      "get": {
+        "operationId": "listVUCs",
+        "tags": [
+          "Администрирование"
+        ],
+        "summary": "Справочник ВУЦ",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VUCList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createVUC",
+        "tags": [
+          "Администрирование"
+        ],
+        "summary": "Создать ВУЦ",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VUC"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверные поля или JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Конфликт: занятая почта, завершённая сессия или устаревшая revision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен размер запроса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Ожидается application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVUCInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teachers/me/platoons/{id}": {
+      "patch": {
+        "operationId": "renamePlatoon",
+        "tags": [
+          "Управление взводом"
+        ],
+        "summary": "Переименовать взвод",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Platoon"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверные поля или JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Конфликт: занятая почта, завершённая сессия или устаревшая revision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен размер запроса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Ожидается application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatoonInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/teachers/me/students/{id}": {
+      "patch": {
+        "operationId": "manageStudent",
+        "tags": [
+          "Управление взводом"
+        ],
+        "summary": "Изменить взвод или доступ студента",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверные поля или JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен размер запроса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Ожидается application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManageStudentInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/admin/teachers/{id}/vuc": {
+      "patch": {
+        "operationId": "assignTeacherVUC",
+        "tags": [
+          "Администрирование"
+        ],
+        "summary": "Назначить ВУЦ существующему преподавателю",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверные поля или JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Конфликт: занятая почта, завершённая сессия или устаревшая revision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен размер запроса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Ожидается application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Для преподавателей без ВУЦ. Переносит принадлежащих им студентов и взводы, отзывает старые ссылки. Повторное назначение запрещено.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VUCInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
     "/auth/{role}/register": {
       "post": {
         "operationId": "register",
@@ -154,7 +839,7 @@
             }
           }
         },
-        "description": "Вход создаёт HttpOnly cookie vuc_teacher или vuc_student на 24 часа. Регистрация сразу выполняет вход. role=student требует platoon.",
+        "description": "Вход создаёт HttpOnly cookie vuc_teacher или vuc_student на 24 часа. Преподаватель регистрируется по одноразовому коду администратора. Студент — по 48-часовой ссылке преподавателя; взвод берётся из ссылки.",
         "requestBody": {
           "required": true,
           "content": {
@@ -289,7 +974,7 @@
             }
           }
         },
-        "description": "Вход создаёт HttpOnly cookie vuc_teacher или vuc_student на 24 часа. Регистрация сразу выполняет вход. role=student требует platoon.",
+        "description": "Вход создаёт HttpOnly cookie vuc_teacher или vuc_student на 24 часа. Преподаватель регистрируется по одноразовому коду администратора. Студент — по 48-часовой ссылке преподавателя; взвод берётся из ссылки.",
         "requestBody": {
           "required": true,
           "content": {
@@ -625,6 +1310,200 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PasswordInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/invitations/teachers": {
+      "post": {
+        "operationId": "inviteTeacher",
+        "tags": [
+          "Администрирование"
+        ],
+        "summary": "Создать код преподавателя",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherInvitation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверные поля или JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен размер запроса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Ожидается application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Требует Basic Auth администратора. Код действует 24 часа, привязан к почте и используется один раз.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeacherInvitationInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teachers/me/student-registration-links": {
+      "post": {
+        "operationId": "createStudentRegistrationLink",
+        "tags": [
+          "Профиль"
+        ],
+        "summary": "Создать ссылку для студентов взвода",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentRegistrationLink"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверные поля или JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен размер запроса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Ожидается application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Ссылка действует 48 часов и может зарегистрировать нескольких студентов. Все они закрепляются за преподавателем и указанным взводом. Новая ссылка для того же взвода отзывает предыдущую.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudentLinkInput"
               }
             }
           }
@@ -1261,9 +2140,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -1310,9 +2186,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -1359,9 +2232,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -1406,9 +2276,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -1513,9 +2380,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -1581,9 +2445,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -1702,9 +2563,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -1749,9 +2607,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -1848,9 +2703,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -1969,9 +2821,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -2018,9 +2867,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -2088,9 +2934,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -2158,9 +3001,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -2268,9 +3108,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -2349,9 +3186,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -2430,9 +3264,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -2550,9 +3381,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -2613,9 +3441,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -3251,9 +4076,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -3322,9 +4144,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -3392,9 +4211,6 @@
         "security": [
           {
             "teacherCookie": []
-          },
-          {
-            "basicAuth": []
           }
         ],
         "responses": {
@@ -3593,6 +4409,9 @@
           },
           "revoked": {
             "type": "boolean"
+          },
+          "teacherId": {
+            "type": "string"
           }
         },
         "additionalProperties": false,
@@ -3805,6 +4624,42 @@
           "indicator"
         ]
       },
+      "VUC": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "Platoon": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "vuc": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "vuc"
+        ]
+      },
       "Profile": {
         "type": "object",
         "properties": {
@@ -3856,6 +4711,9 @@
           },
           "bankVersion": {
             "type": "string"
+          },
+          "ownerId": {
+            "type": "string"
           }
         },
         "additionalProperties": false,
@@ -3900,6 +4758,9 @@
             "type": "boolean"
           },
           "created": {
+            "type": "string"
+          },
+          "ownerId": {
             "type": "string"
           }
         },
@@ -4202,6 +5063,9 @@
           },
           "bankVersion": {
             "type": "string"
+          },
+          "ownerId": {
+            "type": "string"
           }
         },
         "additionalProperties": false,
@@ -4235,6 +5099,15 @@
           },
           "platoon": {
             "type": "string"
+          },
+          "platoonId": {
+            "type": "string"
+          },
+          "vuc": {
+            "type": "string"
+          },
+          "disabled": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false,
@@ -4242,7 +5115,10 @@
           "id",
           "name",
           "email",
-          "platoon"
+          "platoon",
+          "platoonId",
+          "vuc",
+          "disabled"
         ]
       },
       "AuthResponse": {
@@ -4339,6 +5215,12 @@
       "RegisterInput": {
         "type": "object",
         "properties": {
+          "invite": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 512,
+            "description": "Для преподавателя — одноразовый код администратора; для студента — ссылка преподавателя или её ключ."
+          },
           "name": {
             "type": "string",
             "maxLength": 200,
@@ -4354,18 +5236,223 @@
             "format": "password",
             "minLength": 10,
             "maxLength": 256
-          },
-          "platoon": {
-            "type": "string",
-            "maxLength": 80,
-            "description": "Обязательно для студента."
           }
         },
         "additionalProperties": false,
         "required": [
+          "invite",
           "name",
           "email",
           "password"
+        ]
+      },
+      "TeacherInvitationInput": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "vuc": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "email",
+          "vuc"
+        ]
+      },
+      "TeacherInvitation": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "ABCDE-FGHJK"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "teacher"
+            ]
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "vuc": {
+            "type": "string"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "role",
+          "email",
+          "vuc",
+          "expires"
+        ]
+      },
+      "StudentLinkInput": {
+        "type": "object",
+        "properties": {
+          "platoonId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "platoonId"
+        ]
+      },
+      "StudentRegistrationLink": {
+        "type": "object",
+        "properties": {
+          "link": {
+            "type": "string",
+            "example": "/student?invite=..."
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "student"
+            ]
+          },
+          "platoon": {
+            "type": "string"
+          },
+          "platoonId": {
+            "type": "string"
+          },
+          "vuc": {
+            "type": "string"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "link",
+          "role",
+          "platoon",
+          "platoonId",
+          "vuc",
+          "expires"
+        ]
+      },
+      "PlatoonInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ]
+      },
+      "VUCInput": {
+        "type": "object",
+        "properties": {
+          "vuc": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "vuc"
+        ]
+      },
+      "CreateVUCInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ]
+      },
+      "VUCList": {
+        "type": "object",
+        "properties": {
+          "vucs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VUC"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "vucs"
+        ]
+      },
+      "PlatoonManagement": {
+        "type": "object",
+        "properties": {
+          "vuc": {
+            "type": "string"
+          },
+          "platoons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Platoon"
+            }
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicAccount"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "vuc",
+          "platoons",
+          "students"
+        ]
+      },
+      "ManageStudentInput": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "move",
+              "remove",
+              "disable",
+              "enable"
+            ]
+          },
+          "platoonId": {
+            "type": "string",
+            "description": "Обязательно для move; взвод в том же ВУЦ."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "action"
         ]
       },
       "TeacherProfileInput": {
@@ -5601,7 +6688,7 @@
       "basicAuth": {
         "type": "http",
         "scheme": "basic",
-        "description": "Только если настроен VUC_ADMIN_PASSWORD."
+        "description": "Только для административных маршрутов при настроенном VUC_ADMIN_PASSWORD."
       }
     }
   }

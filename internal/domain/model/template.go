@@ -14,4 +14,5 @@ type Profile struct {
 	Values      map[string]*float64 `json:"values"`
 	Created     string              `json:"created,omitempty"`
 	BankVersion string              `json:"bankVersion,omitempty"`
+	OwnerID     string              `json:"ownerId,omitempty"`
 }

@@ -1,24 +1,115 @@
-window.teachingDashboard=async function({view,state,api,esc}){
- let data,search='',platoon='',test='',page=1,pageSize=10;
- const fmt=v=>v==null?'—':Number(v).toFixed(2).replace('.',',');
- const error=e=>{const el=view.querySelector('#dashboard-error');if(el)el.innerHTML=`<p class="error">${esc(e.message||e)}</p>`};
- async function reload(){data=await api('/dashboard');draw()}
- function entries(){const rows=[];for(const as of data.assignments){for(const student of data.students){const session=data.sessions.find(s=>s.studentId===student.id&&s.assignmentId===as.id);if(as.platoon&&as.platoon!==student.platoon&&!session)continue;rows.push({as,student,session})}}return rows}
- function draw(){
- const platoons=[...new Set(data.students.map(s=>s.platoon))].sort((a,b)=>a.localeCompare(b,'ru',{numeric:true}));const all=entries(),done=all.filter(x=>x.session?.completed).length;
- view.innerHTML=`<header class="page-heading"><div><div class="eyebrow">Кабинет преподавателя</div><h1>Тестирования и результаты</h1></div><button id="refresh" class="secondary">Обновить</button></header><div id="dashboard-error" role="alert"></div>
- <div class="dashboard-metrics"><article><strong>${data.students.length}</strong>Студентов</article><article><strong>${platoons.length}</strong>Взводов</article><article><strong>${data.assignments.filter(a=>a.active).length}</strong>Активных тестирований</article><article><strong>${done} / ${all.length}</strong>Пройдено назначений</article></div>
- <section class="surface"><h2>Назначить тестирование</h2><form id="assignment-form"><div class="form-grid"><label>Название тестирования<input name="title" required maxlength="200" placeholder="Например, Входная диагностика"></label><label>Шаблон<select name="profileId" required><option value="">Выберите шаблон</option>${state.profiles.filter(p=>p.approved).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Кому назначить<select id="audience"><option value="all">Всем взводам</option><option value="platoon">Одному взводу</option></select></label><label id="platoon-field" hidden>Номер взвода<input name="platoon" list="platoon-options" maxlength="80" placeholder="Например, 101"><datalist id="platoon-options">${platoons.map(p=>`<option value="${esc(p)}">`).join('')}</datalist></label></div><div class="options-line"><label class="check"><input name="activity" type="checkbox"> Опыт деятельности</label><label class="check"><input name="motivation" type="checkbox"> Мотивация</label></div><button type="submit">Назначить тестирование</button><p class="muted" style="margin-top:1rem">Назначение появится в кабинетах всех студентов выбранного взвода, включая зарегистрировавшихся позднее.</p></form></section>
- <section class="surface"><h2>Назначенные тестирования</h2>${data.assignments.map(a=>`<div class="assignment-row"><div><b>${esc(a.title)}</b><small>${a.platoon?'Взвод '+esc(a.platoon):'Все взводы'} · ${esc(a.profileName)} · ${a.active?'Активно':'Закрыто'}</small></div><button class="secondary" data-toggle="${a.id}" data-active="${!a.active}">${a.active?'Закрыть доступ':'Возобновить'}</button></div>`).join('')||'<p class="muted">Назначений пока нет.</p>'}</section>
- <section class="surface"><h2>Прохождение по всем взводам</h2><p class="muted">Доля завершённых назначений. Это статистика участия, а не оценка показателей.</p>${platoons.map(p=>{const rows=all.filter(x=>x.student.platoon===p),n=rows.filter(x=>x.session?.completed).length;return `<div class="chart-row"><span>Взвод ${esc(p)}</span><div class="chart-track" role="img" aria-label="Пройдено ${n} из ${rows.length}"><div class="chart-fill" style="width:${rows.length?n/rows.length*100:0}%"></div></div><span>${n} / ${rows.length} (${rows.length?Math.round(n/rows.length*100):0}%)</span></div>`}).join('')||'<p>Студентов пока нет.</p>'}</section>
- <section class="surface"><h2>Результаты студентов</h2><div class="dashboard-filters"><label>ФИО<input id="student-search" placeholder="Поиск по фамилии или имени" value="${esc(search)}"></label><label>Взвод<select id="platoon-filter"><option value="">Все взводы</option>${platoons.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('')}</select></label><label>Тестирование<select id="test-filter"><option value="">Все тестирования</option>${data.assignments.map(a=>`<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label></div><div id="result-table"></div><nav id="results-pagination" class="list-pagination" aria-label="Страницы результатов студентов"></nav></section><dialog id="result-dialog" class="result-dialog"></dialog>`;
- view.querySelector('#platoon-filter').value=platoon;view.querySelector('#test-filter').value=test;
- view.querySelector('#student-search').oninput=e=>{search=e.target.value;page=1;table()};view.querySelector('#platoon-filter').onchange=e=>{platoon=e.target.value;page=1;table()};view.querySelector('#test-filter').onchange=e=>{test=e.target.value;page=1;table()};
- view.querySelector('#audience').onchange=e=>{const label=view.querySelector('#platoon-field');label.hidden=e.target.value==='all';label.querySelector('input').required=!label.hidden};
- view.querySelector('#assignment-form').onsubmit=async e=>{e.preventDefault();const form=e.target,fields=Object.fromEntries(new FormData(form));fields.platoon=view.querySelector('#audience').value==='all'?'':fields.platoon;fields.activity=!!fields.activity;fields.motivation=!!fields.motivation;form.querySelector('button').disabled=true;try{await api('/assignments',{method:'POST',body:fields});await reload()}catch(err){error(err);form.querySelector('button').disabled=false}};
- view.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=async()=>{try{await api('/assignments/'+encodeURIComponent(b.dataset.toggle),{method:'PATCH',body:{active:b.dataset.active==='true'}});await reload()}catch(e){error(e)}});view.querySelector('#refresh').onclick=()=>reload().catch(error);table();
- }
- function table(){const rows=entries().filter(x=>(!platoon||x.student.platoon===platoon)&&(!test||x.as.id===test)&&(!search||x.student.name.toLowerCase().includes(search.toLowerCase())));const pagination=window.listPagination(view.querySelector('#results-pagination'),{total:rows.length,page,pageSize,onChange:(next,size)=>{page=next;pageSize=size;table()}});page=pagination.page;view.querySelector('#result-table').innerHTML=`<p class="muted">Найдено назначений: ${rows.length}</p><div class="table-scroll"><table><thead><tr><th>ФИО</th><th>Взвод</th><th>Тестирование</th><th>Статус</th><th>Ответы</th><th></th></tr></thead><tbody>${rows.slice(pagination.start,pagination.end).map(({student:s,as,session:r})=>`<tr><td><b>${esc(s.name)}</b><small>${esc(s.email)}</small></td><td>${esc(s.platoon)}</td><td>${esc(as.title)}</td><td>${r?.completed?'Пройдено':r?'В процессе':'Не начато'}</td><td>${r?r.answered+' / '+r.total:'—'}</td><td>${r?`<button class="secondary" data-result="${r.id}">Результат</button>`:'—'}</td></tr>`).join('')||'<tr><td colspan="6">Результаты не найдены. Измените поиск или фильтры.</td></tr>'}</tbody></table></div>`;view.querySelectorAll('[data-result]').forEach(b=>b.onclick=()=>result(b.dataset.result))}
- function result(id){return window.teacherResult({view,api,esc,id})}
- view.innerHTML='<p role="status">Загрузка назначений и результатов…</p>';try{await reload()}catch(e){view.innerHTML=`<p class="error">${esc(e.message)}</p><a href="/teacher">Войти в кабинет</a>`}
+window.teacherConceptTesting = async function ({view, state, api, esc}) {
+    let data, search = '', platoon = '', test = '', page = 1, pageSize = 10;
+    const error = e => {
+        const el = view.querySelector('#dashboard-error');
+        if (el) el.innerHTML = `<p class="error">${esc(e.message || e)}</p>`
+    };
+
+    async function reload() {
+        data = await api('/dashboard');
+        if (view.isConnected) draw()
+    }
+
+    function entries() {
+        const rows = [];
+        for (const as of data.assignments) {
+            for (const student of data.students) {
+                const session = data.sessions.find(s => s.studentId === student.id && s.assignmentId === as.id);
+                if (as.platoon && as.platoon !== student.platoon && !session) continue;
+                rows.push({as, student, session})
+            }
+        }
+        return rows
+    }
+
+    function draw() {
+        const platoons = [...new Set(data.students.map(s => s.platoon))].sort((a, b) => a.localeCompare(b, 'ru', {numeric: true}));
+        const all = entries(), done = all.filter(x => x.session?.completed).length;
+        view.innerHTML = `<header class="page-heading"><div><h2>Назначения и результаты</h2></div><button id="refresh" class="secondary">Обновить</button></header><div id="dashboard-error" role="alert"></div>
+ <section class="surface"><h2>Назначить «Я концепцию»</h2><form id="assignment-form"><div class="form-grid"><label>Название тестирования<input name="title" required maxlength="200" placeholder="Например, Входная диагностика"></label><label>Шаблон<select name="profileId" required><option value="">Выберите шаблон</option>${state.profiles.filter(p => p.approved).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Кому назначить<select id="audience"><option value="all">Всем взводам</option><option value="platoon">Одному взводу</option></select></label><label id="platoon-field" hidden>Номер взвода<input name="platoon" list="platoon-options" maxlength="80" placeholder="Например, 101"><datalist id="platoon-options">${platoons.map(p => `<option value="${esc(p)}">`).join('')}</datalist></label></div><div class="options-line"><label class="check"><input name="activity" type="checkbox"> Опыт деятельности</label><label class="check"><input name="motivation" type="checkbox"> Мотивация</label></div><button type="submit">Назначить тестирование</button><p class="muted" style="margin-top:1rem">Назначение появится в кабинетах всех студентов выбранного взвода, включая зарегистрировавшихся позднее.</p></form></section>
+ <section class="surface"><h2>Назначенные тестирования</h2>${data.assignments.map(a => `<div class="assignment-row"><div><b>${esc(a.title)}</b><small>${a.platoon ? 'Взвод ' + esc(a.platoon) : 'Все взводы'} · ${esc(a.profileName)} · ${a.active ? 'Активно' : 'Закрыто'}</small></div><button class="secondary" data-toggle="${a.id}" data-active="${!a.active}">${a.active ? 'Закрыть доступ' : 'Возобновить'}</button></div>`).join('') || '<p class="muted">Назначений пока нет.</p>'}</section>
+ <section class="surface"><h2>Результаты студентов</h2><div class="dashboard-filters"><label>ФИО<input id="student-search" placeholder="Поиск по фамилии или имени" value="${esc(search)}"></label><label>Взвод<select id="platoon-filter"><option value="">Все взводы</option>${platoons.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}</select></label><label>Тестирование<select id="test-filter"><option value="">Все тестирования</option>${data.assignments.map(a => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label></div><div id="result-table"></div><nav id="results-pagination" class="list-pagination" aria-label="Страницы результатов студентов"></nav></section><dialog id="result-dialog" class="result-dialog"></dialog>`;
+        view.querySelector('#platoon-filter').value = platoon;
+        view.querySelector('#test-filter').value = test;
+        view.querySelector('#student-search').oninput = e => {
+            search = e.target.value;
+            page = 1;
+            table()
+        };
+        view.querySelector('#platoon-filter').onchange = e => {
+            platoon = e.target.value;
+            page = 1;
+            table()
+        };
+        view.querySelector('#test-filter').onchange = e => {
+            test = e.target.value;
+            page = 1;
+            table()
+        };
+        view.querySelector('#audience').onchange = e => {
+            const label = view.querySelector('#platoon-field');
+            label.hidden = e.target.value === 'all';
+            label.querySelector('input').required = !label.hidden
+        };
+        view.querySelector('#assignment-form').onsubmit = async e => {
+            e.preventDefault();
+            const form = e.target, fields = Object.fromEntries(new FormData(form));
+            fields.platoon = view.querySelector('#audience').value === 'all' ? '' : fields.platoon;
+            fields.activity = !!fields.activity;
+            fields.motivation = !!fields.motivation;
+            form.querySelector('button').disabled = true;
+            try {
+                await api('/assignments', {method: 'POST', body: fields});
+                await reload()
+            } catch (err) {
+                error(err);
+                form.querySelector('button').disabled = false
+            }
+        };
+        view.querySelectorAll('[data-toggle]').forEach(b => b.onclick = async () => {
+            try {
+                await api('/assignments/' + encodeURIComponent(b.dataset.toggle), {
+                    method: 'PATCH',
+                    body: {active: b.dataset.active === 'true'}
+                });
+                await reload()
+            } catch (e) {
+                error(e)
+            }
+        });
+        view.querySelector('#refresh').onclick = () => reload().catch(error);
+        table();
+    }
+
+    function table() {
+        const rows = entries().filter(x => (!platoon || x.student.platoon === platoon) && (!test || x.as.id === test) && (!search || x.student.name.toLowerCase().includes(search.toLowerCase())));
+        const pagination = window.listPagination(view.querySelector('#results-pagination'), {
+            total: rows.length,
+            page,
+            pageSize,
+            onChange: (next, size) => {
+                page = next;
+                pageSize = size;
+                table()
+            }
+        });
+        page = pagination.page;
+        view.querySelector('#result-table').innerHTML = `<p class="muted">Найдено назначений: ${rows.length}</p><div class="table-scroll"><table><thead><tr><th>ФИО</th><th>Взвод</th><th>Тестирование</th><th>Статус</th><th>Ответы</th><th></th></tr></thead><tbody>${rows.slice(pagination.start, pagination.end).map(({
+                                                                                                                                                                                                                                                                                                                              student: s,
+                                                                                                                                                                                                                                                                                                                              as,
+                                                                                                                                                                                                                                                                                                                              session: r
+                                                                                                                                                                                                                                                                                                                          }) => `<tr><td><b>${esc(s.name)}</b><small>${esc(s.email)}</small></td><td>${esc(s.platoon)}</td><td>${esc(as.title)}</td><td>${r?.completed ? 'Пройдено' : r ? 'В процессе' : 'Не начато'}</td><td>${r ? r.answered + ' / ' + r.total : '—'}</td><td>${r ? `<button class="secondary" data-result="${r.id}">Результат</button>` : '—'}</td></tr>`).join('') || '<tr><td colspan="6">Результаты не найдены. Измените поиск или фильтры.</td></tr>'}</tbody></table></div>`;
+        view.querySelectorAll('[data-result]').forEach(b => b.onclick = () => result(b.dataset.result))
+    }
+
+    function result(id) {
+        return window.teacherResult({view, api, esc, id})
+    }
+
+    view.innerHTML = '<p role="status">Загрузка назначений и результатов…</p>';
+    try {
+        await reload()
+    } catch (e) {
+        view.innerHTML = `<p class="error">${esc(e.message)}</p><a href="/teacher">Войти в кабинет</a>`
+    }
 };

@@ -7,7 +7,7 @@ import (
 )
 
 func (h *Handler) sessions(w http.ResponseWriter, r *http.Request) {
-	value, err := h.service.ResearchQuery("state", "", "")
+	value, err := h.service.ResearchQueryFor(h.teacherID(r), "state", "", "")
 	if err != nil {
 		h.respond(w, nil, err)
 		return
@@ -15,15 +15,15 @@ func (h *Handler) sessions(w http.ResponseWriter, r *http.Request) {
 	h.reply(w, map[string]any{"sessions": value.(map[string]any)["sessions"]}, 200)
 }
 func (h *Handler) sessionReport(w http.ResponseWriter, r *http.Request) {
-	value, err := h.service.ResearchQuery("report", r.PathValue("id"), "")
+	value, err := h.service.ResearchQueryFor(h.teacherID(r), "report", r.PathValue("id"), "")
 	h.respond(w, value, err)
 }
 func (h *Handler) exportSession(w http.ResponseWriter, r *http.Request) {
-	value, err := h.service.ResearchQuery("export", r.PathValue("id"), "")
+	value, err := h.service.ResearchQueryFor(h.teacherID(r), "export", r.PathValue("id"), "")
 	h.respond(w, value, err)
 }
 func (h *Handler) groupReport(w http.ResponseWriter, r *http.Request) {
-	value, err := h.service.ResearchQuery("group", "", r.URL.Query().Get("group"))
+	value, err := h.service.ResearchQueryFor(h.teacherID(r), "group", "", r.URL.Query().Get("group"))
 	h.respond(w, value, err)
 }
 func (h *Handler) importSession(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +31,7 @@ func (h *Handler) importSession(w http.ResponseWriter, r *http.Request) {
 	if !h.decodeBody(w, r, 3_000_000, &session) {
 		return
 	}
-	value, err := h.service.ResearchCommand(commandInput(map[string]any{"session": session}), "import")
+	value, err := h.service.ResearchCommandFor(h.teacherID(r), commandInput(map[string]any{"session": session}), "import")
 	if err != nil {
 		h.respond(w, nil, err)
 		return
@@ -48,11 +48,11 @@ func (h *Handler) sessionAction(w http.ResponseWriter, r *http.Request, action s
 	if !h.validOrigin(w, r) {
 		return
 	}
-	if _, err := h.service.ResearchQuery("export", r.PathValue("id"), ""); err != nil {
+	if _, err := h.service.ResearchQueryFor(h.teacherID(r), "export", r.PathValue("id"), ""); err != nil {
 		h.respond(w, nil, err)
 		return
 	}
-	value, err := h.service.ResearchCommand(commandInput(map[string]any{"id": r.PathValue("id")}), action)
+	value, err := h.service.ResearchCommandFor(h.teacherID(r), commandInput(map[string]any{"id": r.PathValue("id")}), action)
 	h.respond(w, value, err)
 }
 func (h *Handler) updatePlan(w http.ResponseWriter, r *http.Request) {
@@ -64,18 +64,18 @@ func (h *Handler) updatePlan(w http.ResponseWriter, r *http.Request) {
 		h.reply(w, map[string]any{"error": "Укажите массив plan."}, 400)
 		return
 	}
-	if _, err := h.service.ResearchQuery("export", r.PathValue("id"), ""); err != nil {
+	if _, err := h.service.ResearchQueryFor(h.teacherID(r), "export", r.PathValue("id"), ""); err != nil {
 		h.respond(w, nil, err)
 		return
 	}
 	input := commandInput(body)
 	setField(input, "id", r.PathValue("id"))
-	value, err := h.service.ResearchCommand(input, "plan")
+	value, err := h.service.ResearchCommandFor(h.teacherID(r), input, "plan")
 	h.respond(w, value, err)
 }
 func (h *Handler) exportCSV(w http.ResponseWriter, r *http.Request) {
 	var output bytes.Buffer
-	if err := h.service.ExportCSV(&output, r.URL.Query().Get("group")); err != nil {
+	if err := h.service.ExportCSVFor(h.teacherID(r), &output, r.URL.Query().Get("group")); err != nil {
 		h.respond(w, nil, err)
 		return
 	}

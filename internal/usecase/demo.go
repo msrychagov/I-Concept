@@ -12,6 +12,7 @@ func (a *Service) ResetDemo() (string, error) {
 	now := time.Now().UTC()
 	created := now.Add(-72 * time.Hour).Format(time.RFC3339)
 	db := model.Database{Students: []model.Account{}, Assignments: []model.Assignment{}, Logins: []model.Login{}, Profiles: []model.Profile{}, Sessions: []model.SessionRecord{}, Submissions: []model.FormSubmission{}}
+	db.VUCs = []model.VUC{{ID: uuid(), Name: "Демонстрационный ВУЦ"}}
 	full := a.emptyProfile()
 	full.ID = uuid()
 	full.Name = "Полная диагностика"
@@ -33,17 +34,32 @@ func (a *Service) ResetDemo() (string, error) {
 			short.Questions = append(short.Questions, i)
 		}
 	}
-	db.Profiles = []model.Profile{full, short}
-	addAccount := func(role, name, platoon, email, password string) {
+	addAccount := func(role, name, platoon, email, password, ownerID string) string {
 		salt := token()
-		db.Students = append(db.Students, model.Account{ID: uuid(), Role: role, Name: name, Platoon: platoon, Email: email, PasswordHash: passwordHash(password, salt), Salt: salt, Created: created})
+		id := uuid()
+		platoonID := ""
+		if platoon != "" {
+			for _, p := range db.Platoons {
+				if p.Name == platoon {
+					platoonID = p.ID
+				}
+			}
+			if platoonID == "" {
+				platoonID = uuid()
+				db.Platoons = append(db.Platoons, model.Platoon{ID: platoonID, Name: platoon, VUC: "Демонстрационный ВУЦ"})
+			}
+		}
+		db.Students = append(db.Students, model.Account{VUC: "Демонстрационный ВУЦ", PlatoonID: platoonID, ID: id, Role: role, Name: name, Platoon: platoon, Email: email, PasswordHash: passwordHash(password, salt), Salt: salt, Created: created, OwnerID: ownerID})
+		return id
 	}
-	addAccount("teacher", "Преподаватель Демо", "", "teacher@example.test", "TeacherDemo2026!")
+	teacherID := addAccount("teacher", "Преподаватель Демо", "", "teacher@example.test", "TeacherDemo2026!", "")
 	names := []string{"Иванов Иван Иванович", "Петров Пётр Петрович", "Сидоров Алексей Андреевич", "Смирнов Артём Олегович", "Волков Максим Игоревич", "Орлов Дмитрий Сергеевич", "Кузнецов Павел Алексеевич", "Соколов Никита Романович", "Новиков Михаил Денисович"}
 	for n, name := range names {
-		addAccount("student", name, fmt.Sprint(101+n/3), fmt.Sprintf("student%d@example.test", n+1), "StudentDemo2026!")
+		addAccount("student", name, fmt.Sprint(101+n/3), fmt.Sprintf("student%d@example.test", n+1), "StudentDemo2026!", teacherID)
 	}
-	db.Assignments = []model.Assignment{{ID: uuid(), Title: "Входное тестирование", Profile: short, Active: true, Created: created}, {ID: uuid(), Title: "Диагностика взвода 101", Platoon: "101", Profile: full, Active: true, Created: created}, {ID: uuid(), Title: "Завершённый этап", Profile: short, Active: false, Created: created}}
+	full.OwnerID, short.OwnerID = teacherID, teacherID
+	db.Profiles = []model.Profile{full, short}
+	db.Assignments = []model.Assignment{{ID: uuid(), Title: "Входное тестирование", Profile: short, Active: true, Created: created, OwnerID: teacherID}, {ID: uuid(), Title: "Диагностика взвода 101", Platoon: "101", Profile: full, Active: true, Created: created, OwnerID: teacherID}, {ID: uuid(), Title: "Завершённый этап", Profile: short, Active: false, Created: created, OwnerID: teacherID}}
 	for n, student := range db.Students {
 		if student.Role != "student" {
 			continue
@@ -55,7 +71,7 @@ func (a *Service) ResetDemo() (string, error) {
 			if j == 0 && n%3 == 1 {
 				continue
 			}
-			s := model.Session{ID: uuid(), StudentID: student.ID, AssignmentID: as.ID, Kind: "student", Participant: student.Name, Group: student.Platoon, Wave: as.Title, Profile: clone(as.Profile), BankVersion: a.bank.Version, Created: created, Updated: now.Add(-time.Duration(n) * time.Hour).Format(time.RFC3339), Seed: uint32(n*97 + j), Consent: true, ConsentAt: created, Answers: map[string]int{}, Notes: map[string]string{}, Plan: []model.PlanItem{}}
+			s := model.Session{ID: uuid(), StudentID: student.ID, AssignmentID: as.ID, Kind: "student", Participant: student.Name, Group: student.Platoon, Wave: as.Title, Profile: clone(as.Profile), BankVersion: a.bank.Version, Created: created, Updated: now.Add(-time.Duration(n) * time.Hour).Format(time.RFC3339), Seed: uint32(n*97 + j), Consent: true, ConsentAt: created, Answers: map[string]int{}, Notes: map[string]string{}, Plan: []model.PlanItem{}, TeacherID: teacherID}
 			s.Completed = j == 2 || n%3 == 0
 			items := a.itemsFor(s)
 			for k, item := range items {
@@ -68,7 +84,7 @@ func (a *Service) ResetDemo() (string, error) {
 			db.Sessions = append(db.Sessions, model.SessionRecord{TokenHash: hash(token()), Session: s})
 		}
 	}
-	if err := a.addDemoAutobiography(&db, created, now); err != nil {
+	if err := a.addDemoAutobiography(&db, created, now, teacherID); err != nil {
 		return "", err
 	}
 	return a.repo.ReplaceWithBackup(db)
@@ -76,12 +92,12 @@ func (a *Service) ResetDemo() (string, error) {
 
 // addDemoAutobiography assigns the autobiography to platoon 101: the first
 // student of the platoon has submitted it, the second has filled a few sections.
-func (a *Service) addDemoAutobiography(db *model.Database, created string, now time.Time) error {
+func (a *Service) addDemoAutobiography(db *model.Database, created string, now time.Time, teacherID string) error {
 	form, ok := a.forms["autobiography"]
 	if !ok {
 		return nil
 	}
-	as := model.Assignment{ID: uuid(), Title: "Автобиография", Platoon: "101", FormID: form.ID, Active: true, Created: created}
+	as := model.Assignment{ID: uuid(), Title: "Автобиография", Platoon: "101", FormID: form.ID, Active: true, Created: created, OwnerID: teacherID}
 	db.Assignments = append(db.Assignments, as)
 	answers, err := sampleAnswers(form, map[string]bool{"work": true, "languages": true, "relatives": true, "sport": true, "science": true}, now)
 	if err != nil {

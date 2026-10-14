@@ -9,7 +9,11 @@ import (
 func TestTeacherSettingsAuthorizationAndPasswordChange(t *testing.T) {
 	a := testApp(t)
 	register := func(endpoint, email string) *http.Cookie {
-		response := callAccount(t, a, endpoint, map[string]any{"name": "Тестовый Пользователь", "platoon": "101", "email": email, "password": "TestPassword2026!"}, nil)
+		role := "student"
+		if strings.Contains(endpoint, "/teacher/") {
+			role = "teacher"
+		}
+		response := callAccount(t, a, endpoint, map[string]any{"name": "Тестовый Пользователь", "invite": testInvite(t, a, role, email, "101"), "email": email, "password": "TestPassword2026!"}, nil)
 		requireCode(t, response, 201)
 		return response.Result().Cookies()[0]
 	}

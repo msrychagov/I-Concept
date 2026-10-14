@@ -3,11 +3,11 @@ package httptransport
 import "net/http"
 
 func (h *Handler) dashboard(w http.ResponseWriter, r *http.Request) {
-	value, err := h.service.TeachingState()
+	value, err := h.service.TeachingStateFor(h.teacherID(r))
 	h.respond(w, value, err)
 }
 func (h *Handler) assignments(w http.ResponseWriter, r *http.Request) {
-	value, err := h.service.TeachingState()
+	value, err := h.service.TeachingStateFor(h.teacherID(r))
 	if err != nil {
 		h.respond(w, nil, err)
 		return
@@ -19,7 +19,7 @@ func (h *Handler) createAssignment(w http.ResponseWriter, r *http.Request) {
 	if !h.decodeBody(w, r, 16384, &body) {
 		return
 	}
-	value, err := h.service.AssignmentCommand(commandInput(body), "assignment")
+	value, err := h.service.AssignmentCommandFor(h.teacherID(r), commandInput(body), "assignment")
 	if err != nil {
 		h.respond(w, nil, err)
 		return
@@ -37,7 +37,7 @@ func (h *Handler) updateAssignment(w http.ResponseWriter, r *http.Request) {
 	}
 	input := commandInput(body)
 	setField(input, "id", r.PathValue("id"))
-	value, err := h.service.AssignmentCommand(input, "assignment_status")
+	value, err := h.service.AssignmentCommandFor(h.teacherID(r), input, "assignment_status")
 	h.respond(w, value, err)
 }
 func (h *Handler) startAssignment(w http.ResponseWriter, r *http.Request) {

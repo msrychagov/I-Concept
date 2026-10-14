@@ -1,110 +1,110 @@
 [
- {
-  "id": "ryadovoy",
-  "text": "Рядовой"
- },
- {
-  "id": "efreytor",
-  "text": "Ефрейтор"
- },
- {
-  "id": "mladshiy_serzhant",
-  "text": "Младший сержант"
- },
- {
-  "id": "serzhant",
-  "text": "Сержант"
- },
- {
-  "id": "starshiy_serzhant",
-  "text": "Старший сержант"
- },
- {
-  "id": "starshina",
-  "text": "Старшина"
- },
- {
-  "id": "praporshchik",
-  "text": "Прапорщик"
- },
- {
-  "id": "starshiy_praporshchik",
-  "text": "Старший прапорщик"
- },
- {
-  "id": "mladshiy_leytenant",
-  "text": "Младший лейтенант"
- },
- {
-  "id": "leytenant",
-  "text": "Лейтенант"
- },
- {
-  "id": "starshiy_leytenant",
-  "text": "Старший лейтенант"
- },
- {
-  "id": "kapitan",
-  "text": "Капитан"
- },
- {
-  "id": "mayor",
-  "text": "Майор"
- },
- {
-  "id": "podpolkovnik",
-  "text": "Подполковник"
- },
- {
-  "id": "polkovnik",
-  "text": "Полковник"
- },
- {
-  "id": "matros",
-  "text": "Матрос"
- },
- {
-  "id": "starshiy_matros",
-  "text": "Старший матрос"
- },
- {
-  "id": "starshina_2_stati",
-  "text": "Старшина 2 статьи"
- },
- {
-  "id": "starshina_1_stati",
-  "text": "Старшина 1 статьи"
- },
- {
-  "id": "glavnyy_starshina",
-  "text": "Главный старшина"
- },
- {
-  "id": "glavnyy_korabelnyy_starshina",
-  "text": "Главный корабельный старшина"
- },
- {
-  "id": "michman",
-  "text": "Мичман"
- },
- {
-  "id": "starshiy_michman",
-  "text": "Старший мичман"
- },
- {
-  "id": "kapitan_leytenant",
-  "text": "Капитан-лейтенант"
- },
- {
-  "id": "kapitan_3_ranga",
-  "text": "Капитан 3 ранга"
- },
- {
-  "id": "kapitan_2_ranga",
-  "text": "Капитан 2 ранга"
- },
- {
-  "id": "kapitan_1_ranga",
-  "text": "Капитан 1 ранга"
- }
+  {
+    "id": "ryadovoy",
+    "text": "Рядовой"
+  },
+  {
+    "id": "efreytor",
+    "text": "Ефрейтор"
+  },
+  {
+    "id": "mladshiy_serzhant",
+    "text": "Младший сержант"
+  },
+  {
+    "id": "serzhant",
+    "text": "Сержант"
+  },
+  {
+    "id": "starshiy_serzhant",
+    "text": "Старший сержант"
+  },
+  {
+    "id": "starshina",
+    "text": "Старшина"
+  },
+  {
+    "id": "praporshchik",
+    "text": "Прапорщик"
+  },
+  {
+    "id": "starshiy_praporshchik",
+    "text": "Старший прапорщик"
+  },
+  {
+    "id": "mladshiy_leytenant",
+    "text": "Младший лейтенант"
+  },
+  {
+    "id": "leytenant",
+    "text": "Лейтенант"
+  },
+  {
+    "id": "starshiy_leytenant",
+    "text": "Старший лейтенант"
+  },
+  {
+    "id": "kapitan",
+    "text": "Капитан"
+  },
+  {
+    "id": "mayor",
+    "text": "Майор"
+  },
+  {
+    "id": "podpolkovnik",
+    "text": "Подполковник"
+  },
+  {
+    "id": "polkovnik",
+    "text": "Полковник"
+  },
+  {
+    "id": "matros",
+    "text": "Матрос"
+  },
+  {
+    "id": "starshiy_matros",
+    "text": "Старший матрос"
+  },
+  {
+    "id": "starshina_2_stati",
+    "text": "Старшина 2 статьи"
+  },
+  {
+    "id": "starshina_1_stati",
+    "text": "Старшина 1 статьи"
+  },
+  {
+    "id": "glavnyy_starshina",
+    "text": "Главный старшина"
+  },
+  {
+    "id": "glavnyy_korabelnyy_starshina",
+    "text": "Главный корабельный старшина"
+  },
+  {
+    "id": "michman",
+    "text": "Мичман"
+  },
+  {
+    "id": "starshiy_michman",
+    "text": "Старший мичман"
+  },
+  {
+    "id": "kapitan_leytenant",
+    "text": "Капитан-лейтенант"
+  },
+  {
+    "id": "kapitan_3_ranga",
+    "text": "Капитан 3 ранга"
+  },
+  {
+    "id": "kapitan_2_ranga",
+    "text": "Капитан 2 ранга"
+  },
+  {
+    "id": "kapitan_1_ranga",
+    "text": "Капитан 1 ранга"
+  }
 ]

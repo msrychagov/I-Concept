@@ -1,110 +1,110 @@
 [
- {
-  "id": "sukhoputnye_voyska",
-  "text": "Сухопутные войска"
- },
- {
-  "id": "motostrelkovye_voyska",
-  "text": "Мотострелковые войска"
- },
- {
-  "id": "tankovye_voyska",
-  "text": "Танковые войска"
- },
- {
-  "id": "raketnye_voyska_i_artilleriya",
-  "text": "Ракетные войска и артиллерия"
- },
- {
-  "id": "voyska_protivovozdushnoy_oborony",
-  "text": "Войска противовоздушной обороны"
- },
- {
-  "id": "vozdushno_desantnye_voyska",
-  "text": "Воздушно-десантные войска"
- },
- {
-  "id": "voenno_vozdushnye_sily",
-  "text": "Военно-воздушные силы"
- },
- {
-  "id": "voenno_kosmicheskie_sily",
-  "text": "Военно-космические силы"
- },
- {
-  "id": "kosmicheskie_voyska",
-  "text": "Космические войска"
- },
- {
-  "id": "voenno_morskoy_flot",
-  "text": "Военно-морской флот"
- },
- {
-  "id": "morskaya_pekhota",
-  "text": "Морская пехота"
- },
- {
-  "id": "beregovye_voyska",
-  "text": "Береговые войска"
- },
- {
-  "id": "raketnye_voyska_strategicheskogo_naznacheniya",
-  "text": "Ракетные войска стратегического назначения"
- },
- {
-  "id": "voyska_svyazi",
-  "text": "Войска связи"
- },
- {
-  "id": "inzhenernye_voyska",
-  "text": "Инженерные войска"
- },
- {
-  "id": "voyska_radiatsionnoy_khimicheskoy_i_biologicheskoy_zashchity",
-  "text": "Войска радиационной, химической и биологической защиты"
- },
- {
-  "id": "radioelektronnaya_borba",
-  "text": "Радиоэлектронная борьба"
- },
- {
-  "id": "zheleznodorozhnye_voyska",
-  "text": "Железнодорожные войска"
- },
- {
-  "id": "voyska_materialno_tekhnicheskogo_obespecheniya",
-  "text": "Войска материально-технического обеспечения"
- },
- {
-  "id": "avtomobilnye_voyska",
-  "text": "Автомобильные войска"
- },
- {
-  "id": "topograficheskaya_sluzhba",
-  "text": "Топографическая служба"
- },
- {
-  "id": "voennaya_politsiya",
-  "text": "Военная полиция"
- },
- {
-  "id": "meditsinskaya_sluzhba",
-  "text": "Медицинская служба"
- },
- {
-  "id": "pogranichnye_voyska",
-  "text": "Пограничные войска"
- },
- {
-  "id": "vnutrennie_voyska_rosgvardiya",
-  "text": "Внутренние войска, Росгвардия"
- },
- {
-  "id": "spetsialnye_voyska_razvedka_spetsnaz",
-  "text": "Специальные войска (разведка, спецназ)"
- },
- {
-  "id": "other",
-  "text": "Другой вид или род войск"
- }
+  {
+    "id": "sukhoputnye_voyska",
+    "text": "Сухопутные войска"
+  },
+  {
+    "id": "motostrelkovye_voyska",
+    "text": "Мотострелковые войска"
+  },
+  {
+    "id": "tankovye_voyska",
+    "text": "Танковые войска"
+  },
+  {
+    "id": "raketnye_voyska_i_artilleriya",
+    "text": "Ракетные войска и артиллерия"
+  },
+  {
+    "id": "voyska_protivovozdushnoy_oborony",
+    "text": "Войска противовоздушной обороны"
+  },
+  {
+    "id": "vozdushno_desantnye_voyska",
+    "text": "Воздушно-десантные войска"
+  },
+  {
+    "id": "voenno_vozdushnye_sily",
+    "text": "Военно-воздушные силы"
+  },
+  {
+    "id": "voenno_kosmicheskie_sily",
+    "text": "Военно-космические силы"
+  },
+  {
+    "id": "kosmicheskie_voyska",
+    "text": "Космические войска"
+  },
+  {
+    "id": "voenno_morskoy_flot",
+    "text": "Военно-морской флот"
+  },
+  {
+    "id": "morskaya_pekhota",
+    "text": "Морская пехота"
+  },
+  {
+    "id": "beregovye_voyska",
+    "text": "Береговые войска"
+  },
+  {
+    "id": "raketnye_voyska_strategicheskogo_naznacheniya",
+    "text": "Ракетные войска стратегического назначения"
+  },
+  {
+    "id": "voyska_svyazi",
+    "text": "Войска связи"
+  },
+  {
+    "id": "inzhenernye_voyska",
+    "text": "Инженерные войска"
+  },
+  {
+    "id": "voyska_radiatsionnoy_khimicheskoy_i_biologicheskoy_zashchity",
+    "text": "Войска радиационной, химической и биологической защиты"
+  },
+  {
+    "id": "radioelektronnaya_borba",
+    "text": "Радиоэлектронная борьба"
+  },
+  {
+    "id": "zheleznodorozhnye_voyska",
+    "text": "Железнодорожные войска"
+  },
+  {
+    "id": "voyska_materialno_tekhnicheskogo_obespecheniya",
+    "text": "Войска материально-технического обеспечения"
+  },
+  {
+    "id": "avtomobilnye_voyska",
+    "text": "Автомобильные войска"
+  },
+  {
+    "id": "topograficheskaya_sluzhba",
+    "text": "Топографическая служба"
+  },
+  {
+    "id": "voennaya_politsiya",
+    "text": "Военная полиция"
+  },
+  {
+    "id": "meditsinskaya_sluzhba",
+    "text": "Медицинская служба"
+  },
+  {
+    "id": "pogranichnye_voyska",
+    "text": "Пограничные войска"
+  },
+  {
+    "id": "vnutrennie_voyska_rosgvardiya",
+    "text": "Внутренние войска, Росгвардия"
+  },
+  {
+    "id": "spetsialnye_voyska_razvedka_spetsnaz",
+    "text": "Специальные войска (разведка, спецназ)"
+  },
+  {
+    "id": "other",
+    "text": "Другой вид или род войск"
+  }
 ]

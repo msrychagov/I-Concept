@@ -35,7 +35,7 @@ func (a *Service) StartAssignment(student model.Account, id string) (any, error)
 			}
 		}
 		now := time.Now().UTC().Format(time.RFC3339)
-		s := model.Session{ID: uuid(), StudentID: student.ID, AssignmentID: id, Kind: "student", Participant: student.Name, Group: student.Platoon, Wave: assignment.Title, Profile: clone(assignment.Profile), BankVersion: assignment.Profile.BankVersion, Created: now, Updated: now, Seed: uint32(time.Now().UnixNano()), Activity: assignment.Activity, Motivation: assignment.Motivation, Answers: map[string]int{}, Notes: map[string]string{}, Plan: []model.PlanItem{}}
+		s := model.Session{ID: uuid(), StudentID: student.ID, AssignmentID: id, Kind: "student", Participant: student.Name, Group: student.Platoon, Wave: assignment.Title, Profile: clone(assignment.Profile), BankVersion: assignment.Profile.BankVersion, Created: now, Updated: now, Seed: uint32(time.Now().UnixNano()), Activity: assignment.Activity, Motivation: assignment.Motivation, Answers: map[string]int{}, Notes: map[string]string{}, Plan: []model.PlanItem{}, TeacherID: assignment.OwnerID}
 		if s.BankVersion == "" {
 			s.BankVersion = a.bank.Version
 		}
@@ -48,14 +48,18 @@ func (a *Service) StartAssignment(student model.Account, id string) (any, error)
 	})
 }
 func (a *Service) AssignmentCommand(b Input, op string) (any, error) {
+	return a.AssignmentCommandFor("", b, op)
+}
+
+func (a *Service) AssignmentCommandFor(teacherID string, b Input, op string) (any, error) {
 	return a.transaction(func(db *model.Database) (any, error) {
 		if op == "assignment" && str(b, "formId") != "" {
-			return a.assignForm(db, b)
+			return a.assignForm(db, teacherID, b)
 		}
 		if op == "assignment" {
 			var p model.Profile
 			for _, x := range db.Profiles {
-				if x.ID == str(b, "profileId") {
+				if x.ID == str(b, "profileId") && inTeacherScope(x.OwnerID, teacherID) {
 					p = x
 					break
 				}
@@ -71,14 +75,14 @@ func (a *Service) AssignmentCommand(b Input, op string) (any, error) {
 			if p.Questions == nil {
 				p.Questions = clone(a.engineFor(model.Session{Profile: p, BankVersion: p.BankVersion}).bank.Items)
 			}
-			as := model.Assignment{ID: uuid(), Title: title, Platoon: platoon, Profile: clone(p), Activity: boolean(b, "activity"), Motivation: boolean(b, "motivation"), Active: true, Created: time.Now().UTC().Format(time.RFC3339)}
+			as := model.Assignment{ID: uuid(), Title: title, Platoon: platoon, Profile: clone(p), Activity: boolean(b, "activity"), Motivation: boolean(b, "motivation"), Active: true, Created: time.Now().UTC().Format(time.RFC3339), OwnerID: teacherID}
 			db.Assignments = append(db.Assignments, as)
 
 			return map[string]any{"ok": true}, nil
 		}
 		if op == "assignment_status" {
 			for n := range db.Assignments {
-				if db.Assignments[n].ID == str(b, "id") {
+				if db.Assignments[n].ID == str(b, "id") && inTeacherScope(db.Assignments[n].OwnerID, teacherID) {
 					db.Assignments[n].Active = boolean(b, "active")
 
 					return map[string]any{"ok": true}, nil
@@ -91,14 +95,14 @@ func (a *Service) AssignmentCommand(b Input, op string) (any, error) {
 }
 
 // assignForm assigns a fixed questionnaire; it needs no template.
-func (a *Service) assignForm(db *model.Database, b Input) (any, error) {
+func (a *Service) assignForm(db *model.Database, teacherID string, b Input) (any, error) {
 	form, known := a.forms[str(b, "formId")]
 	title := strings.TrimSpace(str(b, "title"))
 	platoon := strings.TrimSpace(str(b, "platoon"))
 	if !known || str(b, "profileId") != "" || title == "" || len(title) > 200 || len(platoon) > 80 {
 		return nil, failure(Invalid, map[string]any{"error": "Выберите анкету и укажите название задания."})
 	}
-	db.Assignments = append(db.Assignments, model.Assignment{ID: uuid(), Title: title, Platoon: platoon, FormID: form.ID, Active: true, Created: time.Now().UTC().Format(time.RFC3339)})
+	db.Assignments = append(db.Assignments, model.Assignment{ID: uuid(), Title: title, Platoon: platoon, FormID: form.ID, Active: true, Created: time.Now().UTC().Format(time.RFC3339), OwnerID: teacherID})
 	return map[string]any{"ok": true}, nil
 }
 

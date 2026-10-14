@@ -1,34 +1,34 @@
 [
- {
-  "id": "shkola_ekonomiki_i_menedzhmenta",
-  "text": "Школа экономики и менеджмента"
- },
- {
-  "id": "shkola_informatiki_fiziki_i_tekhnologiy",
-  "text": "Школа информатики, физики и технологий"
- },
- {
-  "id": "shkola_sotsialnykh_nauk",
-  "text": "Школа социальных наук"
- },
- {
-  "id": "shkola_gumanitarnykh_nauk_i_iskusstv",
-  "text": "Школа гуманитарных наук и искусств"
- },
- {
-  "id": "institut_vostokovedeniya_i_afrikanistiki",
-  "text": "Институт востоковедения и африканистики"
- },
- {
-  "id": "shkola_dizayna",
-  "text": "Школа дизайна"
- },
- {
-  "id": "yuridicheskiy_fakultet",
-  "text": "Юридический факультет"
- },
- {
-  "id": "other",
-  "text": "Другое подразделение"
- }
+  {
+    "id": "shkola_ekonomiki_i_menedzhmenta",
+    "text": "Школа экономики и менеджмента"
+  },
+  {
+    "id": "shkola_informatiki_fiziki_i_tekhnologiy",
+    "text": "Школа информатики, физики и технологий"
+  },
+  {
+    "id": "shkola_sotsialnykh_nauk",
+    "text": "Школа социальных наук"
+  },
+  {
+    "id": "shkola_gumanitarnykh_nauk_i_iskusstv",
+    "text": "Школа гуманитарных наук и искусств"
+  },
+  {
+    "id": "institut_vostokovedeniya_i_afrikanistiki",
+    "text": "Институт востоковедения и африканистики"
+  },
+  {
+    "id": "shkola_dizayna",
+    "text": "Школа дизайна"
+  },
+  {
+    "id": "yuridicheskiy_fakultet",
+    "text": "Юридический факультет"
+  },
+  {
+    "id": "other",
+    "text": "Другое подразделение"
+  }
 ]

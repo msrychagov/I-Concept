@@ -47,7 +47,7 @@ func TestFormAssignmentNeedsNoTemplateButTestsStillDo(t *testing.T) {
 func TestStartingAFormTwiceReturnsTheSameSubmission(t *testing.T) {
 	s := testApp(t)
 	login := signUp(t, s, "student", "first@example.test", "101")
-	if _, err := s.AssignmentCommand(formAssignmentInput(t, "101"), "assignment"); err != nil {
+	if _, err := s.AssignmentCommandFor(login.Account.OwnerID, formAssignmentInput(t, "101"), "assignment"); err != nil {
 		t.Fatal(err)
 	}
 	id := s.repo.Snapshot().Assignments[0].ID
@@ -73,7 +73,7 @@ func TestStartingAFormRespectsPlatoonAndAccess(t *testing.T) {
 	s := testApp(t)
 	mine := signUp(t, s, "student", "first@example.test", "101")
 	other := signUp(t, s, "student", "second@example.test", "102")
-	if _, err := s.AssignmentCommand(formAssignmentInput(t, "101"), "assignment"); err != nil {
+	if _, err := s.AssignmentCommandFor(mine.Account.OwnerID, formAssignmentInput(t, "101"), "assignment"); err != nil {
 		t.Fatal(err)
 	}
 	id := s.repo.Snapshot().Assignments[0].ID
@@ -83,7 +83,7 @@ func TestStartingAFormRespectsPlatoonAndAccess(t *testing.T) {
 	if _, err := s.StartAssignment(mine.Account, id); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.AssignmentCommand(Input{"id": raw(t, id), "active": raw(t, false)}, "assignment_status"); err != nil {
+	if _, err := s.AssignmentCommandFor(mine.Account.OwnerID, Input{"id": raw(t, id), "active": raw(t, false)}, "assignment_status"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := s.StartAssignment(mine.Account, id); kind(err) != Forbidden {

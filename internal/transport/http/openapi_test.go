@@ -84,7 +84,7 @@ func TestRESTValidationAndMethodHandling(t *testing.T) {
 }
 func TestTemplateRESTLifecycle(t *testing.T) {
 	a := testApp(t)
-	registration := callAccount(t, a, "/api/v1/auth/teacher/register", map[string]any{"name": "Автор Шаблона", "email": "author@example.test", "password": "TestPassword2026!"}, nil)
+	registration := callAccount(t, a, "/api/v1/auth/teacher/register", map[string]any{"name": "Автор Шаблона", "email": "author@example.test", "invite": testInvite(t, a, "teacher", "author@example.test", ""), "password": "TestPassword2026!"}, nil)
 	requireCode(t, registration, 201)
 	cookie := registration.Result().Cookies()[0]
 	profile := a.emptyProfile()

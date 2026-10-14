@@ -3,6 +3,7 @@
 package app
 
 import (
+	"encoding/json"
 	"net/http"
 	"vucdiagnostic/internal/formbank"
 	"vucdiagnostic/internal/questionbank"
@@ -39,7 +40,23 @@ func New(config Config) (*App, error) {
 	}
 	service := usecase.New(bank, repository, previous...)
 	service.RegisterForms(forms...)
+	if err := service.NormalizeOwnership(); err != nil {
+		return nil, err
+	}
 	handler := httptransport.New(service, web.Files, httptransport.Config{AdminUser: config.AdminUser, AdminPassword: config.AdminPassword})
 	return &App{Handler: handler, service: service}, nil
 }
 func (a *App) ResetDemo() (string, error) { return a.service.ResetDemo() }
+
+func (a *App) CreateVUC(name string) (any, error) { return a.service.CreateVUC(name) }
+
+func (a *App) InviteTeacher(email, vuc string) (map[string]any, error) {
+	data, _ := json.Marshal(map[string]string{"email": email, "vuc": vuc})
+	var input usecase.Input
+	_ = json.Unmarshal(data, &input)
+	value, err := a.service.CreateTeacherInvitation(input)
+	if err != nil {
+		return nil, err
+	}
+	return value.(map[string]any), nil
+}
