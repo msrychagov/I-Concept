@@ -72,7 +72,10 @@ func New(config Config) (*App, error) {
 	handler := httptransport.New(service, web.Files, httptransport.Config{AdminUser: config.AdminUser, AdminPassword: config.AdminPassword})
 	return &App{Handler: handler, service: service, close: closeRepository}, nil
 }
-func (a *App) Close()                             { a.close() }
+func (a *App) Close() {
+	a.service.Close()
+	a.close()
+}
 func (a *App) SeedDemo() error                    { return a.service.SeedDemo() }
 func (a *App) ImportData(db model.Database) error { return a.service.ImportData(db) }
 func (a *App) ResetDemo() (string, error)         { return a.service.ResetDemo() }
