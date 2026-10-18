@@ -443,6 +443,8 @@
         try {
             data = await api();
             values = structuredClone(data.submission.answers || {});
+            // Gaps of sections saved earlier are shown right away, also after a reload.
+            data.submission.savedSections.forEach(id => visited.add(id));
             view = data.submission.consent ? firstUnfinished() : 'intro';
             render();
         } catch (e) {
