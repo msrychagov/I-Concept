@@ -37,6 +37,10 @@ func TestValidateRejectsBrokenDescriptions(t *testing.T) {
 	if err := Validate(record); err != nil {
 		t.Fatalf("condition inside a record rejected: %v", err)
 	}
+	laterOutside := build(model.FormField{ID: "g", Label: "G", Type: "group", Max: 2, Fields: []model.FormField{dependent("a", "yes")}}, fork)
+	if Validate(laterOutside) == nil {
+		t.Error("record condition on a section field declared after the group accepted")
+	}
 	outside := build(fork, model.FormField{ID: "g", Label: "G", Type: "group", Max: 2, Fields: []model.FormField{dependent("a", "yes")}})
 	if err := Validate(outside); err != nil {
 		t.Fatalf("record condition on a section field rejected: %v", err)
