@@ -18,10 +18,18 @@ services:
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8080}:8080"
+    # The key of the language model (GIGACHAT_AUTH_KEY, GIGACHAT_MODEL) lives
+    # outside the repository; without the file the model is simply off.
+    env_file:
+      - path: ../.secrets/llm.env
+        required: false
     environment:
       <<: *database-environment
       VUC_ADMIN_USER: ${VUC_ADMIN_USER:-admin}
       VUC_ADMIN_PASSWORD: ${VUC_ADMIN_PASSWORD:-}
+      GIGACHAT_CA_FILE: /app/certs/mincifry.crt
+    volumes:
+      - ../.secrets/russian_trusted_root_ca_pem.crt:/app/certs/mincifry.crt:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
