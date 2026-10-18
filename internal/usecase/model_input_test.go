@@ -3,6 +3,7 @@ package usecase
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"maps"
 	"os"
 	"path/filepath"
@@ -50,9 +51,8 @@ func everySection(form model.Form) map[string]bool {
 }
 
 // flatten lists the paths of a JSON value with their types, like
-// "семья.родственники[].жив string", and the numbers with their values.
-// Arrays merge their elements: the order and number of records do not matter.
-func flatten(value any) (paths []string, numbers []string) {
+// "семья.родственники[].жив string". Arrays merge their elements.
+func flatten(value any) []string {
 	var data any
 	_ = json.Unmarshal(canonicalJSON(value), &data)
 	seen := map[string]bool{}
@@ -61,8 +61,8 @@ func flatten(value any) (paths []string, numbers []string) {
 		switch v := v.(type) {
 		case map[string]any:
 			seen[path+" object"] = true
-			for _, key := range sortedKeys(v) {
-				walk(v[key], strings.TrimPrefix(path+"."+key, "."))
+			for key, item := range v {
+				walk(item, strings.TrimPrefix(path+"."+key, "."))
 			}
 		case []any:
 			seen[path+" array"] = true
@@ -73,28 +73,17 @@ func flatten(value any) (paths []string, numbers []string) {
 			seen[path+" string"] = true
 		case float64:
 			seen[path+" number"] = true
-			numbers = append(numbers, path+" = "+strings.TrimSpace(string(canonicalJSON(v))))
 		default:
 			seen[path+" other"] = true
 		}
 	}
 	walk(data, "")
-	return slices.Sorted(maps.Keys(seen)), numbers
-}
-
-func without(list, other []string) []string {
-	result := []string{}
-	for _, item := range list {
-		if !slices.Contains(other, item) {
-			result = append(result, item)
-		}
-	}
-	return result
+	return slices.Sorted(maps.Keys(seen))
 }
 
 // The made-up questionnaires of the model comparison, entered as a student
-// would enter them. testdata/model_input holds copies of
-// Вики/Автобиография/Сравнение моделей/анкеты.
+// would enter them. The files in testdata/model_input are generated from them
+// and copied to Вики/Автобиография/Сравнение моделей/анкеты.
 var comparisonAnswers = map[string]answerSet{
 	"01 Минимальная.json": {
 		"birth_date":     "2008-03-15",
@@ -227,45 +216,34 @@ var comparisonAnswers = map[string]answerSet{
 	},
 }
 
-// The payload has the same fields as the questionnaires the models are
-// compared on, and the levels counted by the scale are the ones written in them.
-// Texts are not compared: the questionnaires write them in lower case.
-func TestPayloadHasTheStructureOfTheComparisonQuestionnaires(t *testing.T) {
+var update = flag.Bool("update", false, "rewrite testdata/model_input from comparisonAnswers")
+
+// The questionnaires the models are compared on are what the program sends for
+// comparisonAnswers on the day today. With -update the files are rewritten;
+// then copy them to the wiki.
+func TestComparisonQuestionnaires(t *testing.T) {
 	form := autobiography(t)
-	files, err := filepath.Glob(filepath.Join("testdata", "model_input", "*.json"))
-	if err != nil || len(files) != len(comparisonAnswers) {
-		t.Fatalf("questionnaires %v (%v), answers for %d", files, err, len(comparisonAnswers))
+	dir := filepath.Join("testdata", "model_input")
+	files, _ := filepath.Glob(filepath.Join(dir, "*.json"))
+	if !*update && len(files) != len(comparisonAnswers) {
+		t.Fatalf("%d files for %d questionnaires", len(files), len(comparisonAnswers))
 	}
-	for _, file := range files {
-		name := filepath.Base(file)
+	for _, name := range sortedKeys(comparisonAnswers) {
 		t.Run(name, func(t *testing.T) {
-			values, ok := comparisonAnswers[name]
-			if !ok {
-				t.Fatalf("no answers for %s", name)
+			got := indentedJSON(autobiographyPayload(form, answersOf(t, form, comparisonAnswers[name]), today))
+			path := filepath.Join(dir, name)
+			if *update {
+				if err := os.WriteFile(path, got, 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return
 			}
-			data, err := os.ReadFile(file)
+			want, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			var want map[string]any
-			if err = json.Unmarshal(data, &want); err != nil {
-				t.Fatal(err)
-			}
-			payload := autobiographyPayload(form, answersOf(t, form, values), today)
-			var got map[string]any
-			if err = json.Unmarshal(canonicalJSON(payload), &got); err != nil {
-				t.Fatal(err)
-			}
-			wantPaths, wantNumbers := flatten(want)
-			gotPaths, gotNumbers := flatten(got)
-			if missing, extra := without(wantPaths, gotPaths), without(gotPaths, wantPaths); len(missing)+len(extra) > 0 {
-				t.Errorf("fields differ\nmissing: %q\nextra: %q", missing, extra)
-			}
-			if !slices.Equal(gotNumbers, wantNumbers) {
-				t.Errorf("numbers %q, want %q", gotNumbers, wantNumbers)
-			}
-			if !reflect.DeepEqual(got["уровни"], want["уровни"]) {
-				t.Errorf("levels %v, want %v", got["уровни"], want["уровни"])
+			if !bytes.Equal(got, want) {
+				t.Errorf("%s differs from the program output; run go test -run TestComparisonQuestionnaires -update\n%s", path, got)
 			}
 		})
 	}
@@ -509,7 +487,7 @@ func TestPayloadFieldsAreAllowedByTheComparison(t *testing.T) {
 		sets = append(sets, comparisonAnswers[name])
 	}
 	for _, values := range sets {
-		paths, _ := flatten(autobiographyPayload(form, answersOf(t, form, values), today))
+		paths := flatten(autobiographyPayload(form, answersOf(t, form, values), today))
 		for _, path := range paths {
 			path = path[:strings.LastIndex(path, " ")]
 			if !allowed[path] {
