@@ -1,5 +1,7 @@
 package usecase
 
+import "vucdiagnostic/internal/domain/model"
+
 func missingForm() error { return problem(NotFound, "Анкета не найдена.") }
 
 // FormDescription returns the questionnaire as the teacher may preview it.
@@ -9,6 +11,17 @@ func (a *Service) FormDescription(id string) (any, error) {
 		return nil, missingForm()
 	}
 	return clone(form), nil
+}
+
+// teacherOwnsSubmission says whether the submission belongs to an assignment
+// of the teacher; an empty teacherID sees everything.
+func teacherOwnsSubmission(db model.Database, teacherID string, submission model.FormSubmission) bool {
+	for _, assignment := range db.Assignments {
+		if assignment.ID == submission.AssignmentID && inTeacherScope(assignment.OwnerID, teacherID) {
+			return true
+		}
+	}
+	return false
 }
 
 // FormOverview lists students, the assignments of this form and brief
@@ -43,14 +56,7 @@ func (a *Service) FormOverviewFor(teacherID, id string) (any, error) {
 		if submission.FormID != id {
 			continue
 		}
-		owned := false
-		for _, assignment := range db.Assignments {
-			if assignment.ID == submission.AssignmentID && inTeacherScope(assignment.OwnerID, teacherID) {
-				owned = true
-				break
-			}
-		}
-		if !owned {
+		if !teacherOwnsSubmission(db, teacherID, submission) {
 			continue
 		}
 		progress := formProgress(form, submission)
@@ -75,14 +81,7 @@ func (a *Service) FormSubmissionDetailFor(teacherID, id string) (any, error) {
 		if submission.ID != id || !known {
 			continue
 		}
-		owned := false
-		for _, assignment := range db.Assignments {
-			if assignment.ID == submission.AssignmentID && inTeacherScope(assignment.OwnerID, teacherID) {
-				owned = true
-				break
-			}
-		}
-		if !owned {
+		if !teacherOwnsSubmission(db, teacherID, submission) {
 			continue
 		}
 		var student map[string]any

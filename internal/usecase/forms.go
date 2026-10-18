@@ -74,7 +74,7 @@ func withoutModelMarks(form model.Form) model.Form {
 // FormCommand changes a submission: op is consent, section or completion.
 // The input carries revision and, for a section, sectionId and answers.
 func (a *Service) FormCommand(loginToken, id, op string, b Input) (any, error) {
-	return a.transaction(func(db *model.Database) (any, error) {
+	result, err := a.transaction(func(db *model.Database) (any, error) {
 		submission, form, err := a.studentForm(db, loginToken, id)
 		if err != nil {
 			return nil, err
@@ -127,6 +127,10 @@ func (a *Service) FormCommand(loginToken, id, op string, b Input) (any, error) {
 		}
 		return result, nil
 	})
+	if err == nil && op == "completion" {
+		a.queuePortraits(Source{"submission", id})
+	}
+	return result, err
 }
 
 // saveFormSection replaces the stored answers of one section.

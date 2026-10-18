@@ -1,0 +1,126 @@
+package usecase
+
+import (
+	"fmt"
+	"slices"
+	"strings"
+	"vucdiagnostic/internal/domain/model"
+	"vucdiagnostic/internal/promptbank"
+)
+
+// RegisterPrompts connects the instructions and turns on the portrait tasks
+// whose instruction is among them. It is called once at startup, before UseModel.
+func (a *Service) RegisterPrompts(prompts ...promptbank.Prompt) {
+	if prompt, ok := promptbank.Find(prompts, autobiographyForm, "v1"); ok {
+		a.registerPortraitTask(a.autobiographyTask(prompt))
+	}
+}
+
+// findSubmission returns the submitted autobiography a source points to.
+func findSubmission(db model.Database, s Source) (model.FormSubmission, bool) {
+	if s.Kind != "submission" {
+		return model.FormSubmission{}, false
+	}
+	for _, submission := range db.Submissions {
+		if submission.ID == s.ID {
+			return submission, true
+		}
+	}
+	return model.FormSubmission{}, false
+}
+
+// autobiographyTask writes the portrait of a submitted autobiography from the
+// anonymised input of model_input.go. The levels of potential are counted by
+// the program; the answer is only checked against them.
+func (a *Service) autobiographyTask(prompt promptbank.Prompt) portraitTask {
+	return portraitTask{
+		ID: autobiographyForm, Version: prompt.Version, Prompt: prompt,
+		Accepts: func(db model.Database, s Source) bool {
+			submission, ok := findSubmission(db, s)
+			return ok && submission.FormID == autobiographyForm && submission.Completed
+		},
+		Payload: func(a *Service, db model.Database, s Source) (*object, error) {
+			submission, _ := findSubmission(db, s)
+			payload, _, err := submissionPayload(a.forms[submission.FormID], submission)
+			return payload, err
+		},
+		Check: checkAutobiographyAnswer,
+		Visible: func(db model.Database, s Source, teacherID string) bool {
+			submission, ok := findSubmission(db, s)
+			return ok && teacherOwnsSubmission(db, teacherID, submission)
+		},
+	}
+}
+
+const attentionLimit = 5
+
+// checkAutobiographyAnswer returns what is wrong with an answer to the
+// instruction autobiography/v1 that can be found without reading the text:
+// the schema and the rules about the levels and the number of points.
+func checkAutobiographyAnswer(output map[string]any, payload *object) []string {
+	problems := []string{}
+	if text, ok := output["summary"].(string); !ok || strings.TrimSpace(text) == "" {
+		problems = append(problems, "нет характеристики")
+	}
+	expected := map[string]string{}
+	areas := []string{}
+	if levels, ok := payload.values["уровни"].(*object); ok {
+		for _, key := range levels.keys {
+			areas = append(areas, key)
+			expected[key], _ = levels.values[key].(string)
+		}
+	}
+	items, listed := output["potential"].([]any)
+	records := []map[string]any{}
+	for _, item := range items {
+		if record, ok := item.(map[string]any); ok {
+			records = append(records, record)
+		}
+	}
+	if !listed || len(records) != len(items) {
+		problems = append(problems, "потенциал не список записей")
+	} else {
+		given := []string{}
+		for _, record := range records {
+			name, _ := record["area"].(string)
+			given = append(given, name)
+		}
+		switch {
+		case !slices.Equal(slices.Sorted(slices.Values(given)), slices.Sorted(slices.Values(areas))):
+			problems = append(problems, fmt.Sprintf("направления не те: %v", given))
+		case !slices.Equal(given, areas):
+			problems = append(problems, "направления в другом порядке")
+		}
+		for _, record := range records {
+			name, _ := record["area"].(string)
+			for _, key := range []string{"level", "facts", "conclusion"} {
+				if text, ok := record[key].(string); !ok || strings.TrimSpace(text) == "" {
+					problems = append(problems, name+": пустое поле "+key)
+				}
+			}
+			if want, known := expected[name]; known && record["level"] != want {
+				problems = append(problems, fmt.Sprintf("%s: уровень изменён, «%v» вместо «%s»", name, record["level"], want))
+			}
+		}
+	}
+	attention, ok := output["attention"].(map[string]any)
+	if !ok {
+		return append(problems, "нет блока «на что обратить внимание»")
+	}
+	for _, key := range []string{"use", "consider"} {
+		list, isList := attention[key].([]any)
+		strs := true
+		for _, item := range list {
+			if _, isString := item.(string); !isString {
+				strs = false
+			}
+		}
+		switch {
+		case !isList || !strs:
+			problems = append(problems, "attention."+key+" не список строк")
+		case len(list) > attentionLimit:
+			problems = append(problems, "attention."+key+": пунктов больше пяти")
+		}
+	}
+	return problems
+}

@@ -10,6 +10,7 @@ import (
 	"vucdiagnostic/internal/domain/model"
 	"vucdiagnostic/internal/formbank"
 	"vucdiagnostic/internal/platform/database"
+	"vucdiagnostic/internal/promptbank"
 	"vucdiagnostic/internal/questionbank"
 	"vucdiagnostic/internal/repository/jsonfile"
 	"vucdiagnostic/internal/repository/postgres"
@@ -41,6 +42,10 @@ func New(config Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	prompts, err := promptbank.Load()
+	if err != nil {
+		return nil, err
+	}
 	var repository usecase.Repository
 	closeRepository := func() {}
 	if config.DatabaseURL != "" {
@@ -61,6 +66,7 @@ func New(config Config) (*App, error) {
 	}
 	service := usecase.New(bank, repository, previous...)
 	service.RegisterForms(forms...)
+	service.RegisterPrompts(prompts...)
 	// PostgreSQL receives legacy records through ImportData, which normalizes
 	// ownership before the import transaction. Never replace a live SQL snapshot.
 	if config.DatabaseURL == "" {
