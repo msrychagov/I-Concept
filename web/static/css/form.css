@@ -311,7 +311,9 @@
     background: none;
     color: var(--ink);
     font-size: .92rem;
-    white-space: nowrap
+    text-transform: none;
+    letter-spacing: 0;
+    min-width: 11rem
 }
 
 .potential-reasons {
@@ -321,6 +323,8 @@
 
 .potential-level {
     display: inline-block;
+    text-transform: none;
+    letter-spacing: 0;
     padding: .15rem .55rem;
     border-radius: 4px;
     font-size: .85rem;
@@ -351,4 +355,50 @@
 
 .answers-heading {
     margin-top: 1.6rem
+}
+
+.potential-summary td {
+    text-align: center;
+    vertical-align: middle;
+    padding: .5rem
+}
+
+.potential-summary thead th:not(:first-child) {
+    text-align: center
+}
+
+.potential-count {
+    min-width: 52px;
+    min-height: 36px;
+    padding: .35rem .7rem
+}
+
+.potential-count.active {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: #fff
+}
+
+.potential-students {
+    margin-top: 1.2rem
+}
+
+.potential-students ul {
+    margin: 0;
+    padding-left: 1.1rem
+}
+
+.potential-students .text-button {
+    min-height: 0;
+    padding: .2rem 0;
+    text-decoration: underline;
+    text-underline-offset: 3px
+}
+
+.potential-summary th[scope=row] {
+    vertical-align: middle
+}
+
+.potential-table tbody tr:last-child th, .potential-summary tbody tr:last-child th {
+    border-bottom: 0
 }

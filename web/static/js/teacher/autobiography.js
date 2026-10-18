@@ -1,15 +1,19 @@
-// Teacher section "Автобиография": assign the questionnaire, follow progress, read answers.
+// Teacher section "Автобиография": assign the questionnaire, follow progress, read answers
+// and the potential by platoon.
 window.teacherAutobiography = async function ({view, api, esc}) {
     const FORM = 'autobiography';
     let data, search = '', platoon = '', page = 1, pageSize = 10, form = null;
+    let potential, potentialPlatoon = '', selected = null;
     const fmtDate = v => v ? new Date(v).toLocaleDateString('ru-RU') : '';
     const error = e => {
         const el = view.querySelector('#autobiography-error');
         if (el) el.innerHTML = `<p class="error">${esc(e.message || e)}</p>`;
     };
 
+    const loadPotential = () => api(`/forms/${FORM}/potential` + (potentialPlatoon ? '?platoon=' + encodeURIComponent(potentialPlatoon) : ''));
+
     async function reload() {
-        data = await api(`/forms/${FORM}/overview`);
+        [data, potential] = await Promise.all([api(`/forms/${FORM}/overview`), loadPotential()]);
         if (view.isConnected) draw();
     }
 
@@ -35,7 +39,8 @@ window.teacherAutobiography = async function ({view, api, esc}) {
   <div class="dashboard-metrics"><article><strong>${data.assignments.filter(a => a.active).length}</strong>Активных назначений</article><article><strong>${all.length}</strong>Анкет назначено</article><article><strong>${all.filter(x => x.submission && !x.submission.completed).length}</strong>В процессе</article><article><strong>${done} / ${all.length}</strong>Сдано</article></div>
   <section class="surface"><h2>Назначить </h2><form id="form-assignment"><div class="form-grid"><label>Название<input name="title" required maxlength="200" value="Автобиография"></label><label>Кому назначить<select id="form-audience"><option value="all">Всем взводам</option><option value="platoon">Одному взводу</option></select></label><div id="form-platoon-slot"></div></div><button type="submit">Назначить тестирование</button><p class="muted" style="margin-top:1rem">Назначение появится в кабинетах студентов выбранного взвода, включая зарегистрировавшихся позднее. Опросник один и не редактируется.</p></form></section>
   <section class="surface"><h2>Назначения</h2>${data.assignments.map(a => `<div class="assignment-row"><div><b>${esc(a.title)}</b><small>${a.platoon ? 'Взвод ' + esc(a.platoon) : 'Все взводы'} · ${a.active ? 'Активно' : 'Закрыто'}</small></div><button class="secondary" data-toggle="${esc(a.id)}" data-active="${!a.active}">${a.active ? 'Закрыть доступ' : 'Возобновить'}</button></div>`).join('') || '<p class="muted">Назначений пока нет.</p>'}</section>
-  <section class="surface"><h2>Заполнение автобиографий</h2><div class="dashboard-filters"><label>ФИО<input id="form-search" placeholder="Поиск по фамилии или имени" value="${esc(search)}"></label><label>Взвод<select id="form-platoon-filter"><option value="">Все взводы</option>${platoons.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}</select></label></div><div id="form-table"></div><nav id="form-pagination" class="list-pagination" aria-label="Страницы списка автобиографий"></nav></section><dialog id="form-dialog" class="result-dialog"></dialog>`;
+  <section class="surface"><h2>Заполнение автобиографий</h2><div class="dashboard-filters"><label>ФИО<input id="form-search" placeholder="Поиск по фамилии или имени" value="${esc(search)}"></label><label>Взвод<select id="form-platoon-filter"><option value="">Все взводы</option>${platoons.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}</select></label></div><div id="form-table"></div><nav id="form-pagination" class="list-pagination" aria-label="Страницы списка автобиографий"></nav></section>
+  <section class="surface"><h2>Потенциал по взводу</h2><div class="toolbar"><label>Взвод<select id="potential-platoon"><option value="">Все взводы</option>${[...potential.platoons].sort((a, b) => a.localeCompare(b, 'ru', {numeric: true})).map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}</select></label></div><div id="potential-body"></div></section><dialog id="form-dialog" class="result-dialog"></dialog>`;
         view.querySelector('#form-platoon-filter').value = platoon;
         view.querySelector('#form-search').oninput = e => {
             search = e.target.value;
@@ -79,9 +84,33 @@ window.teacherAutobiography = async function ({view, api, esc}) {
                 error(err);
             }
         });
+        view.querySelector('#potential-platoon').value = potentialPlatoon;
+        view.querySelector('#potential-platoon').onchange = async e => {
+            potentialPlatoon = e.target.value;
+            selected = null;
+            try {
+                potential = await loadPotential();
+                drawPotential();
+            } catch (err) {
+                error(err);
+            }
+        };
         view.querySelector('#refresh').onclick = () => reload().catch(error);
         view.querySelector('#preview').onclick = preview;
         table();
+        drawPotential();
+    }
+
+    // Counts by area and level; a count shows the students, a name opens their answers.
+    function drawPotential() {
+        const body = view.querySelector('#potential-body');
+        body.innerHTML = window.potentialView.summary(potential, esc, selected) + window.potentialView.students(potential, selected, esc);
+        body.querySelectorAll('[data-level]').forEach(b => b.onclick = () => {
+            const same = selected && selected.area === b.dataset.area && selected.level === b.dataset.level;
+            selected = same ? null : {area: b.dataset.area, level: b.dataset.level};
+            drawPotential();
+        });
+        body.querySelectorAll('[data-answers]').forEach(b => b.onclick = () => answers(b.dataset.answers));
     }
 
     function table() {
