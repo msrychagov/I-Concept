@@ -70,3 +70,7 @@ func (h *Handler) formSubmissionDetail(w http.ResponseWriter, r *http.Request) {
 	value, err := h.service.FormSubmissionDetailFor(h.teacherID(r), r.PathValue("id"))
 	h.respond(w, value, err)
 }
+func (h *Handler) formPotential(w http.ResponseWriter, r *http.Request) {
+	value, err := h.service.PotentialSummaryFor(h.teacherID(r), r.PathValue("formId"), r.URL.Query().Get("platoon"))
+	h.respond(w, value, err)
+}

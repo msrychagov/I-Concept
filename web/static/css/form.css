@@ -293,3 +293,112 @@
         margin-bottom: .5rem
     }
 }
+
+/* Potential by the autobiography */
+.potential-card {
+    margin: 1.2rem 0 1.6rem;
+    padding: 1rem 1.2rem;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--gold, #ad9653);
+    border-radius: 7px
+}
+
+.potential-card h3 {
+    margin-bottom: .4rem
+}
+
+.potential-table th[scope=row], .potential-summary th[scope=row] {
+    background: none;
+    color: var(--ink);
+    font-size: .92rem;
+    text-transform: none;
+    letter-spacing: 0;
+    min-width: 11rem
+}
+
+.potential-reasons {
+    margin: 0;
+    padding-left: 1.1rem
+}
+
+.potential-level {
+    display: inline-block;
+    text-transform: none;
+    letter-spacing: 0;
+    padding: .15rem .55rem;
+    border-radius: 4px;
+    font-size: .85rem;
+    font-weight: 600;
+    white-space: nowrap
+}
+
+.potential-level.level-high {
+    background: var(--green-soft, #e9f0eb);
+    color: var(--green, #0f4b38);
+    box-shadow: inset 0 0 0 1px #9fc0ad
+}
+
+.potential-level.level-medium {
+    background: var(--gold-soft, #eee8d2);
+    color: #5f5225
+}
+
+.potential-level.level-initial {
+    background: #f0f3f1;
+    color: #46544d
+}
+
+.potential-level.level-none {
+    color: var(--muted);
+    font-weight: 400
+}
+
+.answers-heading {
+    margin-top: 1.6rem
+}
+
+.potential-summary td {
+    text-align: center;
+    vertical-align: middle;
+    padding: .5rem
+}
+
+.potential-summary thead th:not(:first-child) {
+    text-align: center
+}
+
+.potential-count {
+    min-width: 52px;
+    min-height: 36px;
+    padding: .35rem .7rem
+}
+
+.potential-count.active {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: #fff
+}
+
+.potential-students {
+    margin-top: 1.2rem
+}
+
+.potential-students ul {
+    margin: 0;
+    padding-left: 1.1rem
+}
+
+.potential-students .text-button {
+    min-height: 0;
+    padding: .2rem 0;
+    text-decoration: underline;
+    text-underline-offset: 3px
+}
+
+.potential-summary th[scope=row] {
+    vertical-align: middle
+}
+
+.potential-table tbody tr:last-child th, .potential-summary tbody tr:last-child th {
+    border-bottom: 0
+}

@@ -36,6 +36,7 @@ func (h *Handler) apiRoutes() {
 	h.mux.HandleFunc("GET /api/v1/students/me/submissions/{id}/suggestions", h.studentOnly(h.formSuggestions))
 	h.mux.HandleFunc("GET /api/v1/forms/{formId}", h.teacherOnly(h.formDescription))
 	h.mux.HandleFunc("GET /api/v1/forms/{formId}/overview", h.teacherOnly(h.formOverview))
+	h.mux.HandleFunc("GET /api/v1/forms/{formId}/potential", h.teacherOnly(h.formPotential))
 	h.mux.HandleFunc("GET /api/v1/submissions/{id}", h.teacherOnly(h.formSubmissionDetail))
 	h.mux.HandleFunc("GET /api/v1/question-bank", h.teacherOnly(h.questionBank))
 	h.mux.HandleFunc("GET /api/v1/dashboard", h.teacherOnly(h.dashboard))

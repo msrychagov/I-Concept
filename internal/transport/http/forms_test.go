@@ -87,7 +87,7 @@ func TestFormRoutesNeedTheRightLogin(t *testing.T) {
 	requireCode(t, callAccount(t, s.a, "PUT "+s.path("/consent"), body, stranger), 403)
 	requireCode(t, callAccount(t, s.a, "PUT "+s.path("/sections/about"), map[string]any{"answers": map[string]any{}, "revision": 0}, s.teacher), 401)
 	requireCode(t, callAccount(t, s.a, s.path("/completion"), map[string]any{"revision": 0}, s.teacher), 401)
-	for _, route := range []string{"/api/v1/forms/autobiography", "/api/v1/forms/autobiography/overview", "/api/v1/submissions/" + s.submission} {
+	for _, route := range []string{"/api/v1/forms/autobiography", "/api/v1/forms/autobiography/overview", "/api/v1/forms/autobiography/potential", "/api/v1/submissions/" + s.submission} {
 		requireCode(t, callAccount(t, s.a, route, nil, nil), 401)
 		requireCode(t, callAccount(t, s.a, route, nil, s.student), 401)
 		requireCode(t, callAccount(t, s.a, route, nil, s.teacher), 200)
@@ -176,6 +176,18 @@ func TestAutobiographyEndToEnd(t *testing.T) {
 			t.Fatalf("teacher does not see %q", word)
 		}
 	}
+	potential, ok := decoded(t, detail)["potential"].(map[string]any)
+	if !ok || len(potential["areas"].([]any)) != 6 || len(potential["high"].([]any)) != 0 {
+		t.Fatalf("potential in the detail: %v", decoded(t, detail)["potential"])
+	}
+	summary := callAccount(t, s.a, "/api/v1/forms/autobiography/potential?platoon=101", nil, s.teacher)
+	requireCode(t, summary, 200)
+	counted := decoded(t, summary)
+	none := counted["areas"].([]any)[0].(map[string]any)["levels"].([]any)[3].(map[string]any)
+	if counted["submitted"].(float64) != 1 || counted["platoon"] != "101" || none["level"] != "none" || len(none["students"].([]any)) != 1 {
+		t.Fatalf("platoon summary: %v", counted)
+	}
+	requireCode(t, callAccount(t, s.a, "/api/v1/forms/unknown/potential", nil, s.teacher), 404)
 	tests := decoded(t, callAccount(t, s.a, "/api/v1/dashboard", nil, s.teacher))
 	if len(tests["assignments"].([]any)) != 0 {
 		t.Fatalf("form assignment on the tests dashboard: %v", tests["assignments"])
