@@ -634,10 +634,66 @@ func TestSubmissionPayloadCountsTheAgeOnTheDayOfSubmission(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if payload["возраст"] != 22 {
-		t.Errorf("age %v, want 22 on the Moscow date of submission", payload["возраст"])
+	var got map[string]any
+	if err = json.Unmarshal(canonicalJSON(payload), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got["возраст"] != 22.0 {
+		t.Errorf("age %v, want 22 on the Moscow date of submission", got["возраст"])
 	}
 	if fingerprint != payloadFingerprint(payload) {
 		t.Errorf("fingerprint %s of another input", fingerprint)
+	}
+}
+
+// objectKeys reads the keys of a JSON object in the order they are written.
+func objectKeys(t *testing.T, data []byte) []string {
+	t.Helper()
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	if token, err := decoder.Token(); err != nil || token != json.Delim('{') {
+		t.Fatalf("not an object: %v %v", token, err)
+	}
+	keys := []string{}
+	for decoder.More() {
+		token, err := decoder.Token()
+		if err != nil {
+			t.Fatal(err)
+		}
+		keys = append(keys, token.(string))
+		var skip json.RawMessage
+		if err = decoder.Decode(&skip); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return keys
+}
+
+// The model reads the fields in the order of the form and the levels in the
+// order of the scale, as compare.py expects them.
+func TestPayloadKeepsTheOrderOfTheForm(t *testing.T) {
+	form := autobiography(t)
+	payload := autobiographyPayload(form, answersOf(t, form, personalAnswers()), today)
+	want := []string{"возраст", "учёба_до_вуза", "вшэ", "работа_до_вуза", "служба", "языки",
+		"семейное_положение", "семья", "поездки_за_границу", "уголовная_ответственность", "награды",
+		"спорт", "творчество", "военно_патриотическое", "наука", "волонтёрство", "увлечения", "уровни"}
+	if got := objectKeys(t, canonicalJSON(payload)); !slices.Equal(got, want) {
+		t.Errorf("keys %q, want %q", got, want)
+	}
+	levels := []string{"спорт", "музыка и творчество", "военно-патриотическая деятельность", "наука",
+		"волонтёрство", "иностранные языки"}
+	if got := objectKeys(t, canonicalJSON(payload.values["уровни"])); !slices.Equal(got, levels) {
+		t.Errorf("levels %q, want %q", got, levels)
+	}
+	nested := map[string][]string{
+		"семейное_положение": {"статус", "детей"},
+		"семья":              {"кто_воспитывал", "родственники"},
+	}
+	for key, want := range nested {
+		if got := objectKeys(t, canonicalJSON(payload.values[key])); !slices.Equal(got, want) {
+			t.Errorf("%s: keys %q, want %q", key, got, want)
+		}
+	}
+	if data := canonicalJSON(payload); bytes.Contains(data, []byte(`\u00`)) {
+		t.Errorf("escaped characters in %s", data)
 	}
 }

@@ -143,8 +143,25 @@ func (s payloadScope) period(a formAnswers, from, to, still string) string {
 	return "с " + start + " по " + end
 }
 
-// put sets a value unless it is blank: the model gets no empty fields.
-func put(target map[string]any, key string, value any) {
+// object is a JSON object that keeps the order its keys were added in: the
+// model reads the fields in the order of the form.
+type object struct {
+	keys   []string
+	values map[string]any
+}
+
+func newObject() *object { return &object{values: map[string]any{}} }
+
+// set adds a value whatever it is: lists and counts are sent even when empty.
+func (o *object) set(key string, value any) {
+	if _, seen := o.values[key]; !seen {
+		o.keys = append(o.keys, key)
+	}
+	o.values[key] = value
+}
+
+// put adds a value unless it is blank: the model gets no empty fields.
+func (o *object) put(key string, value any) {
 	switch v := value.(type) {
 	case nil:
 		return
@@ -157,7 +174,30 @@ func put(target map[string]any, key string, value any) {
 			return
 		}
 	}
-	target[key] = value
+	o.set(key, value)
+}
+
+func (o *object) MarshalJSON() ([]byte, error) {
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	encoder.SetEscapeHTML(false)
+	buffer.WriteByte('{')
+	for n, key := range o.keys {
+		if n > 0 {
+			buffer.WriteByte(',')
+		}
+		if err := encoder.Encode(key); err != nil {
+			return nil, err
+		}
+		buffer.Truncate(buffer.Len() - 1)
+		buffer.WriteByte(':')
+		if err := encoder.Encode(o.values[key]); err != nil {
+			return nil, err
+		}
+		buffer.Truncate(buffer.Len() - 1)
+	}
+	buffer.WriteByte('}')
+	return buffer.Bytes(), nil
 }
 
 // ageOn returns the full years on the Moscow date of asOf, or nil without a birth date.
@@ -176,101 +216,103 @@ func ageOn(birth string, asOf time.Time) any {
 
 // autobiographyPayload is the model input of an autobiography. The age is
 // counted on the Moscow date of asOf: the caller passes the submission time.
-func autobiographyPayload(form model.Form, answers map[string]json.RawMessage, asOf time.Time) map[string]any {
+func autobiographyPayload(form model.Form, answers map[string]json.RawMessage, asOf time.Time) *object {
 	payload, _ := buildPayload(form, answers, asOf)
 	return payload
 }
 
 // buildPayload also returns the fields it asked for, to check them against the llm marks.
-func buildPayload(form model.Form, answers map[string]json.RawMessage, asOf time.Time) (map[string]any, map[string]bool) {
+func buildPayload(form model.Form, answers map[string]json.RawMessage, asOf time.Time) (*object, map[string]bool) {
 	asked := map[string]bool{}
 	sections := map[string]payloadScope{}
 	for _, section := range form.Sections {
 		sections[section.ID] = newPayloadScope(form, asked, section.ID, section.Fields)
 	}
 	a := formAnswers(answers)
-	payload := map[string]any{}
+	payload := newObject()
 
 	// Section 1: only the age.
-	put(payload, "возраст", ageOn(a.text("birth_date"), asOf))
+	payload.put("возраст", ageOn(a.text("birth_date"), asOf))
 
 	edu := sections["education"].group("education_list")
 	schools := []any{}
 	for _, r := range a.records("education_list") {
-		record := map[string]any{}
-		put(record, "тип", edu.text(r, "edu_type"))
-		put(record, "профиль", edu.text(r, "edu_profile"))
-		put(record, "год_окончания", edu.year(r, "edu_year"))
-		put(record, "специальность", edu.text(r, "edu_speciality"))
-		put(record, "окончил", edu.text(r, "edu_finished"))
-		put(record, "медаль", edu.text(r, "edu_medal"))
+		record := newObject()
+		record.put("тип", edu.text(r, "edu_type"))
+		record.put("профиль", edu.text(r, "edu_profile"))
+		record.put("год_окончания", edu.year(r, "edu_year"))
+		record.put("специальность", edu.text(r, "edu_speciality"))
+		record.put("окончил", edu.text(r, "edu_finished"))
+		record.put("медаль", edu.text(r, "edu_medal"))
 		schools = append(schools, record)
 	}
-	payload["учёба_до_вуза"] = schools
+	payload.set("учёба_до_вуза", schools)
 
 	hse := sections["hse"]
-	study := map[string]any{}
-	put(study, "кампус", hse.text(a, "hse_campus"))
-	put(study, "уровень", hse.text(a, "hse_level"))
+	study := newObject()
+	study.put("кампус", hse.text(a, "hse_campus"))
+	study.put("уровень", hse.text(a, "hse_level"))
 	for _, id := range []string{"hse_faculty_msk", "hse_faculty_spb", "hse_faculty_nnov", "hse_faculty_perm"} {
-		put(study, "факультет", hse.text(a, id))
+		study.put("факультет", hse.text(a, id))
 	}
-	put(study, "направление", hse.text(a, "hse_program"))
-	put(study, "поступление", hse.text(a, "hse_start"))
-	put(study, "окончание", hse.text(a, "hse_end"))
-	payload["вшэ"] = study
+	study.put("направление", hse.text(a, "hse_program"))
+	study.put("поступление", hse.text(a, "hse_start"))
+	study.put("окончание", hse.text(a, "hse_end"))
+	payload.set("вшэ", study)
 
 	work := sections["work"].group("work_list")
 	jobs := []any{}
 	for _, r := range a.records("work_list") {
-		record := map[string]any{}
-		put(record, "сфера", work.text(r, "sphere"))
-		put(record, "должность", work.text(r, "position"))
-		put(record, "период", work.period(r, "from", "to", "still"))
-		put(record, "причина_ухода", work.text(r, "leave_reason"))
+		record := newObject()
+		record.put("сфера", work.text(r, "sphere"))
+		record.put("должность", work.text(r, "position"))
+		record.put("период", work.period(r, "from", "to", "still"))
+		record.put("причина_ухода", work.text(r, "leave_reason"))
 		jobs = append(jobs, record)
 	}
-	payload["работа_до_вуза"] = jobs
+	payload.set("работа_до_вуза", jobs)
 
 	military := sections["military"]
-	service := map[string]any{}
-	put(service, "служил", military.text(a, "served"))
-	put(service, "род_войск", military.text(a, "service_branch"))
-	put(service, "период", military.period(a, "service_from", "service_to", ""))
-	put(service, "должность", military.text(a, "service_position"))
-	put(service, "звание", military.text(a, "service_rank"))
-	payload["служба"] = service
+	service := newObject()
+	service.put("служил", military.text(a, "served"))
+	service.put("род_войск", military.text(a, "service_branch"))
+	service.put("период", military.period(a, "service_from", "service_to", ""))
+	service.put("должность", military.text(a, "service_position"))
+	service.put("звание", military.text(a, "service_rank"))
+	payload.set("служба", service)
 
 	languages := sections["languages"]
 	lang := languages.group("lang_list")
 	known := []any{}
 	if languages.code(a, "lang_has") == "yes" {
 		for _, r := range a.records("lang_list") {
-			record := map[string]any{}
-			put(record, "язык", lang.named(r, "language", "language_other"))
-			put(record, "степень", lang.text(r, "degree"))
+			record := newObject()
+			record.put("язык", lang.named(r, "language", "language_other"))
+			record.put("степень", lang.text(r, "degree"))
 			// Every detail is read whatever the practice, so that each field is asked for.
-			details := map[string]map[string]any{
-				"school":  {"программа": lang.text(r, "school_kind")},
-				"courses": {"курсы": lang.text(r, "courses_what"), "длительность": lang.text(r, "courses_time")},
-				"exam":    {"экзамен": lang.named(r, "exam", "exam_other"), "результат": lang.text(r, "exam_result"), "год": lang.year(r, "exam_year")},
-				"abroad":  {"страна": lang.text(r, "abroad_country"), "срок": lang.text(r, "abroad_time")},
-				"env":     {"страна": lang.text(r, "env_country"), "срок": lang.text(r, "env_years")},
-				"work":    {"работа": lang.text(r, "work_use")},
+			details := map[string][]any{
+				"school":  {"программа", lang.text(r, "school_kind")},
+				"courses": {"курсы", lang.text(r, "courses_what"), "длительность", lang.text(r, "courses_time")},
+				"exam":    {"экзамен", lang.named(r, "exam", "exam_other"), "результат", lang.text(r, "exam_result"), "год", lang.year(r, "exam_year")},
+				"abroad":  {"страна", lang.text(r, "abroad_country"), "срок", lang.text(r, "abroad_time")},
+				"env":     {"страна", lang.text(r, "env_country"), "срок", lang.text(r, "env_years")},
+				"work":    {"работа", lang.text(r, "work_use")},
 			}
 			practice := []any{}
 			for _, kind := range lang.codes(r, "practice") {
-				item := map[string]any{"вид": lang.option("practice", kind)}
-				for key, value := range details[kind] {
-					put(item, key, value)
+				item := newObject()
+				item.set("вид", lang.option("practice", kind))
+				pairs := details[kind]
+				for n := 0; n+1 < len(pairs); n += 2 {
+					item.put(pairs[n].(string), pairs[n+1])
 				}
 				practice = append(practice, item)
 			}
-			record["практика"] = practice
+			record.set("практика", practice)
 			known = append(known, record)
 		}
 	}
-	payload["языки"] = known
+	payload.set("языки", known)
 
 	// Section 7: the status and the number of children, nothing about the spouse.
 	family := sections["family"]
@@ -278,50 +320,52 @@ func buildPayload(form model.Form, answers map[string]json.RawMessage, asOf time
 	if family.code(a, "children_has") == "yes" {
 		children = len(a.records("children_list"))
 	}
-	marital := map[string]any{"детей": children}
-	put(marital, "статус", family.text(a, "marital"))
-	payload["семейное_положение"] = marital
+	marital := newObject()
+	marital.put("статус", family.text(a, "marital"))
+	marital.set("детей", children)
+	payload.set("семейное_положение", marital)
 
 	rel := sections["relatives"].group("rel_list")
 	relatives := []any{}
 	for _, r := range a.records("rel_list") {
-		record := map[string]any{}
-		put(record, "кем_приходится", rel.text(r, "kind"))
-		put(record, "сведения", rel.text(r, "known"))
-		put(record, "жив", rel.text(r, "alive"))
-		put(record, "занятость", rel.text(r, "work"))
-		put(record, "сфера", rel.text(r, "sphere"))
-		put(record, "должность", rel.text(r, "position"))
-		put(record, "иностранное_гражданство", rel.text(r, "foreign"))
-		put(record, "страна_гражданства", rel.text(r, "foreign_country"))
-		put(record, "судимость", rel.text(r, "crim"))
-		put(record, "статья", rel.text(r, "crim_what"))
-		put(record, "тяжкое", rel.text(r, "crim_grave"))
+		record := newObject()
+		record.put("кем_приходится", rel.text(r, "kind"))
+		record.put("сведения", rel.text(r, "known"))
+		record.put("жив", rel.text(r, "alive"))
+		record.put("занятость", rel.text(r, "work"))
+		record.put("сфера", rel.text(r, "sphere"))
+		record.put("должность", rel.text(r, "position"))
+		record.put("иностранное_гражданство", rel.text(r, "foreign"))
+		record.put("страна_гражданства", rel.text(r, "foreign_country"))
+		record.put("судимость", rel.text(r, "crim"))
+		record.put("статья", rel.text(r, "crim_what"))
+		record.put("тяжкое", rel.text(r, "crim_grave"))
 		relatives = append(relatives, record)
 	}
-	circle := map[string]any{"родственники": relatives}
-	put(circle, "кто_воспитывал", sections["relatives"].text(a, "upbringing"))
-	payload["семья"] = circle
+	circle := newObject()
+	circle.put("кто_воспитывал", sections["relatives"].text(a, "upbringing"))
+	circle.set("родственники", relatives)
+	payload.set("семья", circle)
 
 	special := sections["special"]
 	trip := special.group("trips_list")
 	trips := []any{}
 	if special.code(a, "trips_has") == "yes" {
 		for _, r := range a.records("trips_list") {
-			record := map[string]any{}
-			put(record, "страна", trip.text(r, "country"))
-			put(record, "год", trip.year(r, "year"))
-			put(record, "цель", trip.text(r, "purpose"))
+			record := newObject()
+			record.put("страна", trip.text(r, "country"))
+			record.put("год", trip.year(r, "year"))
+			record.put("цель", trip.text(r, "purpose"))
 			trips = append(trips, record)
 		}
 	}
-	payload["поездки_за_границу"] = trips
+	payload.set("поездки_за_границу", trips)
 	// The student's own criminal record: only the fact.
 	switch special.code(a, "crim_has") {
 	case "yes":
-		payload["уголовная_ответственность"] = "привлекался"
+		payload.set("уголовная_ответственность", "привлекался")
 	case "no":
-		payload["уголовная_ответственность"] = "не привлекался"
+		payload.set("уголовная_ответственность", "не привлекался")
 	}
 
 	awards := sections["awards"]
@@ -329,95 +373,96 @@ func buildPayload(form model.Form, answers map[string]json.RawMessage, asOf time
 	given := []any{}
 	if awards.code(a, "awards_has") == "yes" {
 		for _, r := range a.records("awards_list") {
-			record := map[string]any{}
-			put(record, "название", award.text(r, "award_name"))
-			put(record, "год", award.year(r, "award_year"))
+			record := newObject()
+			record.put("название", award.text(r, "award_name"))
+			record.put("год", award.year(r, "award_year"))
 			given = append(given, record)
 		}
 	}
-	payload["награды"] = given
+	payload.set("награды", given)
 
 	sport := sections["sport"]
 	kind := sport.group("sport_list")
 	sports := []any{}
 	if sport.code(a, "sport_has") == "yes" {
 		for _, r := range a.records("sport_list") {
-			record := map[string]any{}
-			put(record, "вид", kind.named(r, "sport_kind", "sport_kind_other"))
-			put(record, "сейчас", kind.text(r, "sport_now"))
-			put(record, "стаж", kind.text(r, "sport_years"))
-			put(record, "разряд", kind.text(r, "sport_rank"))
-			put(record, "соревнования", kind.text(r, "sport_level"))
-			put(record, "достижения", kind.text(r, "sport_ach"))
+			record := newObject()
+			record.put("вид", kind.named(r, "sport_kind", "sport_kind_other"))
+			record.put("сейчас", kind.text(r, "sport_now"))
+			record.put("стаж", kind.text(r, "sport_years"))
+			record.put("разряд", kind.text(r, "sport_rank"))
+			record.put("соревнования", kind.text(r, "sport_level"))
+			record.put("достижения", kind.text(r, "sport_ach"))
 			sports = append(sports, record)
 		}
 	}
-	athletics := map[string]any{"занятия": sports}
-	put(athletics, "гто", sport.text(a, "gto"))
-	payload["спорт"] = athletics
+	athletics := newObject()
+	athletics.set("занятия", sports)
+	athletics.put("гто", sport.text(a, "gto"))
+	payload.set("спорт", athletics)
 
 	creative := sections["creative"]
 	direction := creative.group("creative_list")
 	arts := []any{}
 	if creative.code(a, "creative_has") == "yes" {
 		for _, r := range a.records("creative_list") {
-			record := map[string]any{}
-			put(record, "направление", direction.text(r, "direction"))
-			put(record, "уточнение", direction.text(r, "detail"))
-			put(record, "обучение", direction.text(r, "learning"))
-			put(record, "конкурсы", direction.text(r, "level"))
-			put(record, "достижения", direction.text(r, "ach"))
+			record := newObject()
+			record.put("направление", direction.text(r, "direction"))
+			record.put("уточнение", direction.text(r, "detail"))
+			record.put("обучение", direction.text(r, "learning"))
+			record.put("конкурсы", direction.text(r, "level"))
+			record.put("достижения", direction.text(r, "ach"))
 			arts = append(arts, record)
 		}
 	}
-	payload["творчество"] = arts
+	payload.set("творчество", arts)
 
 	patriotic := sections["patriotic"]
-	patriot := map[string]any{}
-	put(patriot, "участвовал", patriotic.text(a, "patriot_has"))
-	put(patriot, "формы", patriotic.texts(a, "patriot_what", "patriot_other"))
-	put(patriot, "роль", patriotic.text(a, "patriot_role"))
-	put(patriot, "длительность", patriotic.text(a, "patriot_term"))
-	put(patriot, "уровень", patriotic.text(a, "patriot_level"))
-	put(patriot, "навыки", patriotic.texts(a, "patriot_skills", ""))
-	put(patriot, "достижения", patriotic.text(a, "patriot_ach"))
-	payload["военно_патриотическое"] = patriot
+	patriot := newObject()
+	patriot.put("участвовал", patriotic.text(a, "patriot_has"))
+	patriot.put("формы", patriotic.texts(a, "patriot_what", "patriot_other"))
+	patriot.put("роль", patriotic.text(a, "patriot_role"))
+	patriot.put("длительность", patriotic.text(a, "patriot_term"))
+	patriot.put("уровень", patriotic.text(a, "patriot_level"))
+	patriot.put("навыки", patriotic.texts(a, "patriot_skills", ""))
+	patriot.put("достижения", patriotic.text(a, "patriot_ach"))
+	payload.set("военно_патриотическое", patriot)
 
 	science := sections["science"]
-	research := map[string]any{}
-	put(research, "занимался", science.text(a, "science_has"))
-	put(research, "формы", science.texts(a, "science_forms", ""))
-	put(research, "область", science.text(a, "science_area"))
-	put(research, "уровень", science.text(a, "science_level"))
-	put(research, "результат", science.text(a, "science_result"))
-	put(research, "достижения", science.text(a, "science_ach"))
-	payload["наука"] = research
+	research := newObject()
+	research.put("занимался", science.text(a, "science_has"))
+	research.put("формы", science.texts(a, "science_forms", ""))
+	research.put("область", science.text(a, "science_area"))
+	research.put("уровень", science.text(a, "science_level"))
+	research.put("результат", science.text(a, "science_result"))
+	research.put("достижения", science.text(a, "science_ach"))
+	payload.set("наука", research)
 
 	volunteering := sections["volunteering"]
-	help := map[string]any{}
-	put(help, "занимался", volunteering.text(a, "vol_has"))
-	put(help, "направления", volunteering.texts(a, "vol_dirs", "vol_other"))
-	put(help, "длительность", volunteering.text(a, "vol_term"))
-	put(help, "роль", volunteering.text(a, "vol_role"))
-	payload["волонтёрство"] = help
+	help := newObject()
+	help.put("занимался", volunteering.text(a, "vol_has"))
+	help.put("направления", volunteering.texts(a, "vol_dirs", "vol_other"))
+	help.put("длительность", volunteering.text(a, "vol_term"))
+	help.put("роль", volunteering.text(a, "vol_role"))
+	payload.set("волонтёрство", help)
 
 	hobbies := sections["hobbies"]
 	interests := hobbies.texts(a, "hobbies", "")
 	if own := hobbies.text(a, "hobby_own"); own != "" {
 		interests = append(interests, own)
 	}
-	payload["увлечения"] = interests
+	payload.set("увлечения", interests)
 
-	levels := map[string]any{}
+	levels := newObject()
 	for _, area := range autobiographyPotential(form, answers).Areas {
-		levels[lowerFirst(area.Title)] = area.LevelText
+		levels.set(lowerFirst(area.Title), area.LevelText)
 	}
-	payload["уровни"] = levels
+	payload.set("уровни", levels)
 	return payload, asked
 }
 
-// canonicalJSON writes a value with sorted keys, without spaces and without
-// escaping: the same input always gives the same bytes.
+// canonicalJSON writes a value with the keys in the order of the builder,
+// without spaces and without escaping: the same input always gives the same bytes.
 func canonicalJSON(value any) []byte {
 	var buffer bytes.Buffer
 	encoder := json.NewEncoder(&buffer)
@@ -426,9 +471,20 @@ func canonicalJSON(value any) []byte {
 	return bytes.TrimSuffix(buffer.Bytes(), []byte("\n"))
 }
 
+// indentedJSON is the same with an indent of two spaces, for the files of the
+// questionnaires the models are compared on.
+func indentedJSON(value any) []byte {
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "  ")
+	_ = encoder.Encode(value)
+	return buffer.Bytes()
+}
+
 // payloadFingerprint is the hex sha256 of the canonical input. The portrait
 // is to be stored under it, so equal anonymised answers get the same portrait.
-func payloadFingerprint(payload map[string]any) string {
+func payloadFingerprint(payload *object) string {
 	sum := sha256.Sum256(canonicalJSON(payload))
 	return hex.EncodeToString(sum[:])
 }
@@ -436,7 +492,7 @@ func payloadFingerprint(payload map[string]any) string {
 // submissionPayload is the model input of a submitted autobiography and its
 // fingerprint. The age is counted on the day of submission, so the input does
 // not change after the student's birthday.
-func submissionPayload(form model.Form, submission model.FormSubmission) (map[string]any, string, error) {
+func submissionPayload(form model.Form, submission model.FormSubmission) (*object, string, error) {
 	if submission.FormID != autobiographyForm || !submission.Completed {
 		return nil, "", problem(Invalid, "Сведения для модели собираются только по сданной автобиографии.")
 	}
