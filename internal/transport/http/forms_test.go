@@ -117,6 +117,12 @@ func TestAutobiographyEndToEnd(t *testing.T) {
 	s := newFormScenario(t)
 	open := callAccount(t, s.a, s.path(""), nil, s.student)
 	requireCode(t, open, 200)
+	if strings.Contains(open.Body.String(), `"llm"`) {
+		t.Fatal("notes about the language model reach the student")
+	}
+	if described := callAccount(t, s.a, "/api/v1/forms/autobiography", nil, s.teacher); !strings.Contains(described.Body.String(), `"llm"`) {
+		t.Fatal("the teacher's description lost its model marks")
+	}
 	if !strings.Contains(open.Body.String(), `"refs"`) || decoded(t, open)["progress"] == nil {
 		t.Fatal("form description or progress missing")
 	}
