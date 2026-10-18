@@ -271,3 +271,31 @@ func TestOnlySchoolRegionAcceptsAbroad(t *testing.T) {
 		t.Fatal("registration abroad accepted")
 	}
 }
+
+func TestOtherLanguageAsksForItsName(t *testing.T) {
+	form := autobiography(t)
+	record := func(extra obj) []obj {
+		r := obj{"language": "other", "degree": "dict", "practice": []string{"native"}}
+		for k, v := range extra {
+			r[k] = v
+		}
+		return []obj{r}
+	}
+	answers := map[string]json.RawMessage{"lang_has": raw(t, "yes"), "lang_list": raw(t, record(nil))}
+	if gaps := formMissing(form, answers)["languages"]; !slices.Equal(gaps, []string{"lang_list.0.language_other"}) {
+		t.Fatalf("other language without a name: %v", gaps)
+	}
+	answers["lang_list"] = raw(t, record(obj{"language_other": "Хинди-урду"}))
+	if gaps := formMissing(form, answers)["languages"]; gaps != nil {
+		t.Fatalf("other language with a name: %v", gaps)
+	}
+	got, err := clean(t, "languages", obj{"lang_has": "yes", "lang_list": record(obj{"language": "angliyskiy", "language_other": "Лишнее"})})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved []map[string]json.RawMessage
+	_ = json.Unmarshal(got["lang_list"], &saved)
+	if saved[0]["language_other"] != nil {
+		t.Fatal("name of another language kept for a listed language")
+	}
+}

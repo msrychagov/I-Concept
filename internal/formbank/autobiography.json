@@ -802,6 +802,19 @@
               "ref": "languages"
             },
             {
+              "id": "language_other",
+              "label": "Название языка",
+              "type": "text",
+              "required": true,
+              "llm": true,
+              "showIf": {
+                "field": "language",
+                "in": [
+                  "other"
+                ]
+              }
+            },
+            {
               "id": "degree",
               "label": "Степень владения",
               "type": "choice",
