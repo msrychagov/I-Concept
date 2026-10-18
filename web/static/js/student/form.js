@@ -31,6 +31,11 @@
     const sectionIndex = id => data.form.sections.findIndex(s => s.id === id);
     const optionsOf = field => field.ref ? (data.form.refs?.[field.ref] || []) : (field.options || []);
     const asList = v => Array.isArray(v) ? v : [v];
+    // The browser's own calendar day (toISOString would give the UTC day).
+    const localToday = () => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
     const isEmpty = v => v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length);
 
     // ---- visibility: the same rules as on the server -------------------------
@@ -86,7 +91,7 @@
             case 'textarea':
                 return `<textarea ${single} data-kind="text" rows="3" maxlength="${f.maxLength || 2000}">${esc(v)}</textarea>`;
             case 'date':
-                return `<input type="date" ${single} data-kind="text" min="1900-01-01" max="${new Date().toISOString().slice(0, 10)}" value="${esc(v)}">`;
+                return `<input type="date" ${single} data-kind="text" min="1900-01-01" max="${localToday()}" value="${esc(v)}">`;
             case 'month': {
                 const [year, month] = (partial[path] || (v ? v.split('-') : ['', ''])).concat('').slice(0, 2);
                 const years = [];

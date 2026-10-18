@@ -299,3 +299,35 @@ func TestOtherLanguageAsksForItsName(t *testing.T) {
 		t.Fatal("name of another language kept for a listed language")
 	}
 }
+
+func TestDatesMayNotBeLaterThanTodayInMoscow(t *testing.T) {
+	form := autobiography(t)
+	about := section(t, form, "about")
+	check := func(now time.Time, date string) error {
+		_, err := cleanSection(form, about, map[string]json.RawMessage{"birth_date": raw(t, date)}, now)
+		return err
+	}
+	noon := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
+	if err := check(noon, "2026-10-09"); err != nil {
+		t.Errorf("today rejected: %v", err)
+	}
+	if err := check(noon, "2026-10-10"); err == nil {
+		t.Error("tomorrow accepted")
+	}
+	// 22:00 UTC is already the next day in Moscow.
+	lateEvening := time.Date(2026, 10, 9, 22, 0, 0, 0, time.UTC)
+	if err := check(lateEvening, "2026-10-10"); err != nil {
+		t.Errorf("Moscow today rejected: %v", err)
+	}
+	if err := check(lateEvening, "2026-10-11"); err == nil {
+		t.Error("day after Moscow today accepted")
+	}
+	// 21:30 UTC on the 8th is 00:30 on the 9th in Moscow.
+	justPast := time.Date(2026, 10, 8, 21, 30, 0, 0, time.UTC)
+	if err := check(justPast, "2026-10-09"); err != nil {
+		t.Errorf("Moscow today just after midnight rejected: %v", err)
+	}
+	if err := check(justPast, "2026-10-10"); err == nil {
+		t.Error("tomorrow accepted after Moscow midnight")
+	}
+}
