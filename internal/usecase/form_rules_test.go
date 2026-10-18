@@ -224,3 +224,110 @@ func TestDeceasedRelativeNeedsOnlyNameBirthAndYearOfDeath(t *testing.T) {
 		t.Fatalf("a living relative with a conviction needs details: %v", gaps)
 	}
 }
+
+func TestYesInSections12To16NeedsARecordOrAnItem(t *testing.T) {
+	form := autobiography(t)
+	cases := []struct {
+		section, fork, details string
+		filled                 json.RawMessage
+	}{
+		{"sport", "sport_has", "sport_list", raw(t, []obj{{"sport_kind": "boks"}})},
+		{"creative", "creative_has", "creative_list", raw(t, []obj{{"direction": "vocal"}})},
+		{"patriotic", "patriot_has", "patriot_what", raw(t, []string{"yunarmia"})},
+		{"science", "science_has", "science_forms", raw(t, []string{"olympiads"})},
+		{"volunteering", "vol_has", "vol_dirs", raw(t, []string{"eco"})},
+	}
+	for _, c := range cases {
+		answers := map[string]json.RawMessage{c.fork: raw(t, "no")}
+		if gaps := formMissing(form, answers)[c.section]; gaps != nil {
+			t.Errorf("%s: answer no leaves gaps %v", c.section, gaps)
+		}
+		answers[c.fork] = raw(t, "yes")
+		if gaps := formMissing(form, answers)[c.section]; !slices.Equal(gaps, []string{c.details}) {
+			t.Errorf("%s: yes without details reports %v", c.section, gaps)
+		}
+		answers[c.details] = c.filled
+		if gaps := formMissing(form, answers)[c.section]; gaps != nil {
+			t.Errorf("%s: yes with details reports %v", c.section, gaps)
+		}
+	}
+	empty := map[string]json.RawMessage{"sport_has": raw(t, "yes"), "sport_list": raw(t, []obj{{"sport_now": "now"}})}
+	if gaps := formMissing(form, empty)["sport"]; !slices.Equal(gaps, []string{"sport_list.0.sport_kind"}) {
+		t.Errorf("a record without a sport reports %v", gaps)
+	}
+	if gaps := formMissing(form, map[string]json.RawMessage{})["hobbies"]; gaps != nil {
+		t.Errorf("hobbies must stay optional: %v", gaps)
+	}
+}
+
+func TestOnlySchoolRegionAcceptsAbroad(t *testing.T) {
+	if _, err := clean(t, "education", obj{"education_list": []obj{{"edu_region": "abroad"}}}); err != nil {
+		t.Fatalf("school abroad rejected: %v", err)
+	}
+	if _, err := clean(t, "about", obj{"birth_country": "RU", "birth_region": "abroad"}); err == nil {
+		t.Fatal("birth region abroad accepted")
+	}
+	if _, err := clean(t, "address", obj{"reg_region": "abroad"}); err == nil {
+		t.Fatal("registration abroad accepted")
+	}
+}
+
+func TestOtherLanguageAsksForItsName(t *testing.T) {
+	form := autobiography(t)
+	record := func(extra obj) []obj {
+		r := obj{"language": "other", "degree": "dict", "practice": []string{"native"}}
+		for k, v := range extra {
+			r[k] = v
+		}
+		return []obj{r}
+	}
+	answers := map[string]json.RawMessage{"lang_has": raw(t, "yes"), "lang_list": raw(t, record(nil))}
+	if gaps := formMissing(form, answers)["languages"]; !slices.Equal(gaps, []string{"lang_list.0.language_other"}) {
+		t.Fatalf("other language without a name: %v", gaps)
+	}
+	answers["lang_list"] = raw(t, record(obj{"language_other": "Хинди-урду"}))
+	if gaps := formMissing(form, answers)["languages"]; gaps != nil {
+		t.Fatalf("other language with a name: %v", gaps)
+	}
+	got, err := clean(t, "languages", obj{"lang_has": "yes", "lang_list": record(obj{"language": "angliyskiy", "language_other": "Лишнее"})})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved []map[string]json.RawMessage
+	_ = json.Unmarshal(got["lang_list"], &saved)
+	if saved[0]["language_other"] != nil {
+		t.Fatal("name of another language kept for a listed language")
+	}
+}
+
+func TestDatesMayNotBeLaterThanTodayInMoscow(t *testing.T) {
+	form := autobiography(t)
+	about := section(t, form, "about")
+	check := func(now time.Time, date string) error {
+		_, err := cleanSection(form, about, map[string]json.RawMessage{"birth_date": raw(t, date)}, now)
+		return err
+	}
+	noon := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
+	if err := check(noon, "2026-10-09"); err != nil {
+		t.Errorf("today rejected: %v", err)
+	}
+	if err := check(noon, "2026-10-10"); err == nil {
+		t.Error("tomorrow accepted")
+	}
+	// 22:00 UTC is already the next day in Moscow.
+	lateEvening := time.Date(2026, 10, 9, 22, 0, 0, 0, time.UTC)
+	if err := check(lateEvening, "2026-10-10"); err != nil {
+		t.Errorf("Moscow today rejected: %v", err)
+	}
+	if err := check(lateEvening, "2026-10-11"); err == nil {
+		t.Error("day after Moscow today accepted")
+	}
+	// 21:30 UTC on the 8th is 00:30 on the 9th in Moscow.
+	justPast := time.Date(2026, 10, 8, 21, 30, 0, 0, time.UTC)
+	if err := check(justPast, "2026-10-09"); err != nil {
+		t.Errorf("Moscow today just after midnight rejected: %v", err)
+	}
+	if err := check(justPast, "2026-10-10"); err == nil {
+		t.Error("tomorrow accepted after Moscow midnight")
+	}
+}

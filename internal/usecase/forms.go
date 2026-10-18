@@ -51,7 +51,24 @@ func (a *Service) FormOpen(loginToken, id string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"submission": submission, "form": form, "progress": formProgress(form, *submission)}, nil
+	return map[string]any{"submission": submission, "form": withoutModelMarks(form), "progress": formProgress(form, *submission)}, nil
+}
+
+// withoutModelMarks returns a copy of the form without the notes on what goes
+// to the language model: the student must not see them.
+func withoutModelMarks(form model.Form) model.Form {
+	form = clone(form)
+	var clear func([]model.FormField)
+	clear = func(fields []model.FormField) {
+		for n := range fields {
+			fields[n].LLM = false
+			clear(fields[n].Fields)
+		}
+	}
+	for n := range form.Sections {
+		clear(form.Sections[n].Fields)
+	}
+	return form
 }
 
 // FormCommand changes a submission: op is consent, section or completion.

@@ -236,7 +236,7 @@
               "label": "Регион",
               "type": "choice",
               "required": true,
-              "ref": "regions"
+              "ref": "school_regions"
             },
             {
               "id": "school_city",
@@ -800,6 +800,19 @@
               "required": true,
               "llm": true,
               "ref": "languages"
+            },
+            {
+              "id": "language_other",
+              "label": "Название языка",
+              "type": "text",
+              "required": true,
+              "llm": true,
+              "showIf": {
+                "field": "language",
+                "in": [
+                  "other"
+                ]
+              }
             },
             {
               "id": "degree",
@@ -2163,7 +2176,8 @@
               "type": "textarea",
               "llm": true
             }
-          ]
+          ],
+          "min": 1
         },
         {
           "id": "gto",
@@ -2344,7 +2358,8 @@
               "type": "textarea",
               "llm": true
             }
-          ]
+          ],
+          "min": 1
         }
       ]
     },
@@ -2433,7 +2448,8 @@
             "in": [
               "yes"
             ]
-          }
+          },
+          "required": true
         },
         {
           "id": "patriot_other",
@@ -2651,7 +2667,8 @@
             "in": [
               "yes"
             ]
-          }
+          },
+          "required": true
         },
         {
           "id": "science_area",
@@ -2842,7 +2859,8 @@
             "in": [
               "yes"
             ]
-          }
+          },
+          "required": true
         },
         {
           "id": "vol_other",

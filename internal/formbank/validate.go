@@ -33,7 +33,7 @@ func Validate(form model.Form) error {
 // section when the level is a group record; a condition may refer to either.
 func validateFields(form model.Form, fields, outer []model.FormField, where string) error {
 	earlier := map[string]model.FormField{}
-	for _, field := range fields {
+	for n, field := range fields {
 		at := where + "/" + field.ID
 		if field.ID == "" || field.Label == "" {
 			return fmt.Errorf("form %s: %s has no id or label", form.ID, at)
@@ -74,7 +74,8 @@ func validateFields(form model.Form, fields, outer []model.FormField, where stri
 			if outer != nil {
 				return fmt.Errorf("form %s: group %s is nested in a group", form.ID, at)
 			}
-			if err := validateFields(form, field.Fields, fields, at); err != nil {
+			// A record sees only the section fields declared before the group.
+			if err := validateFields(form, field.Fields, fields[:n], at); err != nil {
 				return err
 			}
 		} else if len(field.Fields) > 0 || field.Min != 0 || field.Max != 0 {

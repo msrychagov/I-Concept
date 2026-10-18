@@ -277,3 +277,29 @@ func TestFormAccessIsLimitedToTheOwnerOfAnActiveAssignment(t *testing.T) {
 		t.Fatalf("opened through another platoon's assignment: %v", err)
 	}
 }
+
+func TestOpeningAFormKeepsTheStoredModelMarks(t *testing.T) {
+	f := newFormFixture(t)
+	marks := func(form model.Form) (n int) {
+		eachField(form, func(field model.FormField, _ bool) {
+			if field.LLM {
+				n++
+			}
+		})
+		return n
+	}
+	before := marks(f.service.forms["autobiography"])
+	if before == 0 {
+		t.Fatal("the description has no model marks")
+	}
+	opened, err := f.service.FormOpen(f.token, f.submission)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := marks(opened.(map[string]any)["form"].(model.Form)); n != 0 {
+		t.Fatalf("%d marks reach the student", n)
+	}
+	if after := marks(f.service.forms["autobiography"]); after != before {
+		t.Fatalf("stored description lost marks: %d of %d", after, before)
+	}
+}
