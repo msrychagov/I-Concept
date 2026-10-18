@@ -278,6 +278,7 @@
               "label": "Окончили ли вы это учебное заведение?",
               "type": "choice",
               "required": true,
+              "llm": true,
               "options": [
                 {
                   "id": "yes",
@@ -1428,6 +1429,7 @@
               "label": "Сведения",
               "type": "choice",
               "required": true,
+              "llm": true,
               "options": [
                 {
                   "id": "yes",
