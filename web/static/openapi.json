@@ -4258,7 +4258,7 @@
             }
           }
         },
-        "description": "Отдаётся и сданная, и начатая анкета.",
+        "description": "Отдаётся и сданная, и начатая анкета. У сданной автобиографии есть potential — уровни потенциала.",
         "parameters": [
           {
             "name": "id",
@@ -4267,6 +4267,83 @@
             "schema": {
               "type": "string",
               "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/forms/{formId}/potential": {
+      "get": {
+        "operationId": "getFormPotential",
+        "tags": [
+          "Анкеты"
+        ],
+        "summary": "Потенциал по взводу",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PotentialSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Только для автобиографии. По каждому направлению — студенты на каждом уровне, от высокого до «не выражен». Учитывается последняя сданная анкета каждого студента.",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "platoon",
+            "in": "query",
+            "required": false,
+            "description": "Номер взвода; без него — все взводы.",
+            "schema": {
+              "type": "string"
             }
           }
         ]
@@ -6734,6 +6811,99 @@
           "submissions"
         ]
       },
+      "PotentialArea": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "sport",
+              "creative",
+              "patriotic",
+              "science",
+              "volunteering",
+              "languages"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "initial",
+              "none"
+            ]
+          },
+          "levelText": {
+            "type": "string"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Какие ответы дали этот уровень."
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "level",
+          "levelText",
+          "reasons"
+        ]
+      },
+      "PotentialAward": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "year": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "year"
+        ]
+      },
+      "Potential": {
+        "type": "object",
+        "properties": {
+          "areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PotentialArea"
+            }
+          },
+          "high": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Направления с высоким уровнем."
+            }
+          },
+          "awards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PotentialAward"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "areas",
+          "high",
+          "awards"
+        ],
+        "description": "Уровни потенциала по шести направлениям, посчитанные программой по шкале из ответов студента. Общего уровня нет. Государственные награды на уровни не влияют."
+      },
       "FormSubmissionDetail": {
         "type": "object",
         "properties": {
@@ -6748,6 +6918,9 @@
           },
           "progress": {
             "$ref": "#/components/schemas/FormProgress"
+          },
+          "potential": {
+            "$ref": "#/components/schemas/Potential"
           }
         },
         "additionalProperties": false,
@@ -6756,6 +6929,113 @@
           "form",
           "student",
           "progress"
+        ]
+      },
+      "PotentialStudent": {
+        "type": "object",
+        "properties": {
+          "submissionId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "platoon": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "submissionId",
+          "studentId",
+          "name",
+          "platoon"
+        ]
+      },
+      "PotentialLevelGroup": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "initial",
+              "none"
+            ]
+          },
+          "levelText": {
+            "type": "string"
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PotentialStudent"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "level",
+          "levelText",
+          "students"
+        ]
+      },
+      "PotentialAreaSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PotentialLevelGroup"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "levels"
+        ]
+      },
+      "PotentialSummary": {
+        "type": "object",
+        "properties": {
+          "platoon": {
+            "type": "string"
+          },
+          "platoons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "submitted": {
+            "type": "integer",
+            "description": "Учтено сданных анкет."
+          },
+          "areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PotentialAreaSummary"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "platoon",
+          "platoons",
+          "submitted",
+          "areas"
         ]
       }
     },
