@@ -438,6 +438,87 @@ func TestPayloadOfTheSampleLeavesOutUnmarkedFields(t *testing.T) {
 	}
 }
 
+// comparisonAllowed is a copy of ALLOWED from
+// Вики/Автобиография/Сравнение моделей/compare.py: the fields the comparison
+// lets through to the model. Change it together with compare.py.
+var comparisonAllowed = []string{
+	"возраст",
+	"учёба_до_вуза[].тип", "учёба_до_вуза[].профиль", "учёба_до_вуза[].год_окончания",
+	"учёба_до_вуза[].специальность", "учёба_до_вуза[].окончил", "учёба_до_вуза[].медаль",
+	"вшэ.кампус", "вшэ.уровень", "вшэ.факультет", "вшэ.направление", "вшэ.поступление", "вшэ.окончание",
+	"работа_до_вуза[].сфера", "работа_до_вуза[].должность", "работа_до_вуза[].период", "работа_до_вуза[].причина_ухода",
+	"служба.служил", "служба.род_войск", "служба.период", "служба.должность", "служба.звание",
+	"языки[].язык", "языки[].степень",
+	"языки[].практика[].вид", "языки[].практика[].программа", "языки[].практика[].курсы",
+	"языки[].практика[].длительность", "языки[].практика[].экзамен", "языки[].практика[].результат",
+	"языки[].практика[].год", "языки[].практика[].страна", "языки[].практика[].срок", "языки[].практика[].работа",
+	"семейное_положение.статус", "семейное_положение.детей",
+	"семья.кто_воспитывал",
+	"семья.родственники[].кем_приходится", "семья.родственники[].сведения", "семья.родственники[].жив",
+	"семья.родственники[].занятость", "семья.родственники[].сфера", "семья.родственники[].должность",
+	"семья.родственники[].иностранное_гражданство", "семья.родственники[].страна_гражданства",
+	"семья.родственники[].судимость", "семья.родственники[].статья", "семья.родственники[].тяжкое",
+	"поездки_за_границу[].страна", "поездки_за_границу[].год", "поездки_за_границу[].цель",
+	"уголовная_ответственность",
+	"награды[].название", "награды[].год",
+	"спорт.занятия[].вид", "спорт.занятия[].сейчас", "спорт.занятия[].стаж", "спорт.занятия[].разряд",
+	"спорт.занятия[].соревнования", "спорт.занятия[].достижения", "спорт.гто",
+	"творчество[].направление", "творчество[].уточнение", "творчество[].обучение", "творчество[].конкурсы",
+	"творчество[].достижения",
+	"военно_патриотическое.участвовал", "военно_патриотическое.формы", "военно_патриотическое.роль",
+	"военно_патриотическое.длительность", "военно_патриотическое.уровень", "военно_патриотическое.навыки",
+	"военно_патриотическое.достижения",
+	"наука.занимался", "наука.формы", "наука.область", "наука.уровень", "наука.результат", "наука.достижения",
+	"волонтёрство.занимался", "волонтёрство.направления", "волонтёрство.длительность", "волонтёрство.роль",
+	"увлечения",
+	"уровни.спорт", "уровни.музыка и творчество", "уровни.военно-патриотическая деятельность", "уровни.наука",
+	"уровни.волонтёрство", "уровни.иностранные языки",
+}
+
+// Every field the builder writes passes the list of compare.py, the language
+// practice with all its kinds included.
+func TestPayloadFieldsAreAllowedByTheComparison(t *testing.T) {
+	allowed := map[string]bool{"": true}
+	for _, leaf := range comparisonAllowed {
+		allowed[leaf+"[]"] = true // a value may be a list of strings
+		for path := leaf; path != ""; {
+			allowed[path] = true
+			cut := max(strings.LastIndex(path, "."), strings.LastIndex(path, "[]"))
+			if cut < 0 {
+				break
+			}
+			if strings.HasSuffix(path, "[]") {
+				path = strings.TrimSuffix(path, "[]")
+			} else {
+				path = path[:cut]
+			}
+		}
+	}
+	form := autobiography(t)
+	every := personalAnswers()
+	every["lang_has"], every["lang_list"] = "yes", []record{{
+		"language": "angliyskiy", "degree": "talk",
+		"practice":    []string{"school", "university", "courses", "exam", "abroad", "env", "work", "native", "second"},
+		"school_kind": "advanced", "courses_what": "курсы при вузе", "courses_time": "y13",
+		"exam": "ielts", "exam_result": "6.5", "exam_year": "2024", "abroad_country": "GB", "abroad_time": "m6",
+		"env_country": "US", "env_years": "2", "work_use": "переписка с поставщиками"}}
+	every["trips_has"], every["trips_list"] = "yes", []record{{"country": "TR", "year": "2023", "purpose": "tourism"}}
+	every["awards_has"], every["awards_list"] = "yes", []record{{"award_name": "Медаль «За отвагу»", "award_year": "2023"}}
+	sets := []answerSet{every}
+	for _, name := range sortedKeys(comparisonAnswers) {
+		sets = append(sets, comparisonAnswers[name])
+	}
+	for _, values := range sets {
+		paths, _ := flatten(autobiographyPayload(form, answersOf(t, form, values), today))
+		for _, path := range paths {
+			path = path[:strings.LastIndex(path, " ")]
+			if !allowed[path] {
+				t.Errorf("compare.py does not allow %q", path)
+			}
+		}
+	}
+}
+
 // The marks in autobiography.json decide what the model gets: every marked
 // field reaches the builder, and the builder asks for no other field.
 func TestPayloadUsesExactlyTheMarkedFields(t *testing.T) {

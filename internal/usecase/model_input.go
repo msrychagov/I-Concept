@@ -255,8 +255,8 @@ func buildPayload(form model.Form, answers map[string]json.RawMessage, asOf time
 				"courses": {"курсы": lang.text(r, "courses_what"), "длительность": lang.text(r, "courses_time")},
 				"exam":    {"экзамен": lang.named(r, "exam", "exam_other"), "результат": lang.text(r, "exam_result"), "год": lang.year(r, "exam_year")},
 				"abroad":  {"страна": lang.text(r, "abroad_country"), "срок": lang.text(r, "abroad_time")},
-				"env":     {"страна": lang.text(r, "env_country"), "сколько_лет": lang.text(r, "env_years")},
-				"work":    {"применение": lang.text(r, "work_use")},
+				"env":     {"страна": lang.text(r, "env_country"), "срок": lang.text(r, "env_years")},
+				"work":    {"работа": lang.text(r, "work_use")},
 			}
 			practice := []any{}
 			for _, kind := range lang.codes(r, "practice") {
