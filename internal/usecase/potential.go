@@ -431,3 +431,95 @@ func uniqueStrings(values []string) []string {
 	}
 	return result
 }
+
+// PotentialStudent is one student in the platoon summary; the submission
+// opens the conclusion about them.
+type PotentialStudent struct {
+	SubmissionID string `json:"submissionId"`
+	StudentID    string `json:"studentId"`
+	Name         string `json:"name"`
+	Platoon      string `json:"platoon"`
+}
+
+type PotentialLevelGroup struct {
+	Level     string             `json:"level"`
+	LevelText string             `json:"levelText"`
+	Students  []PotentialStudent `json:"students"`
+}
+
+// PotentialAreaSummary lists the students of every level, from high to none.
+type PotentialAreaSummary struct {
+	ID     string                `json:"id"`
+	Title  string                `json:"title"`
+	Levels []PotentialLevelGroup `json:"levels"`
+}
+
+// PotentialSummary counts the latest submitted autobiography of every student.
+// Platoons lists the platoons that have one; Platoon is the chosen filter.
+type PotentialSummary struct {
+	Platoon   string                 `json:"platoon"`
+	Platoons  []string               `json:"platoons"`
+	Submitted int                    `json:"submitted"`
+	Areas     []PotentialAreaSummary `json:"areas"`
+}
+
+// PotentialSummaryFor builds the summary over the teacher's students, for one
+// platoon or, when platoon is empty, for all of them.
+func (a *Service) PotentialSummaryFor(teacherID, formID, platoon string) (PotentialSummary, error) {
+	form, ok := a.forms[formID]
+	if !ok {
+		return PotentialSummary{}, missingForm()
+	}
+	if formID != autobiographyForm {
+		return PotentialSummary{}, problem(NotFound, "Для этой анкеты уровней потенциала нет.")
+	}
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return PotentialSummary{}, err
+	}
+	owned := map[string]bool{}
+	for _, as := range db.Assignments {
+		if as.FormID == formID && inTeacherScope(as.OwnerID, teacherID) {
+			owned[as.ID] = true
+		}
+	}
+	latest := map[string]model.FormSubmission{}
+	for _, submission := range db.Submissions {
+		if submission.FormID != formID || !submission.Completed || !owned[submission.AssignmentID] {
+			continue
+		}
+		if previous, seen := latest[submission.StudentID]; !seen || submission.CompletedAt > previous.CompletedAt {
+			latest[submission.StudentID] = submission
+		}
+	}
+	summary := PotentialSummary{Platoon: platoon, Platoons: []string{}, Areas: []PotentialAreaSummary{}}
+	for _, area := range potentialAreas {
+		levels := []PotentialLevelGroup{}
+		for level := levelHigh; level >= levelNone; level-- {
+			levels = append(levels, PotentialLevelGroup{Level: levelIDs[level], LevelText: levelTexts[level], Students: []PotentialStudent{}})
+		}
+		summary.Areas = append(summary.Areas, PotentialAreaSummary{ID: area.ID, Title: area.Title, Levels: levels})
+	}
+	students := slices.Clone(db.Students)
+	slices.SortStableFunc(students, func(x, y model.Account) int { return strings.Compare(x.Name, y.Name) })
+	for _, account := range students {
+		submission, done := latest[account.ID]
+		if !done || account.Role != "student" || !inTeacherScope(account.OwnerID, teacherID) {
+			continue
+		}
+		if !slices.Contains(summary.Platoons, account.Platoon) {
+			summary.Platoons = append(summary.Platoons, account.Platoon)
+		}
+		if platoon != "" && account.Platoon != platoon {
+			continue
+		}
+		summary.Submitted++
+		student := PotentialStudent{SubmissionID: submission.ID, StudentID: account.ID, Name: account.Name, Platoon: account.Platoon}
+		for n, area := range autobiographyPotential(form, submission.Answers).Areas {
+			group := &summary.Areas[n].Levels[levelHigh-slices.Index(levelIDs, area.Level)]
+			group.Students = append(group.Students, student)
+		}
+	}
+	slices.Sort(summary.Platoons)
+	return summary, nil
+}

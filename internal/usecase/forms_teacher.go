@@ -60,6 +60,7 @@ func (a *Service) FormOverviewFor(teacherID, id string) (any, error) {
 }
 
 // FormSubmissionDetail returns one submission with answers, submitted or not.
+// A submitted autobiography also carries the potential levels.
 func (a *Service) FormSubmissionDetail(id string) (any, error) {
 	return a.FormSubmissionDetailFor("", id)
 }
@@ -90,7 +91,11 @@ func (a *Service) FormSubmissionDetailFor(teacherID, id string) (any, error) {
 				student = studentPublic(account)
 			}
 		}
-		return map[string]any{"submission": submission, "form": form, "student": student, "progress": formProgress(form, submission)}, nil
+		result := map[string]any{"submission": submission, "form": form, "student": student, "progress": formProgress(form, submission)}
+		if submission.FormID == autobiographyForm && submission.Completed {
+			result["potential"] = autobiographyPotential(form, submission.Answers)
+		}
+		return result, nil
 	}
 	return nil, problem(NotFound, "Анкета студента не найдена.")
 }
