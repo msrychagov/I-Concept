@@ -472,6 +472,53 @@ func TestPayloadUsesExactlyTheMarkedFields(t *testing.T) {
 	}
 }
 
+func TestEqualAnswersGiveEqualFingerprints(t *testing.T) {
+	form := autobiography(t)
+	fingerprint := func(values answerSet) string {
+		return payloadFingerprint(autobiographyPayload(form, answersOf(t, form, values), today))
+	}
+	first := fingerprint(personalAnswers())
+	if !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(first) {
+		t.Fatalf("fingerprint %q", first)
+	}
+	for range 20 {
+		if again := fingerprint(personalAnswers()); again != first {
+			t.Fatalf("the same answers gave %s and %s", first, again)
+		}
+	}
+
+	var stored model.FormSubmission
+	if err := json.Unmarshal(raw(t, model.FormSubmission{Answers: answersOf(t, form, personalAnswers())}), &stored); err != nil {
+		t.Fatal(err)
+	}
+	if read := payloadFingerprint(autobiographyPayload(form, stored.Answers, today)); read != first {
+		t.Errorf("answers read back from storage gave another fingerprint")
+	}
+
+	// Another student: other names, places and organisations, the same age.
+	other := personalAnswers()
+	other["prev_names"], other["birth_date"], other["birth_place"] = "Орлов Глеб Сергеевич", "2004-11-30", "Минск"
+	other["education_list"].([]record)[0]["school_name"] = "Техникум № 3"
+	other["work_list"].([]record)[0]["org"] = "ИП Орлов"
+	other["rel_list"].([]record)[1]["address"] = "ул. Ленина, д. 1"
+	other["spouse_first"], other["reg_address"], other["crim_what"] = "Дарья", "г. Кострома, ул. Ткачей, д. 2", "другое"
+	if fingerprint(other) != first {
+		t.Error("answers equal without personal data gave another fingerprint")
+	}
+
+	clicked := personalAnswers()
+	clicked["hobbies"] = []string{"history", "reading"}
+	if fingerprint(clicked) != first {
+		t.Error("the order of clicks changed the fingerprint")
+	}
+
+	changed := personalAnswers()
+	changed["work_list"].([]record)[0]["position"] = "электрик"
+	if fingerprint(changed) == first {
+		t.Error("another position gave the same fingerprint")
+	}
+}
+
 func TestAgeIsCountedOnTheMoscowDate(t *testing.T) {
 	cases := []struct {
 		birth string
@@ -490,5 +537,26 @@ func TestAgeIsCountedOnTheMoscowDate(t *testing.T) {
 	}
 	if age := ageOn("", today); age != nil {
 		t.Errorf("no birth date: %v", age)
+	}
+}
+
+func TestSubmissionPayloadCountsTheAgeOnTheDayOfSubmission(t *testing.T) {
+	form := autobiography(t)
+	values := personalAnswers()
+	values["birth_date"] = "2004-10-10"
+	submission := model.FormSubmission{FormID: autobiographyForm, Answers: answersOf(t, form, values)}
+	if _, _, err := submissionPayload(form, submission); err == nil {
+		t.Fatal("a draft gave a model input")
+	}
+	submission.Completed, submission.CompletedAt = true, "2026-10-09T21:30:00Z"
+	payload, fingerprint, err := submissionPayload(form, submission)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if payload["возраст"] != 22 {
+		t.Errorf("age %v, want 22 on the Moscow date of submission", payload["возраст"])
+	}
+	if fingerprint != payloadFingerprint(payload) {
+		t.Errorf("fingerprint %s of another input", fingerprint)
 	}
 }

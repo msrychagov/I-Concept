@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"slices"
 	"strconv"
@@ -422,4 +424,26 @@ func canonicalJSON(value any) []byte {
 	encoder.SetEscapeHTML(false)
 	_ = encoder.Encode(value)
 	return bytes.TrimSuffix(buffer.Bytes(), []byte("\n"))
+}
+
+// payloadFingerprint is the hex sha256 of the canonical input. The portrait
+// is to be stored under it, so equal anonymised answers get the same portrait.
+func payloadFingerprint(payload map[string]any) string {
+	sum := sha256.Sum256(canonicalJSON(payload))
+	return hex.EncodeToString(sum[:])
+}
+
+// submissionPayload is the model input of a submitted autobiography and its
+// fingerprint. The age is counted on the day of submission, so the input does
+// not change after the student's birthday.
+func submissionPayload(form model.Form, submission model.FormSubmission) (map[string]any, string, error) {
+	if submission.FormID != autobiographyForm || !submission.Completed {
+		return nil, "", problem(Invalid, "Сведения для модели собираются только по сданной автобиографии.")
+	}
+	submitted, err := time.Parse(time.RFC3339, submission.CompletedAt)
+	if err != nil {
+		return nil, "", problem(Invalid, "У анкеты нет даты сдачи.")
+	}
+	payload := autobiographyPayload(form, submission.Answers, submitted)
+	return payload, payloadFingerprint(payload), nil
 }
