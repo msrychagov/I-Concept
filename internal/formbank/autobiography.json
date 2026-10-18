@@ -236,7 +236,7 @@
               "label": "Регион",
               "type": "choice",
               "required": true,
-              "ref": "regions"
+              "ref": "school_regions"
             },
             {
               "id": "school_city",

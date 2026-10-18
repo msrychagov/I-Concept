@@ -259,3 +259,15 @@ func TestYesInSections12To16NeedsARecordOrAnItem(t *testing.T) {
 		t.Errorf("hobbies must stay optional: %v", gaps)
 	}
 }
+
+func TestOnlySchoolRegionAcceptsAbroad(t *testing.T) {
+	if _, err := clean(t, "education", obj{"education_list": []obj{{"edu_region": "abroad"}}}); err != nil {
+		t.Fatalf("school abroad rejected: %v", err)
+	}
+	if _, err := clean(t, "about", obj{"birth_country": "RU", "birth_region": "abroad"}); err == nil {
+		t.Fatal("birth region abroad accepted")
+	}
+	if _, err := clean(t, "address", obj{"reg_region": "abroad"}); err == nil {
+		t.Fatal("registration abroad accepted")
+	}
+}

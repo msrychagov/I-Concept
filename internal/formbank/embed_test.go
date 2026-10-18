@@ -58,3 +58,41 @@ func TestAutobiographyDescription(t *testing.T) {
 		}
 	}
 }
+
+func TestSchoolRegionsAreRegionsPlusAbroad(t *testing.T) {
+	form := autobiography(t)
+	regions, school := form.Refs["regions"], form.Refs["school_regions"]
+	if len(school) != len(regions)+1 {
+		t.Fatalf("%d school regions for %d regions", len(school), len(regions))
+	}
+	for i, region := range regions {
+		if school[i] != region {
+			t.Fatalf("lists differ at %d: %v and %v", i, region, school[i])
+		}
+	}
+	if last := school[len(school)-1]; last.ID != "abroad" || last.Text != "За пределами России" {
+		t.Fatalf("last school region: %v", last)
+	}
+	// Only the school may be abroad: birth place, military office and registration use the plain list.
+	users := map[string]string{}
+	var walk func([]model.FormField)
+	walk = func(fields []model.FormField) {
+		for _, f := range fields {
+			if f.Ref == "regions" || f.Ref == "school_regions" {
+				users[f.ID] = f.Ref
+			}
+			walk(f.Fields)
+		}
+	}
+	for _, s := range form.Sections {
+		walk(s.Fields)
+	}
+	for id, ref := range users {
+		if want := map[bool]string{true: "school_regions", false: "regions"}[id == "edu_region"]; ref != want {
+			t.Errorf("%s uses %s, want %s", id, ref, want)
+		}
+	}
+	if len(users) != 5 {
+		t.Errorf("fields with a region list: %v", users)
+	}
+}
