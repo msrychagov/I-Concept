@@ -13,6 +13,8 @@ import (
 
 	"vucdiagnostic/internal/app"
 	"vucdiagnostic/internal/platform/database"
+	"vucdiagnostic/internal/platform/gigachat"
+	"vucdiagnostic/internal/usecase"
 )
 
 func main() {
@@ -61,6 +63,12 @@ func main() {
 		return
 	}
 
+	if model := languageModel(); model != nil {
+		a.UseModel(model)
+		log.Printf("Language model: %s", model.Name())
+	} else {
+		log.Print("Language model: off (set GIGACHAT_AUTH_KEY and GIGACHAT_MODEL)")
+	}
 	srv := &http.Server{Addr: *addr, Handler: a, ReadHeaderTimeout: 10 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 60 * time.Second, IdleTimeout: 120 * time.Second}
 	base := "http://localhost" + *addr
 	if (*addr)[0] != ':' {
@@ -86,6 +94,27 @@ func main() {
 	}
 	stop()
 	<-shutdownDone
+}
+
+// languageModel reads the GigaChat settings; without the key or the model it is off.
+func languageModel() usecase.TextModel {
+	config := gigachat.Config{
+		AuthKey:  env("GIGACHAT_AUTH_KEY", ""),
+		Model:    env("GIGACHAT_MODEL", ""),
+		Scope:    env("GIGACHAT_SCOPE", ""),
+		CAFile:   env("GIGACHAT_CA_FILE", ""),
+		OAuthURL: env("GIGACHAT_OAUTH_URL", ""),
+		APIURL:   env("GIGACHAT_API_URL", ""),
+	}
+	if !config.Enabled() {
+		return nil
+	}
+	client, err := gigachat.New(config)
+	if err != nil {
+		log.Printf("Language model: %v", err)
+		return nil
+	}
+	return client
 }
 
 func env(key, fallback string) string {
