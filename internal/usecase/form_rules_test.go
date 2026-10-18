@@ -224,3 +224,38 @@ func TestDeceasedRelativeNeedsOnlyNameBirthAndYearOfDeath(t *testing.T) {
 		t.Fatalf("a living relative with a conviction needs details: %v", gaps)
 	}
 }
+
+func TestYesInSections12To16NeedsARecordOrAnItem(t *testing.T) {
+	form := autobiography(t)
+	cases := []struct {
+		section, fork, details string
+		filled                 json.RawMessage
+	}{
+		{"sport", "sport_has", "sport_list", raw(t, []obj{{"sport_kind": "boks"}})},
+		{"creative", "creative_has", "creative_list", raw(t, []obj{{"direction": "vocal"}})},
+		{"patriotic", "patriot_has", "patriot_what", raw(t, []string{"yunarmia"})},
+		{"science", "science_has", "science_forms", raw(t, []string{"olympiads"})},
+		{"volunteering", "vol_has", "vol_dirs", raw(t, []string{"eco"})},
+	}
+	for _, c := range cases {
+		answers := map[string]json.RawMessage{c.fork: raw(t, "no")}
+		if gaps := formMissing(form, answers)[c.section]; gaps != nil {
+			t.Errorf("%s: answer no leaves gaps %v", c.section, gaps)
+		}
+		answers[c.fork] = raw(t, "yes")
+		if gaps := formMissing(form, answers)[c.section]; !slices.Equal(gaps, []string{c.details}) {
+			t.Errorf("%s: yes without details reports %v", c.section, gaps)
+		}
+		answers[c.details] = c.filled
+		if gaps := formMissing(form, answers)[c.section]; gaps != nil {
+			t.Errorf("%s: yes with details reports %v", c.section, gaps)
+		}
+	}
+	empty := map[string]json.RawMessage{"sport_has": raw(t, "yes"), "sport_list": raw(t, []obj{{"sport_now": "now"}})}
+	if gaps := formMissing(form, empty)["sport"]; !slices.Equal(gaps, []string{"sport_list.0.sport_kind"}) {
+		t.Errorf("a record without a sport reports %v", gaps)
+	}
+	if gaps := formMissing(form, map[string]json.RawMessage{})["hobbies"]; gaps != nil {
+		t.Errorf("hobbies must stay optional: %v", gaps)
+	}
+}
