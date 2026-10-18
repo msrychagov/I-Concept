@@ -30,6 +30,9 @@
       "name": "Анкеты"
     },
     {
+      "name": "Выводы"
+    },
+    {
       "name": "Методика"
     },
     {
@@ -4069,6 +4072,168 @@
         ]
       }
     },
+    "/portraits/{task}/{sourceId}": {
+      "get": {
+        "operationId": "getPortrait",
+        "tags": [
+          "Выводы"
+        ],
+        "summary": "Вывод языковой модели",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortraitView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Task — задача (autobiography), sourceId — id сданной анкеты. Составляется сам после сдачи; запрос только показывает состояние. Если вывода нет и он не в очереди, он ставится в очередь. Чужой или несданный источник — 404.",
+        "parameters": [
+          {
+            "name": "task",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "sourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "retryPortrait",
+        "tags": [
+          "Выводы"
+        ],
+        "summary": "Повторить составление вывода",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortraitView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Снимает ошибку и ставит вывод в очередь заново. Готовый вывод возвращается как есть, модель не вызывается. Тело не требуется.",
+        "parameters": [
+          {
+            "name": "task",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "sourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
     "/forms/{formId}": {
       "get": {
         "operationId": "getForm",
@@ -7037,6 +7202,52 @@
           "submitted",
           "areas"
         ]
+      },
+      "PortraitText": {
+        "type": "object",
+        "properties": {
+          "output": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Ответ модели по схеме задачи. У автобиографии: summary, potential (шесть записей area, level, facts, conclusion), attention (use, consider). Уровни в нём проверены программой; на экране уровни берутся из potential ответа анкеты."
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "output",
+          "created"
+        ]
+      },
+      "PortraitView": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "working",
+              "failed",
+              "ready",
+              "off"
+            ],
+            "description": "queued — в очереди, working — составляется, failed — не удалось (причина в reason), ready — готов, off — языковая модель не подключена."
+          },
+          "portrait": {
+            "$ref": "#/components/schemas/PortraitText"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "description": "Вывод языковой модели по обезличенным сведениям. Одинаковые сведения дают один и тот же вывод."
       }
     },
     "securitySchemes": {
