@@ -119,7 +119,7 @@ window.teacherAutobiography = async function ({view, api, esc}) {
             const d = await api('/submissions/' + encodeURIComponent(id));
             const s = d.submission, who = d.student;
             openDialog(`<div class="section-title"><div><h2>${esc(who?.name || 'Студент')}</h2><p>Взвод ${esc(who?.platoon || '')} · ${esc(d.form.title)}</p></div><button class="secondary" data-close>Закрыть</button></div>
-   <p class="${s.completed ? '' : 'draft-note'}">${s.completed ? `Сдана ${fmtDate(s.completedAt)}.` : `Не сдана: заполнено разделов ${d.progress.complete.length} из ${d.progress.total}. Показан черновик.`}</p>${window.formView.answers(d.form, s, esc)}`);
+   <p class="${s.completed ? '' : 'draft-note'}">${s.completed ? `Сдана ${fmtDate(s.completedAt)}.` : `Не сдана: заполнено разделов ${d.progress.complete.length} из ${d.progress.total}. Показан черновик. Уровни потенциала появятся после сдачи.`}</p>${d.potential ? window.potentialView.card(d.potential, esc) : ''}<h3 class="answers-heading">Ответы</h3>${window.formView.answers(d.form, s, esc)}`);
         } catch (err) {
             openDialog(`<p class="error">${esc(err.message)}</p><button class="secondary" data-close>Закрыть</button>`);
         }
