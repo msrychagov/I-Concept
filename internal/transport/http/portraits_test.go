@@ -57,7 +57,8 @@ func (s *formScenario) portrait(t *testing.T, method string, cookie bool) (int, 
 
 func (s *formScenario) waitFor(t *testing.T, status string) map[string]any {
 	t.Helper()
-	for range 300 {
+	// Three attempts with the real pause between them take over four seconds.
+	for deadline := time.Now().Add(15 * time.Second); time.Now().Before(deadline); {
 		if _, view := s.portrait(t, "GET", true); view["status"] == status {
 			return view
 		}

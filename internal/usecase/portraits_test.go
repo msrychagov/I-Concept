@@ -136,7 +136,7 @@ func (f *portraitFixture) finish(email string) string {
 func (f *portraitFixture) idle() {
 	f.t.Helper()
 	l := f.service.portraits
-	for range 500 {
+	for deadline := time.Now().Add(15 * time.Second); time.Now().Before(deadline); {
 		l.mu.Lock()
 		busy := len(l.queue) > 0
 		for _, state := range l.states {
