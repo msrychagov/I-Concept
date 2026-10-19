@@ -14,6 +14,7 @@ func (a *Service) SurveyCommand(loginToken, sessionID string, b Input, op string
 	if rev != s.Revision {
 		return nil, failure(Conflict, map[string]any{"error": "Данные изменились в другом окне. Обновите страницу.", "conflict": true})
 	}
+	finished := false
 	if op == "consent" {
 		if !boolean(b, "value") {
 			return nil, failure(Invalid, map[string]any{"error": "Для начала нужно согласие."})
@@ -56,6 +57,7 @@ func (a *Service) SurveyCommand(loginToken, sessionID string, b Input, op string
 				return nil, failure(Incomplete, map[string]any{"error": "Есть пропуски. Ответы сохранены.", "partial": true})
 			}
 			s.Completed = true
+			finished = true
 			s.CompletedPartial = len(s.Answers) != len(a.itemsFor(s))
 		}
 	}
@@ -67,6 +69,9 @@ func (a *Service) SurveyCommand(loginToken, sessionID string, b Input, op string
 			kind = Conflict
 		}
 		return nil, failure(kind, map[string]any{"error": err.Error()})
+	}
+	if finished {
+		a.queuePortraits(Source{"session", saved.ID})
 	}
 	return map[string]any{"revision": saved.Revision, "updated": saved.Updated, "completed": saved.Completed}, nil
 }

@@ -313,7 +313,8 @@ func TestDemoBackup(t *testing.T) {
 
 type testApplication struct {
 	*Handler
-	repo *jsonfile.Repository
+	repo    *jsonfile.Repository
+	service *usecase.Service
 }
 
 func testApp(t *testing.T) *testApplication {
@@ -339,7 +340,7 @@ func testApp(t *testing.T) *testApplication {
 		t.Fatal(err)
 	}
 	service.RegisterForms(forms...)
-	return &testApplication{Handler: New(service, web.Files, Config{AdminUser: "admin", AdminPassword: "secret"}), repo: repo}
+	return &testApplication{Handler: New(service, web.Files, Config{AdminUser: "admin", AdminPassword: "secret"}), repo: repo, service: service}
 }
 func (a *testApplication) emptyProfile() model.Profile {
 	data, _ := a.service.ResearchQuery("state", "", "")

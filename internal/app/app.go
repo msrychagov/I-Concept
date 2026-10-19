@@ -10,6 +10,7 @@ import (
 	"vucdiagnostic/internal/domain/model"
 	"vucdiagnostic/internal/formbank"
 	"vucdiagnostic/internal/platform/database"
+	"vucdiagnostic/internal/promptbank"
 	"vucdiagnostic/internal/questionbank"
 	"vucdiagnostic/internal/repository/jsonfile"
 	"vucdiagnostic/internal/repository/postgres"
@@ -41,6 +42,10 @@ func New(config Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	prompts, err := promptbank.Load()
+	if err != nil {
+		return nil, err
+	}
 	var repository usecase.Repository
 	closeRepository := func() {}
 	if config.DatabaseURL != "" {
@@ -61,6 +66,7 @@ func New(config Config) (*App, error) {
 	}
 	service := usecase.New(bank, repository, previous...)
 	service.RegisterForms(forms...)
+	service.RegisterPrompts(prompts...)
 	// PostgreSQL receives legacy records through ImportData, which normalizes
 	// ownership before the import transaction. Never replace a live SQL snapshot.
 	if config.DatabaseURL == "" {
@@ -72,7 +78,14 @@ func New(config Config) (*App, error) {
 	handler := httptransport.New(service, web.Files, httptransport.Config{AdminUser: config.AdminUser, AdminPassword: config.AdminPassword})
 	return &App{Handler: handler, service: service, close: closeRepository}, nil
 }
-func (a *App) Close()                             { a.close() }
+func (a *App) Close() {
+	a.service.Close()
+	a.close()
+}
+
+// UseModel connects the language model that writes the portraits. It is called
+// only by the server: the maintenance commands must not start it.
+func (a *App) UseModel(m usecase.TextModel)       { a.service.UseModel(m) }
 func (a *App) SeedDemo() error                    { return a.service.SeedDemo() }
 func (a *App) ImportData(db model.Database) error { return a.service.ImportData(db) }
 func (a *App) ResetDemo() (string, error)         { return a.service.ResetDemo() }

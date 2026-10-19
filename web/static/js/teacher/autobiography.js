@@ -142,13 +142,49 @@ window.teacherAutobiography = async function ({view, api, esc}) {
         return dialog;
     }
 
+    // The text of the model for the autobiography: the summary, the potential
+    // table with the model's words and the two lists. Levels stay the program's.
+    window.portraitRenderers.autobiography = {
+        summary: (output, esc) => `<section class="portrait-summary"><h3>Краткая характеристика</h3><p>${esc(output.summary)}</p></section>`,
+        attention: (output, esc) => {
+            const list = (title, items) => `<div><h3>${title}</h3>${items.length ? `<ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '<p class="muted">Нет.</p>'}</div>`;
+            return `<section class="portrait-attention"><h2>На что обратить внимание</h2><div class="portrait-lists">${list('Что можно использовать', output.attention.use)}${list('Что учесть', output.attention.consider)}</div></section>`;
+        }
+    };
+
+    let portrait = null;
+
+    // Everything that depends on the model: the summary on top, the potential
+    // with the conclusions, the points to note and the signature.
+    function portraitHtml(d, view) {
+        const ready = view?.status === 'ready' ? view.portrait.output : null;
+        const draw = window.portraitRenderers.autobiography;
+        const state = view ? window.portraitView.status(view, esc) : '';
+        return `${ready ? draw.summary(ready, esc) : state}${d.potential ? window.potentialView.card(d.potential, esc, ready) : ''}${ready ? draw.attention(ready, esc) : ''}${view ? window.portraitView.signature(view, esc) : ''}`;
+    }
+
     async function answers(id) {
+        portrait?.stop();
         openDialog('<h2>Загрузка анкеты…</h2>');
         try {
             const d = await api('/submissions/' + encodeURIComponent(id));
             const s = d.submission, who = d.student;
-            openDialog(`<div class="section-title"><div><h2>${esc(who?.name || 'Студент')}</h2><p>Взвод ${esc(who?.platoon || '')} · ${esc(d.form.title)}</p></div><button class="secondary" data-close>Закрыть</button></div>
-   <p class="${s.completed ? '' : 'draft-note'}">${s.completed ? `Сдана ${fmtDate(s.completedAt)}.` : `Не сдана: заполнено разделов ${d.progress.complete.length} из ${d.progress.total}. Показан черновик. Уровни потенциала появятся после сдачи.`}</p>${d.potential ? window.potentialView.card(d.potential, esc) : ''}<h3 class="answers-heading">Ответы</h3>${window.formView.answers(d.form, s, esc)}`);
+            const dialog = openDialog(`<div class="section-title"><div><h2>${esc(who?.name || 'Студент')}</h2><p>Взвод ${esc(who?.platoon || '')} · ${esc(d.form.title)}</p></div><button class="secondary" data-close>Закрыть</button></div>
+   <p class="${s.completed ? '' : 'draft-note'}">${s.completed ? `Сдана ${fmtDate(s.completedAt)}.` : `Не сдана: заполнено разделов ${d.progress.complete.length} из ${d.progress.total}. Показан черновик. Уровни потенциала появятся после сдачи.`}</p><div id="portrait-box">${portraitHtml(d, null)}</div><h3 class="answers-heading">Ответы</h3>${window.formView.answers(d.form, s, esc)}`);
+            if (!s.completed) return;
+            const box = dialog.querySelector('#portrait-box');
+            const alive = () => dialog.open && box.isConnected;
+            const run = (first = 'GET') => {
+                portrait?.stop();
+                portrait = window.portraitView.start(api, FORM, id, {
+                    alive,
+                    update: view => {
+                        box.innerHTML = portraitHtml(d, view);
+                        box.querySelector('[data-portrait-retry]')?.addEventListener('click', () => run('POST'));
+                    }
+                }, first);
+            };
+            run();
         } catch (err) {
             openDialog(`<p class="error">${esc(err.message)}</p><button class="secondary" data-close>Закрыть</button>`);
         }

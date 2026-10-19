@@ -1,0 +1,59 @@
+{
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "string",
+      "description": "Краткая характеристика, 4–6 предложений"
+    },
+    "potential": {
+      "type": "array",
+      "description": "Шесть направлений в заданном порядке",
+      "items": {
+        "type": "object",
+        "properties": {
+          "area": {
+            "type": "string",
+            "enum": [
+              "спорт",
+              "музыка и творчество",
+              "военно-патриотическая деятельность",
+              "наука",
+              "волонтёрство",
+              "иностранные языки"
+            ]
+          },
+          "level": {
+            "type": "string",
+            "description": "Уровень из входных данных без изменений"
+          },
+          "facts": {
+            "type": "string",
+            "description": "Что указал студент по направлению"
+          },
+          "conclusion": {
+            "type": "string",
+            "description": "Чем этот опыт может быть полезен в ВУЦ"
+          }
+        },
+        "required": ["area", "level", "facts", "conclusion"]
+      }
+    },
+    "attention": {
+      "type": "object",
+      "properties": {
+        "use": {
+          "type": "array",
+          "description": "Что можно использовать",
+          "items": {"type": "string"}
+        },
+        "consider": {
+          "type": "array",
+          "description": "Что учесть",
+          "items": {"type": "string"}
+        }
+      },
+      "required": ["use", "consider"]
+    }
+  },
+  "required": ["summary", "potential", "attention"]
+}

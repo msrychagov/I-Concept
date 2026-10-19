@@ -5,12 +5,20 @@ window.potentialView = (() => {
     const lower = text => text ? text[0].toLowerCase() + text.slice(1) : '';
     const badge = (level, text, esc) => `<span class="potential-level level-${esc(level)}">${esc(text)}</span>`;
 
-    // Levels of one submitted autobiography, for the answers dialog.
-    function card(potential, esc) {
-        const rows = potential.areas.map(a => `<tr><th scope="row">${esc(a.title)}</th><td>${badge(a.level, a.levelText, esc)}</td><td>${a.reasons.length ? `<ul class="potential-reasons">${a.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : '<span class="muted">Сведений нет</span>'}</td></tr>`).join('');
+    // Levels of one submitted autobiography, for the answers dialog. The levels
+    // are the program's; with a ready text of the model (output) the table also
+    // shows what the student reported and the conclusion for each area.
+    function card(potential, esc, output) {
+        const texts = {};
+        for (const item of output?.potential || []) texts[item.area] = item;
+        const extra = !!output;
+        const rows = potential.areas.map(a => {
+            const text = texts[lower(a.title)];
+            return `<tr><th scope="row">${esc(a.title)}</th><td>${badge(a.level, a.levelText, esc)}</td><td>${a.reasons.length ? `<ul class="potential-reasons">${a.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : '<span class="muted">Сведений нет</span>'}</td>${extra ? `<td>${text ? esc(text.facts) : ''}</td><td>${text ? esc(text.conclusion) : ''}</td>` : ''}</tr>`;
+        }).join('');
         const high = potential.high.length ? `<p><b>Высокий уровень:</b> ${esc(potential.high.map(lower).join(', '))}.</p>` : '<p class="muted">Направлений с высоким уровнем нет.</p>';
         const awards = potential.awards.length ? `<p><b>Государственные награды:</b> ${esc(potential.awards.map(a => a.year ? `${a.name} (${a.year})` : a.name).join('; '))}. На уровни не влияют.</p>` : '';
-        return `<section class="potential-card"><h3>Потенциал</h3><p class="muted">${esc(NOTE)}</p>${high}${awards}<div class="table-scroll"><table class="potential-table"><thead><tr><th>Направление</th><th>Уровень</th><th>Из каких ответов</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+        return `<section class="potential-card"><h3>Потенциал</h3><p class="muted">${esc(NOTE)}</p>${high}${awards}<div class="table-scroll"><table class="potential-table"><thead><tr><th>Направление</th><th>Уровень</th><th>Из каких ответов</th>${extra ? '<th>Что указал студент</th><th>Вывод</th>' : ''}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
     }
 
     // The table "area × level" with counts; a count opens the list of students.
