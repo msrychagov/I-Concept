@@ -448,6 +448,14 @@
     vertical-align: top
 }
 
+/* Narrow screens: the table scrolls inside .table-scroll instead of breaking words. */
+.potential-table td:nth-child(n+3) {
+    min-width: 12rem;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none
+}
+
 @media (max-width: 760px) {
     .portrait-lists {
         grid-template-columns: 1fr
