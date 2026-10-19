@@ -24,17 +24,17 @@ func TestAutobiographyV1(t *testing.T) {
 	}
 }
 
-// v1 is the text of Вики/Автобиография/Сравнение моделей/Инструкция.md word for
+// The latest version is the text of Вики/Автобиография/Сравнение моделей/Инструкция.md word for
 // word; the file is in the working folder, not in the repository.
-func TestV1MatchesTheWikiWhenItIsThere(t *testing.T) {
+func TestLatestVersionMatchesTheWikiWhenItIsThere(t *testing.T) {
 	wiki, err := os.ReadFile("../../../Вики/Автобиография/Сравнение моделей/Инструкция.md")
 	if err != nil {
 		t.Skip("the wiki folder is not next to the repository")
 	}
 	prompts, _ := Load()
-	prompt, _ := Find(prompts, "autobiography", "v1")
+	prompt, _ := Latest(prompts, "autobiography")
 	if !strings.Contains(string(wiki), "```text\n"+prompt.Instruction+"\n```") || !strings.Contains(string(wiki), "```json\n"+string(prompt.Schema)+"\n```") {
-		t.Fatal("v1 differs from Инструкция.md: a changed wording must be a new version folder")
+		t.Fatalf("the latest version %s differs from Инструкция.md: a changed wording must be a new version folder", prompt.Version)
 	}
 }
 
@@ -47,6 +47,41 @@ func TestParseRejectsBrokenPrompts(t *testing.T) {
 	} {
 		if _, err := parse(files); err == nil {
 			t.Errorf("%s: accepted", name)
+		}
+	}
+}
+
+func TestLatestIsTheGreatestNumberNotTheLastName(t *testing.T) {
+	files := fstest.MapFS{}
+	for _, version := range []string{"v1", "v2", "v10", "v9"} {
+		files["t/"+version+"/instruction.txt"] = &fstest.MapFile{Data: []byte("text " + version)}
+		files["t/"+version+"/schema.json"] = &fstest.MapFile{Data: []byte(`{"type":"object"}`)}
+	}
+	files["other/v3/instruction.txt"] = &fstest.MapFile{Data: []byte("other")}
+	files["other/v3/schema.json"] = &fstest.MapFile{Data: []byte(`{"type":"object"}`)}
+	prompts, err := parse(files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if latest, ok := Latest(prompts, "t"); !ok || latest.Version != "v10" || latest.Instruction != "text v10" {
+		t.Fatalf("latest: %+v", latest)
+	}
+	if latest, ok := Latest(prompts, "other"); !ok || latest.Version != "v3" {
+		t.Fatalf("other: %+v", latest)
+	}
+	if _, ok := Latest(prompts, "missing"); ok {
+		t.Fatal("a task without prompts has a latest")
+	}
+}
+
+func TestVersionFoldersMustBeNamedVN(t *testing.T) {
+	for _, version := range []string{"v0", "v01", "latest", "2", "v1b"} {
+		files := fstest.MapFS{
+			"t/" + version + "/instruction.txt": {Data: []byte("text")},
+			"t/" + version + "/schema.json":     {Data: []byte(`{"type":"object"}`)},
+		}
+		if _, err := parse(files); err == nil {
+			t.Errorf("%s accepted", version)
 		}
 	}
 }

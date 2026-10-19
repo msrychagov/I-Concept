@@ -346,3 +346,18 @@ func TestEveryComparisonQuestionnairePassesTheCut(t *testing.T) {
 		}
 	}
 }
+
+func TestTheNewestInstructionVersionIsTheOneThatIsUsed(t *testing.T) {
+	s := testApp(t)
+	t.Cleanup(s.Close)
+	schema := []byte(`{"type":"object"}`)
+	s.RegisterPrompts(
+		promptbank.Prompt{Task: "autobiography", Version: "v2", Instruction: "вторая", Schema: schema},
+		promptbank.Prompt{Task: "autobiography", Version: "v10", Instruction: "десятая", Schema: schema},
+		promptbank.Prompt{Task: "autobiography", Version: "v9", Instruction: "девятая", Schema: schema},
+	)
+	task, ok := s.portraits.task("autobiography")
+	if !ok || task.Version != "v10" || task.Prompt.Instruction != "десятая" || len(s.portraits.tasks) != 1 {
+		t.Fatalf("task: %+v", task)
+	}
+}

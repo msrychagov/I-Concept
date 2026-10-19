@@ -9,9 +9,10 @@ import (
 )
 
 // RegisterPrompts connects the instructions and turns on the portrait tasks
-// whose instruction is among them. It is called once at startup, before UseModel.
+// whose instruction is among them, each with its newest version. It is called
+// once at startup, before UseModel.
 func (a *Service) RegisterPrompts(prompts ...promptbank.Prompt) {
-	if prompt, ok := promptbank.Find(prompts, autobiographyForm, "v1"); ok {
+	if prompt, ok := promptbank.Latest(prompts, autobiographyForm); ok {
 		a.registerPortraitTask(a.autobiographyTask(prompt))
 	}
 }
