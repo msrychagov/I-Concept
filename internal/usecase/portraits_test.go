@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 	"vucdiagnostic/internal/domain/model"
@@ -285,25 +286,98 @@ func TestAnErrorOfTheModelIsRetriedAndOneGoodAttemptIsEnough(t *testing.T) {
 	}
 }
 
-func TestInputWithPersonalDataIsNotSent(t *testing.T) {
-	for name, text := range map[string]string{
-		"patronymic": "Работал у Петрова Ивана Сергеевича",
-		"full date":  "родился 01.02.2005",
-		"iso date":   "с 2005-02-01",
-		"email":      "ivan@example.test",
-		"phone":      "+7 912 345-67-89",
+func TestPersonalDataIsCutOutAndTheRestIsSent(t *testing.T) {
+	out := captureJournal(t)
+	note := "Первое место 12.05.2024, тренер Петров Иван Сергеевич, тел. 8 900 123-45-67, ivan@example.test, с 2005-02-01"
+	f := newPortraitFixture(t, func(o *object) {
+		o.set("заметка", note)
+		o.set("список", []string{"звонить 31.12.2005", "без данных"})
+		nested := newObject()
+		nested.set("поле", []any{"Иванович"})
+		o.set("вложено", nested)
+	})
+	m := answering(goodAnswer)
+	f.service.UseModel(m)
+	id := f.finish("a@example.test")
+	f.idle()
+	if m.count() != 1 || f.view(id).Status != portraitReady {
+		t.Fatalf("%d calls, %+v", m.count(), f.view(id))
+	}
+	user := m.calls[0].User
+	for _, leaked := range []string{"12.05.2024", "Сергеевич", "8 900", "123-45-67", "example.test", "2005-02-01", "31.12.2005", "Иванович"} {
+		if strings.Contains(user, leaked) {
+			t.Fatalf("%q reached the model: %s", leaked, user)
+		}
+	}
+	// Only the pieces are cut: the words and the spaces around them stay.
+	for _, kept := range []string{"Первое место [скрыто], тренер Петров Иван [скрыто], тел. [скрыто], [скрыто], с [скрыто]", "звонить [скрыто]", "без данных"} {
+		if !strings.Contains(user, kept) {
+			t.Fatalf("%q is not in %s", kept, user)
+		}
+	}
+	if stored := mustSnapshot(t, f.service.repo).Portraits; len(stored) != 1 || stored[0].Input != user {
+		t.Fatal("the stored input is not what was sent")
+	}
+	// The journal says how many, never what.
+	text := out.String()
+	if !strings.Contains(text, "personal data cut out: 7") {
+		t.Fatalf("journal: %s", text)
+	}
+	for _, leaked := range []string{"Сергеевич", "12.05.2024", "example.test", "Петров"} {
+		if strings.Contains(text, leaked) {
+			t.Fatalf("%q in the journal: %s", leaked, text)
+		}
+	}
+}
+
+func TestSessionsThatDifferOnlyInACutPieceShareOnePortrait(t *testing.T) {
+	var date atomic.Value
+	date.Store("12.05.2024")
+	f := newPortraitFixture(t, func(o *object) { o.set("заметка", "Первое место "+date.Load().(string)) })
+	m := answering(goodAnswer)
+	f.service.UseModel(m)
+	first := f.finish("a@example.test")
+	f.idle()
+	date.Store("03.11.2023")
+	second := f.finish("b@example.test")
+	f.idle()
+	if m.count() != 1 || len(mustSnapshot(t, f.service.repo).Portraits) != 1 || f.view(first).Status != portraitReady || f.view(second).Status != portraitReady {
+		t.Fatalf("%d calls, %d portraits", m.count(), len(mustSnapshot(t, f.service.repo).Portraits))
+	}
+}
+
+func TestMaskingFailsClosedOnAnUnknownValueType(t *testing.T) {
+	o := newObject()
+	o.set("странное", map[string]string{"k": "8 900 123-45-67"})
+	if _, err := maskPersonal(o); err == nil {
+		t.Fatal("a value of an unknown type passed unchecked")
+	}
+	f := newPortraitFixture(t, func(o *object) { o.set("странное", struct{ A string }{"x"}) })
+	m := answering(goodAnswer)
+	f.service.UseModel(m)
+	id := f.finish("a@example.test")
+	f.idle()
+	if m.count() != 0 || f.view(id).Status != portraitFailed {
+		t.Fatalf("%d calls, %+v", m.count(), f.view(id))
+	}
+}
+
+func TestMaskText(t *testing.T) {
+	for text, want := range map[string]struct {
+		out string
+		n   int
+	}{
+		"Первое место 12.05.2024, тренер":      {"Первое место [скрыто], тренер", 1},
+		"Иванович Петрович":                    {"[скрыто] [скрыто]", 2},
+		"с Ивановичем и (Сергеевна)":           {"с [скрыто] и ([скрыто])", 2},
+		"Победа, 2 места, 2023-2024":           {"Победа, 2 места, 2023-2024", 0},
+		"[скрыто] и ещё раз [скрыто]":          {"[скрыто] и ещё раз [скрыто]", 0},
+		"Ивановичи и СИванович и Ивановичский": {"Ивановичи и СИванович и Ивановичский", 0},
+		"8 900 123-45-67, +7 (912) 345-67-89":  {"[скрыто], [скрыто]", 2},
 	} {
-		t.Run(name, func(t *testing.T) {
-			f := newPortraitFixture(t, func(o *object) { o.set("заметка", text) })
-			m := answering(goodAnswer)
-			f.service.UseModel(m)
-			id := f.finish("a@example.test")
-			f.idle()
-			view := f.view(id)
-			if m.count() != 0 || view.Status != portraitFailed || !strings.Contains(view.Reason, "личные данные") {
-				t.Fatalf("%d calls, %+v", m.count(), view)
-			}
-		})
+		if out, n := maskText(text); out != want.out || n != want.n {
+			t.Errorf("%q: %q, %d; want %q, %d", text, out, n, want.out, want.n)
+		}
 	}
 }
 

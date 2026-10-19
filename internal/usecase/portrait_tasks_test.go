@@ -268,3 +268,63 @@ func TestWaitingForANewPortraitDoesNotBlockTheSubmission(t *testing.T) {
 		t.Fatal("not ready")
 	}
 }
+
+// submitWithSport saves a sport record with the given achievements and submits.
+func (f *formFixture) submitWithSport(achievements string) {
+	f.t.Helper()
+	f.consent()
+	f.fillAll(nil)
+	record := map[string]any{"sport_kind": "sambo", "sport_now": "now", "sport_years": "y5", "sport_rank": "kms", "sport_level": "russia", "sport_ach": achievements}
+	if _, err := f.save("sport", map[string]json.RawMessage{"sport_has": raw(f.t, "yes"), "sport_list": raw(f.t, []any{record})}); err != nil {
+		f.t.Fatal(err)
+	}
+	if _, err := f.command("completion", Input{}); err != nil {
+		f.t.Fatal(err)
+	}
+}
+
+func TestPersonalDataInAchievementsIsCutOutOfTheAutobiographyInput(t *testing.T) {
+	f := newAutobiographyFixture(t)
+	m := portraitModel(nil)
+	f.service.UseModel(m)
+	f.submitWithSport("Первое место 12.05.2024, тренер Петров Иван Сергеевич, тел. 8 900 123-45-67")
+	f.idle()
+	if m.count() != 1 || f.portrait(f.submission).Status != portraitReady {
+		t.Fatalf("%d calls, %+v", m.count(), f.portrait(f.submission))
+	}
+	user := m.calls[0].User
+	for _, leaked := range []string{"12.05.2024", "Сергеевич", "8 900", "123-45-67"} {
+		if strings.Contains(user, leaked) {
+			t.Fatalf("%q reached the model", leaked)
+		}
+	}
+	if !strings.Contains(user, "Первое место [скрыто], тренер Петров Иван [скрыто], тел. [скрыто]") {
+		t.Fatalf("achievements in the input: %s", user)
+	}
+}
+
+func TestTwoAutobiographiesThatDifferOnlyInADateGiveOneCallAndOnePortrait(t *testing.T) {
+	f := newAutobiographyFixture(t)
+	m := portraitModel(nil)
+	f.service.UseModel(m)
+	f.submitWithSport("Первое место 12.05.2024")
+	f.idle()
+	second := f.another("second@example.test")
+	second.submitWithSport("Первое место 03.11.2023")
+	f.idle()
+	if m.count() != 1 || len(mustSnapshot(t, f.service.repo).Portraits) != 1 || f.portrait(second.submission).Status != portraitReady {
+		t.Fatalf("%d calls, %d portraits", m.count(), len(mustSnapshot(t, f.service.repo).Portraits))
+	}
+}
+
+// Every field the form sends is a kind of value the cut knows: with a real
+// questionnaire the cut passes and finds nothing in made-up answers.
+func TestEveryComparisonQuestionnairePassesTheCut(t *testing.T) {
+	form := autobiography(t)
+	for _, name := range sortedKeys(comparisonAnswers) {
+		payload := autobiographyPayload(form, answersOf(t, form, comparisonAnswers[name]), today)
+		if n, err := maskPersonal(payload); err != nil || n != 0 {
+			t.Errorf("%s: %d cuts, %v", name, n, err)
+		}
+	}
+}

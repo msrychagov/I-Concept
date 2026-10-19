@@ -9,9 +9,12 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"time"
+	"unicode"
+	"unicode/utf8"
 	"vucdiagnostic/internal/domain/model"
 	"vucdiagnostic/internal/promptbank"
 )
@@ -141,13 +144,20 @@ func findPortrait(db model.Database, key string) (model.Portrait, bool) {
 	return model.Portrait{}, false
 }
 
-// prepare builds the input of a source and the key of its portrait.
-func (a *Service) prepare(db model.Database, task portraitTask, s Source, modelName string) (*object, string, error) {
+// prepare builds the input of a source with the personal data cut out, the
+// number of cuts and the key of its portrait. The key, the fingerprint and
+// the text that goes to the model all come from the cleaned input, so equal
+// answers that differ only in a cut piece give one portrait.
+func (a *Service) prepare(db model.Database, task portraitTask, s Source, modelName string) (*object, string, int, error) {
 	payload, err := task.Payload(a, db, s)
 	if err != nil {
-		return nil, "", err
+		return nil, "", 0, err
 	}
-	return payload, portraitKey(task, modelName, payload), nil
+	masked, err := maskPersonal(payload)
+	if err != nil {
+		return nil, "", 0, err
+	}
+	return payload, portraitKey(task, modelName, payload), masked, nil
 }
 
 // queuePortraits queues the portrait of a source for every task that takes it.
@@ -206,7 +216,7 @@ func (a *Service) enqueuePortrait(db model.Database, task portraitTask, s Source
 	if m == nil {
 		return portraitState{Status: portraitOff}
 	}
-	_, key, err := a.prepare(db, task, s, m.Name())
+	_, key, _, err := a.prepare(db, task, s, m.Name())
 	if err != nil {
 		return portraitState{Status: portraitFailed, Reason: "Не удалось собрать сведения для модели."}
 	}
@@ -278,7 +288,7 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 		l.setState(job.key, &portraitState{Status: portraitFailed, Reason: "Не удалось прочитать данные."})
 		return
 	}
-	payload, key, err := a.prepare(db, task, job.source, m.Name())
+	payload, key, masked, err := a.prepare(db, task, job.source, m.Name())
 	if err != nil {
 		l.setState(job.key, &portraitState{Status: portraitFailed, Reason: "Не удалось собрать сведения для модели."})
 		return
@@ -300,9 +310,8 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 		}
 		log.Printf("portrait %s %.12s: failed (%.1f s): %s", task.ID, key, seconds, detail)
 	}
-	if label := personalData(payload); label != "" {
-		fail("В сведениях найдено похожее на личные данные, отправка отменена.", "personal data in the input: "+label, 0)
-		return
+	if masked > 0 {
+		log.Printf("portrait %s %.12s: personal data cut out: %d", task.ID, key, masked)
 	}
 	l.setState(key, &portraitState{Status: portraitWorking})
 	user := modelText(canonicalJSON(payload))
@@ -378,16 +387,133 @@ func parseModelAnswer(text string) (map[string]any, []string) {
 	return output, nil
 }
 
-// Personal data must not reach the model whatever the form lets through. Go
-// \b knows only ASCII letters, so the Cyrillic patterns use their own edges.
+// Personal data must not reach the model whatever the form lets through: every
+// piece found in a text value is replaced by personalMask and the rest is sent.
+// Go \b knows only ASCII letters, so a patronymic is found by its own pattern
+// and its edges are checked by hand.
+const personalMask = "[скрыто]"
+
 var personalPatterns = []struct {
 	label string
 	re    *regexp.Regexp
 }{
 	{"полная дата", regexp.MustCompile(`\b\d{1,2}\.\d{1,2}\.\d{4}\b|\b\d{4}-\d{2}-\d{2}\b`)},
-	{"отчество", regexp.MustCompile(`(?:^|[^\p{L}])[А-ЯЁ][а-яё]+(?:ович|евич|ьич|овна|евна|ична)(?:а|у|ем|ом|е|ы|ой|ну|не)?(?:[^\p{L}]|$)`)},
+	{"отчество", regexp.MustCompile(`[А-ЯЁ][а-яё]+(?:ович|евич|ьич|овна|евна|ична)(?:а|у|ем|ом|е|ы|ой|ну|не)?`)},
 	{"почта", regexp.MustCompile(`[\p{L}\p{N}_.+-]+@[\p{L}\p{N}_-]+\.[\p{L}\p{N}_]+`)},
 	{"телефон", regexp.MustCompile(`(?:\+7|\b8)[\s(-]*\d{3}[\s)-]*\d{3}[\s-]*\d{2}[\s-]*\d{2}\b`)},
+}
+
+type personalSpan struct {
+	label      string
+	start, end int
+}
+
+// personalSpans lists the pieces of a text that look like personal data, by
+// position, without overlaps.
+func personalSpans(text string) []personalSpan {
+	spans := []personalSpan{}
+	for _, pattern := range personalPatterns {
+		for _, at := range pattern.re.FindAllStringIndex(text, -1) {
+			if pattern.label == "отчество" {
+				before, _ := utf8.DecodeLastRuneInString(text[:at[0]])
+				after, _ := utf8.DecodeRuneInString(text[at[1]:])
+				if unicode.IsLetter(before) || unicode.IsLetter(after) {
+					continue
+				}
+			}
+			spans = append(spans, personalSpan{pattern.label, at[0], at[1]})
+		}
+	}
+	slices.SortFunc(spans, func(x, y personalSpan) int { return x.start - y.start })
+	merged := []personalSpan{}
+	for _, span := range spans {
+		if last := len(merged) - 1; last >= 0 && span.start < merged[last].end {
+			merged[last].end = max(merged[last].end, span.end)
+			continue
+		}
+		merged = append(merged, span)
+	}
+	return merged
+}
+
+// maskText replaces every piece of personal data with personalMask and counts them.
+func maskText(text string) (string, int) {
+	spans := personalSpans(text)
+	if len(spans) == 0 {
+		return text, 0
+	}
+	var out strings.Builder
+	at := 0
+	for _, span := range spans {
+		out.WriteString(text[at:span.start])
+		out.WriteString(personalMask)
+		at = span.end
+	}
+	out.WriteString(text[at:])
+	return out.String(), len(spans)
+}
+
+// maskPersonal cuts personal data out of every text value of the input, in
+// place, and returns the number of cuts. A value of a kind it does not know
+// to hold no text is an error: the input is then not sent at all.
+func maskPersonal(payload *object) (int, error) {
+	count := 0
+	var walk func(any) (any, error)
+	walk = func(value any) (any, error) {
+		switch v := value.(type) {
+		case nil, bool, int, int64, float64:
+			return v, nil
+		case string:
+			text, n := maskText(v)
+			count += n
+			return text, nil
+		case []string:
+			list := make([]string, len(v))
+			for i, item := range v {
+				text, n := maskText(item)
+				list[i], count = text, count+n
+			}
+			return list, nil
+		case []any:
+			list := make([]any, len(v))
+			for i, item := range v {
+				masked, err := walk(item)
+				if err != nil {
+					return nil, err
+				}
+				list[i] = masked
+			}
+			return list, nil
+		case map[string][]any:
+			result := make(map[string][]any, len(v))
+			for key, item := range v {
+				masked, err := walk(item)
+				if err != nil {
+					return nil, err
+				}
+				result[key] = masked.([]any)
+			}
+			return result, nil
+		case *object:
+			for _, key := range v.keys {
+				masked, err := walk(v.values[key])
+				if err != nil {
+					return nil, err
+				}
+				v.values[key] = masked
+			}
+			return v, nil
+		}
+		return nil, fmt.Errorf("portrait: input value of type %T is not checked for personal data", value)
+	}
+	if _, err := walk(payload); err != nil {
+		return 0, err
+	}
+	// The cut must leave nothing behind.
+	if label := personalData(payload); label != "" {
+		return 0, fmt.Errorf("portrait: %s is left in the input after the cut", label)
+	}
+	return count, nil
 }
 
 // personalData names the first kind of personal data found in any text value
@@ -403,11 +529,8 @@ func personalData(payload *object) string {
 		}
 		switch v := value.(type) {
 		case string:
-			for _, pattern := range personalPatterns {
-				if pattern.re.MatchString(v) {
-					found = pattern.label
-					return
-				}
+			if spans := personalSpans(v); len(spans) > 0 {
+				found = spans[0].label
 			}
 		case []any:
 			for _, item := range v {
@@ -481,7 +604,7 @@ func (a *Service) portraitView(teacherID, taskID, sourceID string, retry bool) (
 	if m == nil {
 		return PortraitView{Status: portraitOff}, nil
 	}
-	_, key, err := a.prepare(db, task, s, m.Name())
+	_, key, _, err := a.prepare(db, task, s, m.Name())
 	if err != nil {
 		return PortraitView{Status: portraitFailed, Reason: "Не удалось собрать сведения для модели."}, nil
 	}
