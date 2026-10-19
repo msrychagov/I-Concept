@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -289,17 +290,23 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 		l.setState(key, nil)
 		return
 	}
-	fail := func(reason string, seconds float64) {
+	// reason is for the teacher and stays neutral; detail is for the journal. It
+	// never holds the input or the text of the answer: a client error is cleaned
+	// of the key and the token by the client.
+	fail := func(reason, detail string, seconds float64) {
 		l.setState(key, &portraitState{Status: portraitFailed, Reason: reason})
-		log.Printf("portrait %s %.12s: failed (%.1f s)", task.ID, key, seconds)
+		if runes := []rune(detail); len(runes) > 300 {
+			detail = string(runes[:300]) + "…"
+		}
+		log.Printf("portrait %s %.12s: failed (%.1f s): %s", task.ID, key, seconds, detail)
 	}
 	if label := personalData(payload); label != "" {
-		fail("В сведениях найдено похожее на личные данные, отправка отменена.", 0)
+		fail("В сведениях найдено похожее на личные данные, отправка отменена.", "personal data in the input: "+label, 0)
 		return
 	}
 	l.setState(key, &portraitState{Status: portraitWorking})
 	user := modelText(canonicalJSON(payload))
-	reason := "Модель не ответила."
+	reason, detail := "Модель не ответила.", "no attempt was made"
 	started := time.Now()
 	for attempt := 1; attempt <= portraitAttempts; attempt++ {
 		if attempt > 1 {
@@ -314,7 +321,7 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 			return
 		}
 		if err != nil {
-			reason = "Модель не ответила."
+			reason, detail = "Модель не ответила.", fmt.Sprintf("attempt %d: %v", attempt, err)
 			continue
 		}
 		output, problems := parseModelAnswer(reply.Text)
@@ -323,6 +330,7 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 		}
 		if len(problems) > 0 {
 			reason = "Ответ модели не прошёл проверку: " + strings.Join(problems[:min(len(problems), 3)], "; ") + "."
+			detail = fmt.Sprintf("attempt %d: %s", attempt, strings.Join(problems, "; "))
 			continue
 		}
 		data, _ := json.Marshal(output)
@@ -337,14 +345,14 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 			}
 			return nil
 		}); err != nil {
-			fail("Не удалось сохранить вывод.", time.Since(started).Seconds())
+			fail("Не удалось сохранить вывод.", "store: "+err.Error(), time.Since(started).Seconds())
 			return
 		}
 		l.setState(key, nil)
 		log.Printf("portrait %s %.12s: ready (%.1f s, %d+%d tokens)", task.ID, key, reply.Seconds, reply.In, reply.Out)
 		return
 	}
-	fail(reason, time.Since(started).Seconds())
+	fail(reason, detail, time.Since(started).Seconds())
 }
 
 // modelText turns the canonical input into the text the model gets: the same

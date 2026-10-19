@@ -3,6 +3,8 @@ package usecase
 import (
 	"context"
 	"errors"
+	"log"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -364,4 +366,61 @@ func TestACopyOfTheServiceSharesTheLayerAndCloseStopsTheWorker(t *testing.T) {
 	}
 	f.service.Close()
 	f.service.Close()
+}
+
+// journal collects what the program writes to the log while a test runs.
+type journal struct {
+	mu   sync.Mutex
+	text strings.Builder
+}
+
+func (j *journal) Write(p []byte) (int, error) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return j.text.Write(p)
+}
+
+func (j *journal) String() string {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return j.text.String()
+}
+
+func captureJournal(t *testing.T) *journal {
+	t.Helper()
+	j := &journal{}
+	log.SetOutput(j)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+	return j
+}
+
+func TestJournalSaysWhyAPortraitFailedButNotWhatWasSent(t *testing.T) {
+	for name, tc := range map[string]struct {
+		reply func(int, Completion) (string, error)
+		want  string
+	}{
+		"client error": {func(int, Completion) (string, error) { return "", errors.New("gigachat: HTTP 401 Unauthorized") }, "HTTP 401"},
+		"bad answer":   {func(int, Completion) (string, error) { return `{"summary":""}`, nil }, "нет текста"},
+		"unreadable":   {func(int, Completion) (string, error) { return "not json", nil }, "ответ не объект JSON"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			out := captureJournal(t)
+			f := newPortraitFixture(t, func(o *object) { o.set("возраст", 19) })
+			m := &fakeModel{name: "fake", reply: tc.reply}
+			f.service.UseModel(m)
+			id := f.finish("a@example.test")
+			f.idle()
+			view := f.view(id)
+			if view.Status != portraitFailed || strings.Contains(view.Reason, "HTTP") {
+				t.Fatalf("the teacher sees %+v", view)
+			}
+			text := out.String()
+			if !strings.Contains(text, "failed") || !strings.Contains(text, tc.want) || !strings.Contains(text, "attempt 3") {
+				t.Fatalf("journal: %s", text)
+			}
+			if strings.Contains(text, "возраст") || strings.Contains(text, `"ответов"`) {
+				t.Fatalf("the input is in the journal: %s", text)
+			}
+		})
+	}
 }
