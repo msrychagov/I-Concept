@@ -907,6 +907,7 @@
             {
               "id": "courses_what",
               "label": "Какие курсы или репетитор",
+              "hint": "Без имён и фамилий.",
               "type": "text",
               "required": true,
               "llm": true,
@@ -2175,6 +2176,7 @@
             {
               "id": "sport_ach",
               "label": "Достижения",
+              "hint": "Без имён и фамилий.",
               "type": "textarea",
               "llm": true
             }
@@ -2357,6 +2359,7 @@
             {
               "id": "ach",
               "label": "Достижения",
+              "hint": "Без имён и фамилий.",
               "type": "textarea",
               "llm": true
             }
@@ -2601,6 +2604,7 @@
         {
           "id": "patriot_ach",
           "label": "Достижения",
+          "hint": "Без имён и фамилий.",
           "type": "textarea",
           "llm": true,
           "showIf": {
@@ -2777,6 +2781,7 @@
         {
           "id": "science_ach",
           "label": "Достижения",
+          "hint": "Без имён и фамилий.",
           "type": "textarea",
           "llm": true,
           "showIf": {
@@ -2991,6 +2996,7 @@
         {
           "id": "hobby_own",
           "label": "Своё",
+          "hint": "Без имён и фамилий.",
           "type": "text",
           "llm": true
         }
