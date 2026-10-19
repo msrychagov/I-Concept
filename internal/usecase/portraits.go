@@ -144,20 +144,33 @@ func findPortrait(db model.Database, key string) (model.Portrait, bool) {
 	return model.Portrait{}, false
 }
 
-// prepare builds the input of a source with the personal data cut out, the
-// number of cuts and the key of its portrait. The key, the fingerprint and
-// the text that goes to the model all come from the cleaned input, so equal
-// answers that differ only in a cut piece give one portrait.
-func (a *Service) prepare(db model.Database, task portraitTask, s Source, modelName string) (*object, string, int, error) {
+// prepare builds the input of a source with the personal data cut out, and
+// the number of cuts. The key, the fingerprint and the text that goes to the
+// model all come from the cleaned input, so equal answers that differ only in
+// a cut piece give one portrait. It needs no model.
+func (a *Service) prepare(db model.Database, task portraitTask, s Source) (*object, int, error) {
 	payload, err := task.Payload(a, db, s)
 	if err != nil {
-		return nil, "", 0, err
+		return nil, 0, err
 	}
 	masked, err := maskPersonal(payload)
 	if err != nil {
-		return nil, "", 0, err
+		return nil, 0, err
 	}
-	return payload, portraitKey(task, modelName, payload), masked, nil
+	return payload, masked, nil
+}
+
+// storedPortrait is the newest portrait of the task made for this input by any
+// model or instruction version.
+func storedPortrait(db model.Database, task portraitTask, fingerprint string) (model.Portrait, bool) {
+	var newest model.Portrait
+	found := false
+	for _, portrait := range db.Portraits {
+		if portrait.Task == task.ID && portrait.Fingerprint == fingerprint && (!found || portrait.Created >= newest.Created) {
+			newest, found = portrait, true
+		}
+	}
+	return newest, found
 }
 
 // queuePortraits queues the portrait of a source for every task that takes it.
@@ -216,10 +229,11 @@ func (a *Service) enqueuePortrait(db model.Database, task portraitTask, s Source
 	if m == nil {
 		return portraitState{Status: portraitOff}
 	}
-	_, key, _, err := a.prepare(db, task, s, m.Name())
+	payload, _, err := a.prepare(db, task, s)
 	if err != nil {
 		return portraitState{Status: portraitFailed, Reason: "Не удалось собрать сведения для модели."}
 	}
+	key := portraitKey(task, m.Name(), payload)
 	if _, ok := findPortrait(db, key); ok {
 		return portraitState{Status: portraitReady}
 	}
@@ -288,11 +302,12 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 		l.setState(job.key, &portraitState{Status: portraitFailed, Reason: "Не удалось прочитать данные."})
 		return
 	}
-	payload, key, masked, err := a.prepare(db, task, job.source, m.Name())
+	payload, masked, err := a.prepare(db, task, job.source)
 	if err != nil {
 		l.setState(job.key, &portraitState{Status: portraitFailed, Reason: "Не удалось собрать сведения для модели."})
 		return
 	}
+	key := portraitKey(task, m.Name(), payload)
 	if key != job.key {
 		l.setState(job.key, nil)
 	}
@@ -601,15 +616,29 @@ func (a *Service) portraitView(teacherID, taskID, sourceID string, retry bool) (
 	l.mu.Lock()
 	m := l.model
 	l.mu.Unlock()
-	if m == nil {
-		return PortraitView{Status: portraitOff}, nil
-	}
-	_, key, _, err := a.prepare(db, task, s, m.Name())
+	payload, _, err := a.prepare(db, task, s)
 	if err != nil {
 		return PortraitView{Status: portraitFailed, Reason: "Не удалось собрать сведения для модели."}, nil
 	}
-	if portrait, ok := findPortrait(db, key); ok {
-		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: portrait.Output, Created: portrait.Created}}, nil
+	ready := func(p model.Portrait) PortraitView {
+		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: p.Output, Created: p.Created}}
+	}
+	if m != nil {
+		if portrait, ok := findPortrait(db, portraitKey(task, m.Name(), payload)); ok {
+			return ready(portrait), nil
+		}
+	}
+	// A portrait that was made for the same input earlier, by another model or
+	// another version of the instruction, is shown while the current model makes
+	// its own in the background; the next opening shows the new one.
+	if old, ok := storedPortrait(db, task, payloadFingerprint(payload)); ok {
+		if m != nil {
+			a.enqueuePortrait(db, task, s, retry)
+		}
+		return ready(old), nil
+	}
+	if m == nil {
+		return PortraitView{Status: portraitOff}, nil
 	}
 	state := a.enqueuePortrait(db, task, s, retry)
 	return PortraitView{Status: state.Status, Reason: state.Reason}, nil

@@ -222,9 +222,71 @@ func TestPortraitIsRestoredAtStartAndKeptAcrossRestarts(t *testing.T) {
 	if other.count() != 1 || len(mustSnapshot(t, f.service.repo).Portraits) != 2 {
 		t.Fatalf("another model: %d calls, %d portraits", other.count(), len(mustSnapshot(t, f.service.repo).Portraits))
 	}
+	// Without a model the portrait that exists is still shown.
 	f.service.UseModel(nil)
-	if f.view(id).Status != portraitOff {
-		t.Fatal("model removed but status is not off")
+	if view := f.view(id); view.Status != portraitReady || string(view.Portrait.Output) != goodAnswer {
+		t.Fatalf("model removed: %+v", view)
+	}
+}
+
+// gated answers the first call at once and holds the next ones until release.
+func gated(name string, first, later string, release chan struct{}) *fakeModel {
+	return &fakeModel{name: name, reply: func(call int, _ Completion) (string, error) {
+		if call == 1 && first != "" {
+			return first, nil
+		}
+		<-release
+		return later, nil
+	}}
+}
+
+func TestStoredPortraitIsShownWhileAnotherModelMakesItsOwn(t *testing.T) {
+	f := newPortraitFixture(t, nil)
+	f.service.UseModel(answering(`{"summary":"Старый текст."}`))
+	id := f.finish("a@example.test")
+	f.idle()
+	release := make(chan struct{})
+	renamed := gated("renamed", "", `{"summary":"Новый текст."}`, release)
+	f.service.UseModel(renamed)
+	// At once the old text, already as a ready portrait; the new one is on its way.
+	view := f.view(id)
+	if view.Status != portraitReady || !strings.Contains(string(view.Portrait.Output), "Старый текст.") {
+		t.Fatalf("while the new model works: %+v", view)
+	}
+	close(release)
+	f.idle()
+	if view = f.view(id); view.Status != portraitReady || !strings.Contains(string(view.Portrait.Output), "Новый текст.") || renamed.count() != 1 {
+		t.Fatalf("after the new model: %+v, %d calls", view, renamed.count())
+	}
+	// Without a model the newest one is shown.
+	f.service.UseModel(nil)
+	if view = f.view(id); !strings.Contains(string(view.Portrait.Output), "Новый текст.") {
+		t.Fatalf("model removed: %+v", view)
+	}
+	if len(mustSnapshot(t, f.service.repo).Portraits) != 2 {
+		t.Fatal("the old portrait was not kept")
+	}
+}
+
+func TestRetryShowsTheStoredPortraitAndQueuesTheNewModel(t *testing.T) {
+	f := newPortraitFixture(t, nil)
+	f.service.UseModel(answering(`{"summary":"Старый текст."}`))
+	id := f.finish("a@example.test")
+	f.idle()
+	bad := answering("не JSON")
+	bad.name = "bad"
+	f.service.UseModel(bad)
+	f.idle()
+	if bad.count() != 3 {
+		t.Fatalf("%d calls", bad.count())
+	}
+	view, err := f.service.RetryPortrait(f.teacherID, "test-session", id)
+	if err != nil || view.Status != portraitReady || !strings.Contains(string(view.Portrait.Output), "Старый текст.") {
+		t.Fatalf("retry: %+v %v", view, err)
+	}
+	f.idle()
+	if bad.count() != 6 {
+		t.Fatalf("retry did not queue the new model: %d calls", bad.count())
 	}
 }
 

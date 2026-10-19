@@ -204,7 +204,17 @@ func TestAnswerThatBreaksTheRulesFailsAfterThreeTries(t *testing.T) {
 
 func TestNewInstructionVersionMakesANewPortraitAndKeepsTheOld(t *testing.T) {
 	f := newAutobiographyFixture(t)
-	m := portraitModel(nil)
+	release := make(chan struct{})
+	m := &fakeModel{name: "fake", reply: func(call int, c Completion) (string, error) {
+		answer := goodPortrait(c.User)
+		answer["summary"] = "Текст первой версии."
+		if call > 1 {
+			<-release
+			answer["summary"] = "Текст второй версии."
+		}
+		data, _ := json.Marshal(answer)
+		return string(data), nil
+	}}
 	f.service.UseModel(m)
 	f.submit()
 	f.idle()
@@ -213,7 +223,15 @@ func TestNewInstructionVersionMakesANewPortraitAndKeepsTheOld(t *testing.T) {
 	next.Version = "v2"
 	f.service.portraits.tasks = []portraitTask{next}
 	f.service.UseModel(m)
+	// The portrait of v1 is shown at once, the one of v2 is made in the background.
+	if view := f.portrait(f.submission); view.Status != portraitReady || !strings.Contains(string(view.Portrait.Output), "первой версии") {
+		t.Fatalf("while the new version is made: %+v", view)
+	}
+	close(release)
 	f.idle()
+	if view := f.portrait(f.submission); view.Status != portraitReady || !strings.Contains(string(view.Portrait.Output), "второй версии") {
+		t.Fatalf("after the new version: %+v", view)
+	}
 	db := mustSnapshot(t, f.service.repo)
 	if m.count() != 2 || len(db.Portraits) != 2 || db.Portraits[0].TaskVersion != "v1" || db.Portraits[1].TaskVersion != "v2" || db.Portraits[0].ID == db.Portraits[1].ID || db.Portraits[0].Fingerprint != db.Portraits[1].Fingerprint {
 		t.Fatalf("%d calls: %+v", m.count(), db.Portraits)
