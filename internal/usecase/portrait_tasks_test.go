@@ -228,7 +228,7 @@ func TestNewInstructionVersionMakesANewPortraitAndKeepsTheOld(t *testing.T) {
 	f.idle()
 	task, _ := f.service.portraits.task("autobiography")
 	next := task
-	next.Version = "v2"
+	next.Version = task.Version + "-next"
 	f.service.portraits.tasks = []portraitTask{next}
 	f.service.UseModel(m)
 	// The portrait of v1 is shown at once, the one of v2 is made in the background.
@@ -241,7 +241,7 @@ func TestNewInstructionVersionMakesANewPortraitAndKeepsTheOld(t *testing.T) {
 		t.Fatalf("after the new version: %+v", view)
 	}
 	db := mustSnapshot(t, f.service.repo)
-	if m.count() != 2 || len(db.Portraits) != 2 || db.Portraits[0].TaskVersion != "v1" || db.Portraits[1].TaskVersion != "v2" || db.Portraits[0].ID == db.Portraits[1].ID || db.Portraits[0].Fingerprint != db.Portraits[1].Fingerprint {
+	if m.count() != 2 || len(db.Portraits) != 2 || db.Portraits[0].TaskVersion != task.Version || db.Portraits[1].TaskVersion != next.Version || db.Portraits[0].ID == db.Portraits[1].ID || db.Portraits[0].Fingerprint != db.Portraits[1].Fingerprint {
 		t.Fatalf("%d calls: %+v", m.count(), db.Portraits)
 	}
 }
