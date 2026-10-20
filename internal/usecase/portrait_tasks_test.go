@@ -12,7 +12,8 @@ import (
 // goodPortrait answers the way the instruction asks, for the input it is given.
 func goodPortrait(user string) map[string]any {
 	var input struct {
-		Levels map[string]string `json:"уровни"`
+		Levels   map[string]string `json:"уровни"`
+		Criminal string            `json:"уголовная_ответственность"`
 	}
 	_ = json.Unmarshal([]byte(user), &input)
 	potential := []any{}
@@ -20,10 +21,14 @@ func goodPortrait(user string) map[string]any {
 		name := lowerFirst(area.Title)
 		potential = append(potential, map[string]any{"area": name, "level": input.Levels[name], "facts": "Студент указал опыт.", "conclusion": "Опыт может пригодиться."})
 	}
+	consider := []any{"Нет спортивного опыта."}
+	if input.Criminal == "привлекался" {
+		consider = append(consider, "Привлекался к уголовной ответственности; подробности — в ответах студента.")
+	}
 	return map[string]any{
 		"summary":   "Студент сообщил о себе, по сведениям, которые сообщил студент, следующее.",
 		"potential": potential,
-		"attention": map[string]any{"use": []any{"Опыт организатора."}, "consider": []any{"Нет спортивного опыта."}},
+		"attention": map[string]any{"use": []any{"Опыт организатора."}, "consider": consider},
 	}
 }
 
@@ -178,6 +183,9 @@ func TestAnswerThatBreaksTheRulesFailsAfterThreeTries(t *testing.T) {
 		"empty facts":  {func(a map[string]any) { a["potential"].([]any)[2].(map[string]any)["facts"] = "" }, "пустое поле facts"},
 		"no attention": {func(a map[string]any) { delete(a, "attention") }, "нет блока"},
 		"use not text": {func(a map[string]any) { a["attention"].(map[string]any)["use"] = []any{1} }, "не список строк"},
+		"consequence in consider": {func(a map[string]any) {
+			a["attention"].(map[string]any)["consider"] = []any{"Женат, имеет одного ребёнка — обстоятельства жизни, влияющие на распределение времени."}
+		}, "вывод вместо факта"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			f := newAutobiographyFixture(t)
@@ -260,6 +268,51 @@ func TestPortraitUsesTheLevelsOfTheProgramAndFindsThemInTheInput(t *testing.T) {
 	}
 	if problems := checkAutobiographyAnswer(goodPortrait(string(canonicalJSON(payload))), payload); len(problems) != 0 {
 		t.Fatalf("a good answer fails: %v", problems)
+	}
+}
+
+// The points are answers of the models in the comparison of 19 October 2026.
+func TestWhatToConsiderHoldsFactsWithoutConclusions(t *testing.T) {
+	payload := newObject()
+	payload.set("уголовная_ответственность", "не привлекался")
+	for _, point := range []string{
+		"Женат, имеет одного ребёнка — обстоятельства жизни, влияющие на планирование времени и нагрузок.",
+		"Женат, имеет одного ребёнка — обстоятельства жизни, влияющие на распределение времени.",
+		"Служба в Вооружённых силах уже пройдена — учитывать при планировании учебных сборов и допусков.",
+		"В военно-патриотической деятельности опыт ограничен учебными сборами и службой; расширять практику командных ролей.",
+		"Студент обучается на факультете компьютерных наук и занимается математикой, что указывает на сильную академическую подготовку.",
+		"Отец — военнослужащий, что следует учесть при распределении по нарядам.",
+	} {
+		if problems := considerProblems([]any{point}, payload); len(problems) != 1 || !strings.Contains(problems[0], "вывод вместо факта") || strings.Contains(problems[0], point) {
+			t.Errorf("%q: %v", point, problems)
+		}
+	}
+	for _, point := range []string{
+		"Женат, имеет одного ребёнка.",
+		"Служба в Вооружённых силах уже пройдена, период 2021–2022.",
+		"Воспитывался матерью, сведений об отце не имеет.",
+		"Отец — военнослужащий, заместитель командира батальона.",
+		"У брата есть судимость по ст. 158 УК РФ, кража.",
+		"Другой близкий родственник имеет гражданство Казахстана.",
+		"Спортивный опыт ограничен плаванием 1–3 года, юношеский разряд.",
+		"Наряду с плаванием занимался футболом.",
+		"Студент не проходил военную службу по призыву.",
+		"Опыт владения иностранными языками не указан.",
+	} {
+		if problems := considerProblems([]any{point}, payload); len(problems) != 0 {
+			t.Errorf("%q: %v", point, problems)
+		}
+	}
+	payload.set("уголовная_ответственность", "привлекался")
+	for point, ok := range map[string]bool{
+		"Привлекался к уголовной ответственности.":                                                     false,
+		"Привлекался к уголовной ответственности; подробности — в ответах студента.":                   true,
+		"Привлекался к уголовной ответственности, подробности - в ответах студента.":                   true,
+		"Студент сообщил о привлечении к уголовной ответственности (подробности — в ответах студента)": true,
+	} {
+		if problems := considerProblems([]any{point}, payload); (len(problems) == 0) != ok {
+			t.Errorf("%q: %v", point, problems)
+		}
 	}
 }
 
