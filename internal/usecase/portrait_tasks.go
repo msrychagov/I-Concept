@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 	"vucdiagnostic/internal/domain/model"
@@ -55,9 +56,18 @@ func (a *Service) autobiographyTask(prompt promptbank.Prompt) portraitTask {
 
 const attentionLimit = 5
 
+// consequence finds a conclusion in a point of «what to consider»: what the
+// circumstance affects, how to take it into account, what to do about it. The
+// point must hold the fact alone (decided 9 October 2026). The words come from
+// the answers that broke this rule in the comparison of the models.
+var consequence = regexp.MustCompile(`(?i)влия|учитыв|учесть при|при планировани|при распределени|при назначени|рекоменд|следует|необходимо|потребует|может сказаться|указывает на|свидетельству|расширять|развивать|уделить|обратить внимание|допуск|нагрузк|нарядам|нарядов|наряды|в наряд`)
+
+// criminalDetails is the phrase that must follow the student's own criminal record.
+var criminalDetails = regexp.MustCompile(`(?i)подробности[^.;]{0,20}в ответах студента`)
+
 // checkAutobiographyAnswer returns what is wrong with an answer to the
-// instruction autobiography/v1 that can be found without reading the text:
-// the schema and the rules about the levels and the number of points.
+// autobiography instruction that a program can find: the schema, the levels,
+// the number of points and the rules of «what to consider».
 func checkAutobiographyAnswer(output map[string]any, payload *object) []string {
 	problems := []string{}
 	if text, ok := output["summary"].(string); !ok || strings.TrimSpace(text) == "" {
@@ -122,6 +132,28 @@ func checkAutobiographyAnswer(output map[string]any, payload *object) []string {
 		case len(list) > attentionLimit:
 			problems = append(problems, "attention."+key+": пунктов больше пяти")
 		}
+		if key == "consider" && isList && strs {
+			problems = append(problems, considerProblems(list, payload)...)
+		}
+	}
+	return problems
+}
+
+// considerProblems checks the points of «what to consider» against the rules
+// of the instruction. A problem names the point by its number and never quotes
+// its text: the problems go to the journal, the answer must not.
+func considerProblems(points []any, payload *object) []string {
+	problems := []string{}
+	details := false
+	for n, point := range points {
+		text := point.(string)
+		if found := consequence.FindString(text); found != "" {
+			problems = append(problems, fmt.Sprintf("attention.consider, пункт %d: вывод вместо факта («%s»)", n+1, strings.ToLower(found)))
+		}
+		details = details || criminalDetails.MatchString(text)
+	}
+	if record, _ := payload.values["уголовная_ответственность"].(string); record == "привлекался" && !details {
+		problems = append(problems, "attention.consider: нет «подробности — в ответах студента»")
 	}
 	return problems
 }
