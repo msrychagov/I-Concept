@@ -1,0 +1,29 @@
+.ai-report-card{margin-top:1.2rem;padding:1.2rem;border:1px solid rgba(180,150,81,.34);border-radius:16px;background:linear-gradient(145deg,rgba(212,185,124,.09),rgba(29,57,46,.025))}
+.ai-report-header{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:.8rem}
+.ai-report-header h3{margin:0}
+.ai-report-summary{border-left:3px solid #c2a060;padding:.1rem 1rem;margin:1rem 0 1.5rem}
+.ai-report-summary h4{margin:.3rem 0}
+.ai-report-summary p{line-height:1.65;margin-bottom:.3rem}
+.ai-indicators{max-height:560px;overflow:auto;display:grid;gap:.5rem;scrollbar-width:thin}
+.ai-indicators .evidence-card{margin:0}
+.ai-indicators p{line-height:1.6}
+.ai-report-limitations{font-size:.88em;color:var(--muted,#66736b);margin-top:1.3rem;line-height:1.5}
+.ai-working-bar{height:4px;border-radius:3px;background:#d9d5c6;overflow:hidden;margin:1rem 0}
+.ai-working-bar i{display:block;height:100%;width:35%;background:#bc9f61;animation:ai-scan 1.6s ease-in-out infinite alternate}
+@keyframes ai-scan{from{transform:translateX(-105%)}to{transform:translateX(390%)}}
+@media(prefers-reduced-motion:reduce){.ai-working-bar i{animation:none;width:100%}}
+
+/* Fixed report outline shared by the student and platoon reports. */
+.ai-report-section{margin:1.15rem 0;padding-top:.2rem}
+.ai-report-section h4{margin:.5rem 0 .65rem;color:var(--ink,#263e34)}
+.ai-report-section p{line-height:1.65;margin:.3rem 0 .7rem}
+.ai-report-section ul{padding-left:1.4rem;margin:.35rem 0 .8rem}
+.ai-report-section li{line-height:1.6;margin-bottom:.45rem}
+.ai-report-summary{background:rgba(192,162,95,.06);border-radius:0 8px 8px 0;padding:.85rem 1.1rem;margin:1.1rem 0}
+.ai-indicator-body{padding:.45rem .7rem .6rem}
+.ai-indicator-body p{margin:.45rem 0 .75rem;line-height:1.55}
+.ai-indicator-body strong{color:var(--ink,#263e34)}
+.ai-indicator-status{font-size:.9rem}
+.ai-discussion{border-left:2px solid rgba(172,135,62,.5);padding-left:.75rem}
+.ai-report-source{font-size:.82rem;line-height:1.45;opacity:.8;margin-top:1.2rem}
+.ai-report-limitations{margin-top:1.2rem}

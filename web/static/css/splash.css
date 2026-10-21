@@ -1,0 +1,197 @@
+/* Opening animation only. Kept isolated from existing page/component styles. */
+#vuc-intro {
+    position: fixed;
+    inset: 0;
+    z-index: 100100;
+    display: grid;
+    place-items: center;
+    isolation: isolate;
+    overflow: hidden;
+    color: #f6f0df;
+    background:
+        radial-gradient(ellipse 36% 48% at 50% 43%, rgba(115, 116, 72, .13), transparent 85%),
+        radial-gradient(ellipse 80% 65% at 50% 110%, #294439 0%, transparent 74%),
+        linear-gradient(145deg, #101f1b 0%, #1c332b 49%, #132820 100%);
+    font-family: 'Roboto Condensed', 'Segoe UI', Arial, sans-serif;
+    opacity: 1;
+    transition: opacity 620ms cubic-bezier(.25,.6,.2,1), visibility 620ms;
+}
+#vuc-intro, #vuc-intro * { box-sizing: border-box; }
+#vuc-intro.vuc-intro-closing { opacity: 0; visibility: hidden; pointer-events: none; }
+#vuc-intro::before {
+    content: '';
+    position: absolute;
+    inset: -30%;
+    z-index: -2;
+    opacity: .29;
+    background: repeating-radial-gradient(circle at 50% 50%, transparent 0 68px, rgba(206,178,109,.12) 69px 70px, transparent 71px 140px);
+    animation: vuc-intro-breathe 7s ease-in-out both;
+}
+#vuc-intro::after {
+    content: '';
+    position: absolute;
+    left: 8%; right: 8%; top: 52%;
+    height: 1px;
+    opacity: .25;
+    background: linear-gradient(90deg, transparent, rgba(210,178,109,.25) 30%, rgba(210,178,109,.25) 70%, transparent);
+    z-index: -1;
+}
+.vuc-intro-content {
+    width: min(92vw, 660px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transform: translateY(-10px);
+}
+.vuc-intro-mark {
+    width: clamp(205px, 25vw, 292px);
+    aspect-ratio: 1331 / 1181;
+    position: relative;
+    margin-bottom: clamp(12px, 3vh, 28px);
+    animation: vuc-intro-rise 1100ms cubic-bezier(.19,1,.22,1) both;
+}
+.vuc-intro-crest, .vuc-intro-gild, .vuc-intro-star {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    pointer-events: none;
+}
+.vuc-intro-crest {
+    filter: drop-shadow(0 12px 25px rgba(0,0,0,.35));
+    animation: vuc-intro-assemble 1750ms cubic-bezier(.18,.9,.23,1) both;
+}
+/* These two glints use the exact same crest pixels, not a replacement logo. */
+.vuc-intro-gild {
+    opacity: 0;
+    filter: brightness(1.7) saturate(1.2) drop-shadow(0 0 8px rgba(249,219,138,.45));
+    -webkit-mask-image: linear-gradient(107deg, transparent 35%, black 49%, black 51%, transparent 65%);
+    mask-image: linear-gradient(107deg, transparent 35%, black 49%, black 51%, transparent 65%);
+    -webkit-mask-size: 310% 100%;
+    mask-size: 310% 100%;
+    animation: vuc-intro-gild 1350ms ease-in-out 1050ms both;
+}
+.vuc-intro-star {
+    -webkit-clip-path: polygon(49% 3%, 56% 12%, 64% 12%, 60% 22%, 62% 26%, 49% 22%, 39% 27%, 41% 18%, 35% 13%, 44% 11%);
+    clip-path: polygon(49% 3%, 56% 12%, 64% 12%, 60% 22%, 62% 26%, 49% 22%, 39% 27%, 41% 18%, 35% 13%, 44% 11%);
+    filter: brightness(1.6) drop-shadow(0 0 15px #e8c67a);
+    animation: vuc-intro-star-flash 1100ms ease-out 1200ms both;
+}
+.vuc-intro-halo {
+    position: absolute;
+    width: 124%; height: 124%; left: -12%; top: -12%;
+    border: 1px solid rgba(204,174,99,.24);
+    border-radius: 50%;
+    transform: scale(.7);
+    opacity: 0;
+    animation: vuc-intro-halo 1400ms ease-out 390ms forwards;
+    pointer-events: none;
+}
+.vuc-intro-halo::after {
+    content: '';
+    position: absolute;
+    inset: 10px;
+    border: 1px solid rgba(204,174,99,.12);
+    border-radius: 50%;
+}
+.vuc-intro-spark {
+    position: absolute;
+    width: 4px; height: 4px;
+    background: #ebd292;
+    border-radius: 50%;
+    box-shadow: 0 0 16px 4px rgba(232,201,128,.35);
+    opacity: 0;
+    animation: vuc-intro-spark 1450ms ease-out both;
+    pointer-events: none;
+}
+.vuc-intro-spark.s1 { left: 7%; top: 34%; --dx: -24px; --dy: -28px; animation-delay: 520ms; }
+.vuc-intro-spark.s2 { right: 3%; top: 43%; --dx: 22px; --dy: -16px; animation-delay: 730ms; }
+.vuc-intro-spark.s3 { left: 25%; bottom: 5%; --dx: -12px; --dy: 18px; animation-delay: 930ms; }
+.vuc-intro-spark.s4 { right: 20%; bottom: 9%; --dx: 12px; --dy: 22px; animation-delay: 1180ms; }
+.vuc-intro-rule {
+    width: 0;
+    height: 1px;
+    margin: 0 0 22px;
+    background: linear-gradient(90deg, transparent, #d6b671 28%, #f4db9d 50%, #d6b671 72%, transparent);
+    animation: vuc-intro-rule 690ms cubic-bezier(.19,1,.22,1) 1090ms both;
+}
+.vuc-intro-kicker {
+    margin: 0 0 10px;
+    font-size: clamp(11px, 1.4vw, 13px);
+    letter-spacing: .32em;
+    font-weight: 500;
+    line-height: 1.4;
+    color: #ddc794;
+    text-transform: uppercase;
+    animation: vuc-intro-caption 760ms ease-out 1180ms both;
+}
+.vuc-intro-title {
+    margin: 0;
+    font-size: clamp(23px, 4.1vw, 40px);
+    letter-spacing: .08em;
+    font-weight: 600;
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: #fffaf0;
+    text-shadow: 0 2px 18px rgba(0,0,0,.2);
+    animation: vuc-intro-caption 850ms ease-out 1360ms both;
+}
+.vuc-intro-subtitle {
+    margin: 8px 0 0;
+    color: rgba(244,233,207,.65);
+    font: 400 clamp(12px,1.5vw,15px)/1.5 'Roboto', 'Segoe UI', Arial, sans-serif;
+    letter-spacing: .14em;
+    animation: vuc-intro-caption 800ms ease-out 1510ms both;
+}
+#vuc-intro .vuc-intro-skip {
+    position: absolute;
+    right: max(22px, env(safe-area-inset-right));
+    bottom: max(22px, env(safe-area-inset-bottom));
+    min-height: auto;
+    padding: 9px 14px;
+    border: 1px solid rgba(214,188,127,.36);
+    border-radius: 100px;
+    background: rgba(7,19,14,.17);
+    box-shadow: none;
+    color: #e4d4ad;
+    font: 400 13px/1.4 'Roboto', 'Segoe UI', Arial, sans-serif;
+    letter-spacing: .02em;
+    cursor: pointer;
+    transition: background .2s, border-color .2s;
+    opacity: 0;
+    animation: vuc-intro-caption 500ms ease-out 2000ms both;
+}
+#vuc-intro .vuc-intro-skip:hover { background: rgba(200,172,103,.12); border-color: #d6b77d; transform: none; }
+#vuc-intro .vuc-intro-skip:focus-visible { outline: 2px solid #eddaac; outline-offset: 4px; }
+@keyframes vuc-intro-assemble {
+    0% { opacity: 0; transform: translateY(15px) scale(.83) rotate(-4deg); filter: blur(11px) brightness(.7); }
+    45% { opacity: 1; filter: blur(0) brightness(.87) drop-shadow(0 6px 16px rgba(0,0,0,.22)); }
+    78% { transform: translateY(0) scale(1.02) rotate(.6deg); }
+    100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); filter: drop-shadow(0 12px 25px rgba(0,0,0,.35)); }
+}
+@keyframes vuc-intro-gild {
+    0% { opacity: 0; -webkit-mask-position: 120% 0; mask-position: 120% 0; }
+    23% { opacity: .76; }
+    78% { opacity: .68; }
+    100% { opacity: 0; -webkit-mask-position: -10% 0; mask-position: -10% 0; }
+}
+@keyframes vuc-intro-star-flash { 0%,12% { opacity: 0; } 40% { opacity: .9; } 100% { opacity: 0; } }
+@keyframes vuc-intro-rise { from { transform: translateY(12px); } to { transform: translateY(0); } }
+@keyframes vuc-intro-halo { 0% { opacity: 0; transform: scale(.7); } 34% { opacity: .57; } 100% { opacity: 0; transform: scale(1.2); } }
+@keyframes vuc-intro-breathe { from { transform: scale(.86); opacity: 0; } to { transform: scale(1); opacity: .29; } }
+@keyframes vuc-intro-spark { 0% { opacity: 0; transform: translate(0,0) scale(.4); } 26% { opacity: .7; } 100% { opacity: 0; transform: translate(var(--dx),var(--dy)) scale(.1); } }
+@keyframes vuc-intro-rule { from { width: 0; opacity: 0; } to { width: 90px; opacity: 1; } }
+@keyframes vuc-intro-caption { from { opacity: 0; transform: translateY(13px); filter: blur(3px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+@media (max-width: 480px) {
+    .vuc-intro-content { transform: translateY(-4vh); }
+    .vuc-intro-rule { margin-bottom: 19px; }
+    .vuc-intro-kicker { letter-spacing: .20em; }
+    .vuc-intro-title { letter-spacing: .035em; }
+    .vuc-intro-subtitle { letter-spacing: .045em; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #vuc-intro, #vuc-intro * { animation: none !important; transition-duration: .01ms !important; }
+}

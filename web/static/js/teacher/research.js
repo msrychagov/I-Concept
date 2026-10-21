@@ -96,6 +96,40 @@
         document.querySelectorAll('[data-tab]').forEach(item => item.classList.toggle('active', item === button));
         render();
     };
+    // The profile menu lives in the teacher header only. Logout behavior remains unchanged.
+    const userMenu = document.querySelector('.teacher-user-menu');
+    const userTrigger = document.querySelector('#teacher-user-trigger');
+    const userDropdown = document.querySelector('#teacher-user-dropdown');
+    const setUserMenuOpen = (open, restoreFocus = false) => {
+        userMenu.classList.toggle('is-open', open);
+        userTrigger.setAttribute('aria-expanded', String(open));
+        userDropdown.setAttribute('aria-hidden', String(!open));
+        userDropdown.inert = !open;
+        if (restoreFocus) userTrigger.focus();
+    };
+    userTrigger.addEventListener('click', () => {
+        setUserMenuOpen(!userMenu.classList.contains('is-open'));
+    });
+    userTrigger.addEventListener('keydown', event => {
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            setUserMenuOpen(true);
+            userDropdown.querySelector('[role="menuitem"]')?.focus();
+        }
+    });
+    document.addEventListener('pointerdown', event => {
+        if (!userMenu.contains(event.target)) setUserMenuOpen(false);
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && userMenu.classList.contains('is-open')) {
+            event.preventDefault();
+            setUserMenuOpen(false, true);
+        }
+    });
+    userMenu.addEventListener('focusout', event => {
+        if (!userMenu.contains(event.relatedTarget)) setUserMenuOpen(false);
+    });
+
     document.querySelector('#teacher-logout').onclick = async () => {
         window.pageLoader.show('Выходим…');
         try {

@@ -23,7 +23,7 @@ func (h *Handler) consent(w http.ResponseWriter, r *http.Request) {
 }
 func (h *Handler) answer(w http.ResponseWriter, r *http.Request) {
 	var body answerRequest
-	if !h.decodeBody(w, r, 16384, &body) || !h.requiredRevision(w, body.Revision) {
+	if !h.decodeBody(w, r, 65536, &body) || !h.requiredRevision(w, body.Revision) {
 		return
 	}
 	if len(body.Value) == 0 {

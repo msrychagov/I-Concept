@@ -6,44 +6,54 @@
     <title>Кабинет преподавателя</title>
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="/assets/css/portal.css">
-    <link rel="stylesheet" href="/assets/css/military-theme.css">
     <link rel="stylesheet" href="/assets/css/form.css">
+    <link rel="stylesheet" href="/assets/css/military-theme.css">
+    <link rel="stylesheet" href="/assets/css/splash.css">
+    <link rel="stylesheet" href="/assets/css/ai-reports.css">
+    <link rel="stylesheet" href="/assets/css/ai-reports.css">
+    <meta name="theme-color" content="#1b302a">
 </head>
 <body data-managed-loader="true">
+<script src="/assets/js/shared/splash.js"></script>
 <script src="/assets/js/shared/loader.js"></script>
 <script src="/assets/js/shared/api.js"></script>
 <div class="research-layout">
-    <aside class="research-nav">
-        <div class="brand"><img class="brand-mark" src="/assets/images/logo.png" alt="ВУЦ" width="54" height="62"><span
-                class="brand-copy">Диагностическая система<small>кабинет преподавателя</small></span></div>
+    <aside class="research-nav" id="main-sidebar" aria-label="Основная навигация">
+        <a class="brand" href="/" aria-label="На главную"><img class="brand-mark" src="/assets/images/reference/crest.png" alt="Эмблема ВУЦ" width="99" height="93"></a>
         <nav id="nav">
-            <button data-tab="overview" class="active">Главная</button>
-            <button data-tab="autobiography">Автобиография</button>
-            <button data-tab="profiles">Диагностическое тестирование</button>
-            <button data-tab="platoons">Управление взводом</button>
-            <button data-tab="model">Модель и методика</button>
-            <button data-tab="settings">Настройки</button>
+            <button data-tab="overview" class="active"><img class="ui-icon" src="/assets/images/icons/home.svg" alt="" aria-hidden="true" width="20" height="20"><span>Главная</span></button>
+            <button data-tab="autobiography"><img class="ui-icon" src="/assets/images/icons/file.svg" alt="" aria-hidden="true" width="20" height="20"><span>Автобиография</span></button>
+            <button data-tab="profiles"><img class="ui-icon" src="/assets/images/icons/target.svg" alt="" aria-hidden="true" width="20" height="20"><span>Диагностическое тестирование</span></button>
+            <button data-tab="platoons"><img class="ui-icon" src="/assets/images/icons/users.svg" alt="" aria-hidden="true" width="20" height="20"><span>Управление взводом</span></button>
+            <button data-tab="model"><img class="ui-icon" src="/assets/images/icons/book.svg" alt="" aria-hidden="true" width="20" height="20"><span>Модель и методика</span></button>
+            <button data-tab="settings"><img class="ui-icon" src="/assets/images/icons/settings.svg" alt="" aria-hidden="true" width="20" height="20"><span>Настройки</span></button>
         </nav>
-        <div class="nav-motto">Знания<br>Дисциплина<br>Развитие<br>Ответственность</div>
-        <div class="nav-foot"><a href="/api/v1/exports/answers.csv">⇩ Выгрузить CSV</a>
-            <p>
-                <button id="teacher-logout" class="secondary">Выйти</button>
-            </p>
-        </div>
+        <div class="nav-motto"><div class="building-picture" aria-hidden="true"></div><span>«Знание<br>Ответственность<br>Служение»</span><i aria-hidden="true"></i></div>
     </aside>
     <div class="research-workspace">
         <header class="app-topbar">
-            <div><b>Электронная диагностическая система ВУЦ</b><span>Главная панель преподавателя</span></div>
-            <div class="user-state"><span class="user-avatar" id="teacher-avatar">П</span><span><span id="teacher-name">Преподаватель</span><small>● В сети</small></span>
+            <button class="menu-toggle secondary" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="main-sidebar"><img class="ui-icon" src="/assets/images/icons/menu.svg" alt="" aria-hidden="true" width="20" height="20"></button><div class="topbar-title"><b>Электронная диагностическая система</b></div>
+            <div class="teacher-user-menu">
+                <button class="user-state teacher-user-trigger" id="teacher-user-trigger" type="button" aria-expanded="false" aria-haspopup="menu" aria-controls="teacher-user-dropdown" aria-label="Меню преподавателя">
+                    <span class="user-avatar" id="teacher-avatar">П</span>
+                    <span class="teacher-user-details"><span id="teacher-name">Преподаватель</span><small>Преподаватель</small></span>
+                    <img class="ui-icon teacher-user-chevron" src="/assets/images/icons/chevron-down.svg" alt="" aria-hidden="true" width="16" height="16">
+                </button>
+                <div class="teacher-user-dropdown" id="teacher-user-dropdown" role="menu" aria-label="Меню преподавателя" aria-hidden="true" inert>
+                    <button id="teacher-logout" type="button" role="menuitem"><img class="ui-icon" src="/assets/images/icons/logout.svg" alt="" aria-hidden="true" width="20" height="20"><span>Выйти</span></button>
+                </div>
             </div>
         </header>
         <main class="research-main">
             <div id="messages"></div>
             <div id="view"><h1>Загрузка…</h1></div>
         </main>
+        <footer class="site-footer">Электронная диагностическая система воспитания студента ВУЦ <span>© 2026</span></footer>
     </div>
 </div>
 <script src="/assets/js/shared/pagination.js" defer></script>
+<script src="/assets/js/teacher/ai-reports.js" defer></script>
+<script src="/assets/js/teacher/ai-reports.js" defer></script>
 <script src="/assets/js/teacher/results.js" defer></script>
 <script src="/assets/js/teacher/dashboard.js" defer></script>
 <script src="/assets/js/teacher/teaching.js" defer></script>
@@ -56,5 +66,6 @@
 <script src="/assets/js/teacher/template-editor.js" defer></script>
 <script src="/assets/js/teacher/methodology.js" defer></script>
 <script src="/assets/js/teacher/research.js" defer></script>
+<script src="/assets/js/shared/reference-ui.js" defer></script>
 </body>
 </html>

@@ -3,6 +3,7 @@ package usecase
 import (
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 func (a *Service) SurveyCommand(loginToken, sessionID string, b Input, op string) (any, error) {
@@ -39,8 +40,18 @@ func (a *Service) SurveyCommand(loginToken, sessionID string, b Input, op string
 				return nil, failure(Invalid, map[string]any{"error": err.Error()})
 			}
 			note := str(b, "note")
-			if len(note) > 4000 {
+			if utf8.RuneCountInString(note) > 4000 {
 				return nil, failure(Invalid, map[string]any{"error": "Заметка слишком длинная."})
+			}
+			for _, item := range a.itemsFor(s) {
+				if item.ID == id && item.Type == "textarea" {
+					// The text is stored in Notes; 0 marks completion, never a score.
+					if value == nil {
+						note = ""
+					} else if strings.TrimSpace(note) == "" {
+						return nil, failure(Invalid, map[string]any{"error": "Введите развёрнутый ответ или оставьте вопрос без ответа."})
+					}
+				}
 			}
 			if value == nil {
 				delete(s.Answers, id)

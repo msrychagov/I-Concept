@@ -47,6 +47,9 @@ func (a *Service) validateQuestions(p model.Profile) error {
 			return fmt.Errorf("Повторяющийся или пустой код вопроса.")
 		}
 		seen[i.ID] = true
+		if i.Type == "textarea" && (i.Module != "F" || !i.ResponseOnly || i.Scored || i.Min != 0 || i.Max != 0 || len(i.Options) != 0) {
+			return fmt.Errorf("Текстовый вопрос %s должен быть описательным вопросом раздела «Мои действия и опыт».", i.ID)
+		}
 		if i.ResponseOnly && (i.Scored || i.Reverse) {
 			return fmt.Errorf("Описательный вопрос %s нельзя включать в балльный расчёт.", i.ID)
 		}

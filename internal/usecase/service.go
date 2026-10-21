@@ -13,6 +13,7 @@ type Service struct {
 	forms    map[string]model.Form
 	// portraits is shared by the copies of the service made for old bank versions.
 	portraits *portraitLayer
+	ai        *aiLayer
 }
 
 func New(bank model.Bank, repo Repository, previous ...model.Bank) *Service {
@@ -20,7 +21,7 @@ func New(bank model.Bank, repo Repository, previous ...model.Bank) *Service {
 	for _, old := range previous {
 		history[old.Version] = model.Clone(old)
 	}
-	return &Service{bank: model.Clone(bank), repo: repo, previous: history, forms: map[string]model.Form{}, portraits: newPortraitLayer()}
+	return &Service{bank: model.Clone(bank), repo: repo, previous: history, forms: map[string]model.Form{}, portraits: newPortraitLayer(), ai: newAILayer()}
 }
 
 // The question wording and key of earlier sessions remain tied to their bank version.

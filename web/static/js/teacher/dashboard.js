@@ -35,10 +35,10 @@ window.teachingDashboard = async function ({view, api, esc}) {
         const shownStudents = students.filter(s => !platoon || s.platoon === platoon);
         const shownPlatoons = platoons.filter(p => !platoon || p === platoon);
         const assignments = datasets.flatMap(d => d.assignments).filter(a => a.active && (!platoon || !a.platoon || a.platoon === platoon));
-        root.innerHTML = `<header class="page-heading"><div><div class="eyebrow">Кабинет преподавателя</div><h1>Главная</h1><p class="muted">Общая статистика по вашим назначениям и студентам</p></div><button id="refresh-overview" class="secondary">Обновить</button></header>
+        root.innerHTML = `<header class="page-heading"><div><div class="eyebrow">Кабинет преподавателя</div><h1>Главная</h1><p class="muted">Общая статистика по вашим назначениям и студентам</p></div></header>
    <div id="overview-error" role="alert"></div>
-   <div class="dashboard-metrics"><article><strong>${shownStudents.length}</strong>Студентов</article><article><strong>${shownPlatoons.filter(Boolean).length}</strong>Взводов</article><article><strong>${assignments.length}</strong>Активных тестирований</article><article><strong>${all.done} / ${all.total}</strong>Пройдено назначений</article></div>
-   <section class="surface testing-summary"><div class="section-title"><div><h2>Общая картина прохождения</h2></div></div>
+   <div class="dashboard-metrics"><article><img class="metric-picture" src="/assets/images/reference/card-study.jpg" alt=""><span class="metric-emblem"><img class="ui-icon" src="/assets/images/icons/graduation.svg" alt="" width="26" height="26"></span><strong>${shownStudents.length}</strong>Студентов</article><article><img class="metric-picture" src="/assets/images/reference/card-upbringing.jpg" alt=""><span class="metric-emblem"><img class="ui-icon" src="/assets/images/icons/users.svg" alt="" width="26" height="26"></span><strong>${shownPlatoons.filter(Boolean).length}</strong>Взводов</article><article><img class="metric-picture" src="/assets/images/reference/card-daily.jpg" alt=""><span class="metric-emblem"><img class="ui-icon" src="/assets/images/icons/clipboard.svg" alt="" width="26" height="26"></span><strong>${assignments.length}</strong>Активных тестирований</article><article><img class="metric-picture" src="/assets/images/reference/card-knowledge.jpg" alt=""><span class="metric-emblem"><img class="ui-icon" src="/assets/images/icons/check-circle.svg" alt="" width="26" height="26"></span><strong>${all.done} / ${all.total}</strong>Пройдено назначений</article></div>
+   <section class="surface testing-summary"><div class="section-title"><div><h2>Общая статистика</h2></div></div>
    <div class="toolbar testing-filters"><label>Назначения<select id="overview-scope"><option value="all" ${scope === 'all' ? 'selected' : ''}>Все, включая закрытые</option><option value="active" ${scope === 'active' ? 'selected' : ''}>Только активные</option></select></label><label>Взвод<select id="overview-platoon"><option value="">Все взводы</option>${platoons.filter(Boolean).map(p => `<option value="${esc(p)}" ${p === platoon ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></label></div>
    <div class="testing-legend"><span><i class="testing-done"></i>Завершено</span><span><i class="testing-started"></i>В процессе</span><span><i class="testing-waiting"></i>Не начато</span></div>
    <div class="testing-type-grid">${datasets.map((d, i) => {
@@ -59,17 +59,6 @@ window.teachingDashboard = async function ({view, api, esc}) {
         root.querySelector('#overview-platoon').onchange = e => {
             platoon = e.target.value;
             draw()
-        };
-        root.querySelector('#refresh-overview').onclick = async e => {
-            const button = e.currentTarget;
-            button.disabled = true;
-            try {
-                await load()
-            } catch (err) {
-                if (root.isConnected) root.querySelector('#overview-error').innerHTML = `<p class="error">${esc(err.message)}</p>`
-            } finally {
-                button.disabled = false
-            }
         };
     }
 

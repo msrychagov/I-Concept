@@ -24,10 +24,23 @@ window.teacherConceptTesting = async function ({view, state, api, esc}) {
 
     function draw() {
         const platoons = [...new Set(data.students.map(s => s.platoon))].sort((a, b) => a.localeCompare(b, 'ru', {numeric: true}));
-        view.innerHTML = `<header class="page-heading"><div><h2>Назначения и результаты</h2></div><button id="refresh" class="secondary">Обновить</button></header><div id="dashboard-error" role="alert"></div>
- <section class="surface"><h2>Назначить тестирование</h2><form id="assignment-form"><div class="form-grid"><label>Название тестирования<input name="title" required maxlength="200" placeholder="Например, Входная диагностика"></label><label>Шаблон<select name="profileId" required><option value="">Выберите шаблон</option>${state.profiles.filter(p => p.approved).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Кому назначить<select id="audience"><option value="all">Всем взводам</option><option value="platoon">Одному взводу</option></select></label><label id="platoon-field" hidden>Номер взвода<input name="platoon" list="platoon-options" maxlength="80" placeholder="Например, 101"><datalist id="platoon-options">${platoons.map(p => `<option value="${esc(p)}">`).join('')}</datalist></label></div><div class="options-line"><label class="check"><input name="activity" type="checkbox"> Мои действия и опыт</label><label class="check"><input name="motivation" type="checkbox"> Мотивация</label></div><button type="submit">Назначить тестирование</button><p class="muted" style="margin-top:1rem">При назначении фиксируется выборка: до 3 расчётных вопросов на показатель и до 2 вопросов на описательное направление. Связанные блоки сохраняются целиком. Порядок вопросов внутри секций перемешивается для каждого студента. Назначение доступно и студентам, зарегистрировавшимся позднее.</p></form></section>
+        view.innerHTML = `<header class="page-heading"><div><h2>Назначения и результаты</h2></div></header><div id="dashboard-error" role="alert"></div>
+ <section class="surface"><h2>Назначить тестирование</h2><form id="assignment-form"><div class="form-grid"><label>Название тестирования<input name="title" required maxlength="200" placeholder="Например, Входная диагностика"></label><label>Шаблон<select name="profileId" required><option value="">Выберите шаблон</option>${state.profiles.filter(p => p.approved).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Кому назначить<select id="audience"><option value="all">Всем взводам</option><option value="platoon">Одному взводу</option></select></label><label id="platoon-field" hidden>Номер взвода<input name="platoon" list="platoon-options" maxlength="80" placeholder="Например, 101"><datalist id="platoon-options">${platoons.map(p => `<option value="${esc(p)}">`).join('')}</datalist></label></div><div class="options-line"><label class="check"><input name="activity" type="checkbox"> Мои действия и опыт</label><label class="check"><input name="motivation" type="checkbox"> Мотивация</label></div><button type="submit">Назначить тестирование</button><p class="muted" style="margin-top:1rem">При назначении фиксируется выборка: до 3 расчётных вопросов на показатель и до 2 вопросов на описательное направление. Связанные блоки сохраняются целиком. При включении «Мои действия и опыт» добавляются 38 вопросов с развёрнутыми ответами об участии и достижениях. Порядок вопросов внутри секций перемешивается для каждого студента. Назначение доступно и студентам, зарегистрировавшимся позднее.</p></form></section>
  <section class="surface"><h2>Назначенные тестирования</h2>${data.assignments.map(a => `<div class="assignment-row"><div><b>${esc(a.title)}</b><small>${a.platoon ? 'Взвод ' + esc(a.platoon) : 'Все взводы'} · ${esc(a.profileName)} · ${a.active ? 'Активно' : 'Закрыто'}</small></div><button class="secondary" data-toggle="${a.id}" data-active="${!a.active}">${a.active ? 'Закрыть доступ' : 'Возобновить'}</button></div>`).join('') || '<p class="muted">Назначений пока нет.</p>'}</section>
+ <section class="surface"><h2>Отчет по взводу</h2><p class="muted">Анализ только завершённых тестирований одной методики; персональные ответы не передаются локальной модели.</p><div class="toolbar"><label>Взвод<select id="ai-platoon-choice"><option value="">Выберите взвод</option>${platoons.filter(Boolean).map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}</select></label></div><div class="ai-report-card" id="ai-platoon-report" aria-live="polite"><p class="muted">Выберите взвод для формирования отчёта.</p></div></section>
  <section class="surface"><h2>Результаты студентов</h2><div class="dashboard-filters"><label>ФИО<input id="student-search" placeholder="Поиск по фамилии или имени" value="${esc(search)}"></label><label>Взвод<select id="platoon-filter"><option value="">Все взводы</option>${platoons.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}</select></label><label>Тестирование<select id="test-filter"><option value="">Все тестирования</option>${data.assignments.map(a => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label></div><div id="result-table"></div><nav id="results-pagination" class="list-pagination" aria-label="Страницы результатов студентов"></nav></section><dialog id="result-dialog" class="result-dialog"></dialog>`;
+        const aiChoose = view.querySelector('#ai-platoon-choice');
+        aiChoose.value = platoon || '';
+        let stopPlatoonAI = () => {};
+        const aiRefresh = () => {
+            stopPlatoonAI();
+            const container = view.querySelector('#ai-platoon-report');
+            container.innerHTML = '';
+            if (aiChoose.value) stopPlatoonAI = window.aiReportWidget.mount({element:container, api, kind:'platoon', id:aiChoose.value});
+            else container.innerHTML = '<p class="muted">Выберите взвод для формирования отчёта.</p>';
+        };
+        aiChoose.onchange = aiRefresh;
+        aiRefresh();
         view.querySelector('#platoon-filter').value = platoon;
         view.querySelector('#test-filter').value = test;
         view.querySelector('#student-search').oninput = e => {
@@ -76,7 +89,6 @@ window.teacherConceptTesting = async function ({view, state, api, esc}) {
                 error(e)
             }
         });
-        view.querySelector('#refresh').onclick = () => reload().catch(error);
         table();
     }
 

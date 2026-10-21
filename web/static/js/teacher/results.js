@@ -1,7 +1,8 @@
 window.teacherResult = async function ({view, api, esc, id}) {
     const dialog = view.querySelector('#result-dialog');
     const fmt = value => value == null ? 'Нет данных' : Number(value).toFixed(2).replace('.', ',');
-    let data, page = 1, pageSize = 10;
+    let data, page = 1, pageSize = 10, stopAI = () => {};
+    dialog.addEventListener('close', () => stopAI(), {once: true});
     dialog.innerHTML = '<h2>Загрузка результата…</h2>';
     dialog.showModal();
 
@@ -18,11 +19,14 @@ window.teacherResult = async function ({view, api, esc, id}) {
         dialog.innerHTML = `<div class="section-title"><div><h2>${esc(s.participant)}</h2><p>Взвод ${esc(s.group)} · ${esc(s.wave)}</p></div><button class="secondary" id="close-result">Закрыть</button></div>
    <p>${s.completed ? 'Прохождение завершено' : 'Прохождение в процессе'} · ответов на утверждения ${answered} из ${total}</p>
    <h3>Отчёт по утверждениям</h3><p class="muted">Средний балл по показателю рассчитывается по шкале 1–5 с учётом обратных утверждений. При неполном наборе ответов балл не рассчитывается; пропуски не заменяются нулём.</p>
+   <section class="ai-report-card" id="ai-report-box" aria-label="ИИ-анализ тестирования"></section>
    <section><div id="evidence-list"></div><nav class="list-pagination" id="evidence-pagination" aria-label="Страницы диагностических показателей"></nav></section>
    <details><summary>Ответы на утверждения и комментарии</summary>${statements.map(item => `<article class="bank-item"><b>${esc(item.text)}</b><p>${s.answers[item.id] === undefined ? 'Нет ответа' : esc(item.options?.[s.answers[item.id]]?.text ?? s.answers[item.id])}</p><small>${esc(s.notes[item.id] || '')}</small></article>`).join('')}</details>
    ${(r.psychological||[]).length?`<section class="surface"><h3>Мое самочувстсвие</h3><p class="muted">Ответы представлены по направлениям без диагностических порогов и без включения в педагогические баллы. Отказ, неприменимость и отсутствие ответа учитываются отдельно.</p>${r.psychological.map(group=>`<details class="evidence-card"><summary><b>${esc(group.name)}</b><span>${group.answered} ответов · ${group.total} вопросов</span></summary><p class="muted">${esc(group.limitations)}</p><p>Не относится: ${group.notApplicable} · Отказ: ${group.declined} · Без ответа: ${group.unanswered}</p>${group.answers.map(answer=>`<article class="bank-item"><small>${esc(answer.id)} · ${esc(answer.timeWindow)}</small><b>${esc(answer.text)}</b><p>${esc(answer.selected)}</p>${answer.note?`<small>${esc(answer.note)}</small>`:''}</article>`).join('')}</details>`).join('')}</section>`:''}
+   ${(r.activity || []).length ? `<section class="surface"><h3>Мои действия и опыт</h3><p class="muted">Самоописание участия и достижений. Текстовые ответы не включаются в балльный расчёт.</p>${[...new Set(r.activity.map(x => x.topic || 'Опыт деятельности'))].map(topic => `<details class="evidence-card"><summary><b>${esc(topic)}</b></summary>${r.activity.filter(x => (x.topic || 'Опыт деятельности') === topic).map(x => `<article class="bank-item"><b>${esc(x.text)}</b><p class="activity-answer-text">${esc(x.value == null ? 'Нет ответа' : x.type === 'textarea' ? x.value : ['Ни разу','Один раз','Два–три раза','Четыре–пять раз','Шесть раз и более'][x.value] ?? x.value)}</p>${x.type !== 'textarea' && x.note ? `<small>${esc(x.note)}</small>` : ''}</article>`).join('')}</details>`).join('')}</section>` : ''}
    <a class="button secondary" href="/api/v1/sessions/${encodeURIComponent(id)}/export">Экспорт сессии</a>`;
         dialog.querySelector('#close-result').onclick = () => dialog.close();
+        stopAI = window.aiReportWidget.mount({element: dialog.querySelector('#ai-report-box'), api, kind:'student', id});
         list();
 
     }

@@ -9,6 +9,12 @@ func (a *Service) publicItems(s model.Session) []map[string]any {
 	out := []map[string]any{}
 	for _, i := range a.itemsFor(s) {
 		m := map[string]any{"id": i.ID, "module": i.Module, "text": i.Text, "min": i.Min, "max": i.Max, "type": i.Type}
+		if i.Hint != "" {
+			m["hint"] = i.Hint
+		}
+		if i.Topic != "" {
+			m["topic"] = i.Topic
+		}
 		if i.TimeWindow != "" {
 			m["timeWindow"] = i.TimeWindow
 		}

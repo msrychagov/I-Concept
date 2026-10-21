@@ -398,7 +398,13 @@ func (a *Service) analyzeSnapshot(s model.Session, all []model.SessionRecord) ma
 			if v, ok := s.Answers[i.ID]; ok {
 				value = v
 			}
-			activity = append(activity, map[string]any{"id": i.ID, "text": i.Text, "value": value})
+			if i.Type == "textarea" {
+				value = nil
+				if _, ok := s.Answers[i.ID]; ok {
+					value = s.Notes[i.ID]
+				}
+			}
+			activity = append(activity, map[string]any{"id": i.ID, "text": i.Text, "value": value, "type": i.Type, "topic": i.Topic, "note": s.Notes[i.ID]})
 		}
 	}
 	return map[string]any{"evidence": a.evidence(s, all, rows), "interpretationNote": "Диагностический профиль описывает ответы студента, а не процент воспитанности. Источники не складываются в общий балл. Числовая динамика сама по себе не доказывает влияние педагогических условий.", "rows": rows, "components": components, "tags": tags, "images": images, "sjt": sjt, "history": history, "recommendations": recommendations, "motivation": motivation, "activity": activity, "profile": s.Profile, "notes": s.Notes, "plan": s.Plan, "answered": len(s.Answers), "total": len(a.itemsFor(s))}
@@ -458,6 +464,10 @@ func (a *Service) writeCSV(w io.Writer, sessions []model.SessionRecord) error {
 				}
 			}
 			optionID, answerText := "", ""
+			if ok && i.Type == "textarea" {
+				rv = ""
+				answerText = s.Notes[i.ID]
+			}
 			if ok && raw >= 0 && raw < len(i.Options) {
 				optionID, answerText = i.Options[raw].ID, i.Options[raw].Text
 			}

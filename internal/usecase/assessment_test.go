@@ -51,8 +51,8 @@ func TestBankAndModuleSelection(t *testing.T) {
 	}
 	base.Activity = true
 	base.Motivation = true
-	if got := len(a.itemsFor(base)); got != 404 {
-		t.Fatalf("extended items=%d, want 404", got)
+	if got := len(a.itemsFor(base)); got != 442 {
+		t.Fatalf("extended items=%d, want 442", got)
 	}
 	if got := len(a.itemsFor(model.Session{Kind: "observer"})); got != 8 {
 		t.Fatalf("observer items=%d, want 8", got)

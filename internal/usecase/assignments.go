@@ -75,6 +75,19 @@ func (a *Service) AssignmentCommandFor(teacherID string, b Input, op string) (an
 			if p.Questions == nil {
 				p.Questions = clone(a.engineFor(model.Session{Profile: p, BankVersion: p.BankVersion}).bank.Items)
 			}
+			// Extend legacy templates only in the new assignment snapshot. Existing
+			// assignments and sessions retain their original questions and version.
+			if boolean(b, "activity") {
+				ids := map[string]bool{}
+				for _, item := range p.Questions {
+					ids[item.ID] = true
+				}
+				for _, item := range a.bank.Items {
+					if item.Module == "F" && item.Type == "textarea" && !ids[item.ID] {
+						p.Questions = append(p.Questions, clone(item))
+					}
+				}
+			}
 			p.Questions = a.assignmentQuestions(p, boolean(b, "activity"), boolean(b, "motivation"))
 			if len(p.Questions) == 0 {
 				return nil, failure(Invalid, map[string]any{"error": "В выбранном шаблоне нет доступных вопросов."})

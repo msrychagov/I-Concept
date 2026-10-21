@@ -467,15 +467,6 @@
     gap: 12px
 }
 
-.platoon-management .page-heading h1::before {
-    content: "";
-    flex: 0 0 32px;
-    width: 32px;
-    height: 32px;
-    background: currentColor;
-    -webkit-mask: url('/assets/images/platoon.svg') center / contain no-repeat;
-    mask: url('/assets/images/platoon.svg') center / contain no-repeat
-}
 
 .platoon-management .platoon-actions {
     display: flex;

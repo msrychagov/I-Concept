@@ -14,6 +14,7 @@ import (
 	"vucdiagnostic/internal/app"
 	"vucdiagnostic/internal/platform/database"
 	"vucdiagnostic/internal/platform/gigachat"
+	"vucdiagnostic/internal/platform/ollama"
 	"vucdiagnostic/internal/usecase"
 )
 
@@ -63,6 +64,12 @@ func main() {
 		return
 	}
 
+	if model := localAnalysisModel(); model != nil {
+		a.UseAnalysisModel(model)
+		log.Printf("Local diagnostic analysis: %s", model.Name())
+	} else {
+		log.Print("Local diagnostic analysis: off (set LOCAL_LLM_MODEL)")
+	}
 	if model := languageModel(); model != nil {
 		a.UseModel(model)
 		log.Printf("Language model: %s", model.Name())
@@ -94,6 +101,31 @@ func main() {
 	}
 	stop()
 	<-shutdownDone
+}
+
+// localAnalysisModel never sends diagnostic results to a cloud provider.
+func localAnalysisModel() usecase.TextModel {
+	name := env("LOCAL_LLM_MODEL", "")
+	if name == "" {
+		return nil
+	}
+	model, err := ollama.New(env("LOCAL_LLM_URL", "http://localhost:11434"), name)
+	if err != nil {
+		log.Printf("Local diagnostic analysis: configuration invalid")
+		return nil
+	}
+	// Creating configurations does not generate text or load model weights.
+	// If Ollama is unavailable at startup, requests retain the inline prompt.
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	for _, system := range usecase.AnalysisSystemPrompts() {
+		if err := model.Prepare(ctx, system); err != nil {
+			log.Printf("Local diagnostic analysis: system prompt will be sent inline: %v", err)
+			return model
+		}
+	}
+	log.Print("Local diagnostic analysis: system prompts registered in Ollama")
+	return model
 }
 
 // languageModel reads the GigaChat settings; without the key or the model it is off.

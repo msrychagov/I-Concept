@@ -35,7 +35,7 @@ window.teacherAutobiography = async function ({view, api, esc}) {
     function draw() {
         const platoons = [...new Set(data.students.map(s => s.platoon))].sort((a, b) => a.localeCompare(b, 'ru', {numeric: true}));
         const all = entries(), done = all.filter(x => x.submission?.completed).length;
-        view.innerHTML = `<header class="page-heading"><div><div class="eyebrow">Кабинет преподавателя</div><h1>Автобиография</h1></div><div class="toolbar"><button id="preview" class="secondary">Посмотреть опросник</button><button id="refresh" class="secondary">Обновить</button></div></header><div id="autobiography-error" role="alert"></div>
+        view.innerHTML = `<header class="page-heading"><div><div class="eyebrow">Кабинет преподавателя</div><h1>Автобиография</h1></div><div class="toolbar"><button id="preview" class="secondary">Посмотреть опросник</button></div></header><div id="autobiography-error" role="alert"></div>
   <div class="dashboard-metrics"><article><strong>${data.assignments.filter(a => a.active).length}</strong>Активных назначений</article><article><strong>${all.length}</strong>Анкет назначено</article><article><strong>${all.filter(x => x.submission && !x.submission.completed).length}</strong>В процессе</article><article><strong>${done} / ${all.length}</strong>Сдано</article></div>
   <section class="surface"><h2>Назначить </h2><form id="form-assignment"><div class="form-grid"><label>Название<input name="title" required maxlength="200" value="Автобиография"></label><label>Кому назначить<select id="form-audience"><option value="all">Всем взводам</option><option value="platoon">Одному взводу</option></select></label><div id="form-platoon-slot"></div></div><button type="submit">Назначить тестирование</button><p class="muted" style="margin-top:1rem">Назначение появится в кабинетах студентов выбранного взвода, включая зарегистрировавшихся позднее. Опросник один и не редактируется.</p></form></section>
   <section class="surface"><h2>Назначения</h2>${data.assignments.map(a => `<div class="assignment-row"><div><b>${esc(a.title)}</b><small>${a.platoon ? 'Взвод ' + esc(a.platoon) : 'Все взводы'} · ${a.active ? 'Активно' : 'Закрыто'}</small></div><button class="secondary" data-toggle="${esc(a.id)}" data-active="${!a.active}">${a.active ? 'Закрыть доступ' : 'Возобновить'}</button></div>`).join('') || '<p class="muted">Назначений пока нет.</p>'}</section>
@@ -95,7 +95,6 @@ window.teacherAutobiography = async function ({view, api, esc}) {
                 error(err);
             }
         };
-        view.querySelector('#refresh').onclick = () => reload().catch(error);
         view.querySelector('#preview').onclick = preview;
         table();
         drawPotential();

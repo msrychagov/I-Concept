@@ -28,6 +28,9 @@ services:
       VUC_ADMIN_USER: ${VUC_ADMIN_USER:-admin}
       VUC_ADMIN_PASSWORD: ${VUC_ADMIN_PASSWORD:-}
       GIGACHAT_CA_FILE: /app/certs/mincifry.crt
+      # Set LOCAL_LLM_MODEL=qwen3:1.7b in .env to enable local report generation.
+      LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-}
+      LOCAL_LLM_URL: http://ollama:11434
     volumes:
       - ../.secrets/russian_trusted_root_ca_pem.crt:/app/certs/mincifry.crt:ro
     depends_on:
@@ -64,6 +67,18 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  # Optional local language model. Pull weights once after starting:
+  # docker compose --profile ai up -d ollama
+  # docker compose exec ollama ollama pull qwen3:1.7b
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ai"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -83,3 +98,4 @@ services:
 
 volumes:
   postgres_data:
+  ollama_models:

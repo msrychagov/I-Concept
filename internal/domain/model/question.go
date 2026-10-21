@@ -31,6 +31,8 @@ type Option struct {
 }
 
 type Item struct {
+	Hint         string   `json:"hint,omitempty"`
+	Topic        string   `json:"topic,omitempty"`
 	ResponseOnly bool     `json:"responseOnly,omitempty"`
 	TimeWindow   string   `json:"timeWindow,omitempty"`
 	KeyStatus    string   `json:"keyStatus,omitempty"`

@@ -85,10 +85,11 @@ func (a *App) Close() {
 
 // UseModel connects the language model that writes the portraits. It is called
 // only by the server: the maintenance commands must not start it.
-func (a *App) UseModel(m usecase.TextModel)       { a.service.UseModel(m) }
-func (a *App) SeedDemo() error                    { return a.service.SeedDemo() }
-func (a *App) ImportData(db model.Database) error { return a.service.ImportData(db) }
-func (a *App) ResetDemo() (string, error)         { return a.service.ResetDemo() }
+func (a *App) UseAnalysisModel(m usecase.TextModel) { a.service.UseAnalysisModel(m) }
+func (a *App) UseModel(m usecase.TextModel)         { a.service.UseModel(m) }
+func (a *App) SeedDemo() error                      { return a.service.SeedDemo() }
+func (a *App) ImportData(db model.Database) error   { return a.service.ImportData(db) }
+func (a *App) ResetDemo() (string, error)           { return a.service.ResetDemo() }
 
 func (a *App) CreateVUC(name string) (any, error) { return a.service.CreateVUC(name) }
 

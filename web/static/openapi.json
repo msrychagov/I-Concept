@@ -4810,6 +4810,12 @@
       "Item": {
         "type": "object",
         "properties": {
+          "hint": {
+            "type": "string"
+          },
+          "topic": {
+            "type": "string"
+          },
           "responseOnly": {
             "type": "boolean"
           },
@@ -6137,7 +6143,7 @@
           "value": {
             "type": "integer",
             "nullable": true,
-            "description": "Значение в пределах шкалы вопроса. null удаляет ответ."
+            "description": "Значение в пределах шкалы вопроса. Для type=textarea: value=0 отмечает заполнение, текст передаётся в note (до 4000 символов), балл не рассчитывается. null удаляет ответ и его текст."
           },
           "note": {
             "type": "string",
@@ -6245,6 +6251,12 @@
           },
           "responseOnly": {
             "type": "boolean"
+          },
+          "hint": {
+            "type": "string"
+          },
+          "topic": {
+            "type": "string"
           }
         },
         "additionalProperties": false,

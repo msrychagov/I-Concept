@@ -67,7 +67,7 @@ S['SessionSummary'] = obj({**{k:string() for k in ['id','kind','participant','gr
 S['Sessions'] = obj({'sessions':arr(ref('SessionSummary'))}, ['sessions'])
 S['StartSession'] = obj({'url':string(example='/survey?id=ID-сессии')}, ['url'])
 S['ConsentInput'] = obj({'value':boolean(enum=[True]),'revision':integer(minimum=0)}, ['value','revision'])
-S['AnswerInput'] = obj({'value':integer(nullable=True,description='Значение в пределах шкалы вопроса. null удаляет ответ.'),'note':string(maxLength=4000),'revision':integer(minimum=0)}, ['value','revision'])
+S['AnswerInput'] = obj({'value':integer(nullable=True,description='Значение в пределах шкалы вопроса. Для type=textarea: value=0 отмечает заполнение, текст передаётся в note (до 4000 символов), балл не рассчитывается. null удаляет ответ и его текст.'),'note':string(maxLength=4000),'revision':integer(minimum=0)}, ['value','revision'])
 S['AnswerInput']['example'] = {'value':5,'note':'','revision':1}
 S['CompletionInput'] = obj({'allowPartial':boolean(default=False),'revision':integer(minimum=0)}, ['revision'])
 S['RevisionResponse'] = obj({'revision':integer(),'updated':string(format='date-time'),'completed':boolean()}, ['revision','updated','completed'])
@@ -149,6 +149,8 @@ S['Bank']['properties']['instructions']={'type':'object','additionalProperties':
 S['Survey']['properties']['instructions']={'type':'object','additionalProperties':string()}
 S['PublicQuestion']['properties']['timeWindow']=string()
 S['PublicQuestion']['properties']['responseOnly']=boolean()
+S['PublicQuestion']['properties']['hint']=string()
+S['PublicQuestion']['properties']['topic']=string()
 S['PsychologicalAnswer']=obj({'id':string(),'text':string(),'timeWindow':string(),'selected':string(),'code':string(description='Исходный код варианта, включая NA и SKIP; пустой при отсутствии ответа.'),'note':string()})
 S['PsychologicalIndicator']=obj({'id':string(),'name':string(),'limitations':string(),'total':integer(),'answered':integer(),'declined':integer(),'notApplicable':integer(),'unanswered':integer(),'answers':arr(ref('PsychologicalAnswer'))})
 S['Report']['properties']['psychological']=arr(ref('PsychologicalIndicator'))
