@@ -52,7 +52,7 @@ S['PlatoonManagement'] = obj({'vuc':string(),'platoons':arr(ref('Platoon')),'stu
 S['ManageStudentInput'] = obj({'action':string(enum=['move','remove','disable','enable']),'platoonId':string(description='Обязательно для move; взвод в том же ВУЦ.')}, ['action'])
 S['TeacherProfileInput'] = obj({'name':string(maxLength=200),'email':string(format='email',maxLength=254),'currentPassword':string(format='password',maxLength=256,description='Обязательно при изменении электронной почты.')}, ['name','email'])
 S['PasswordInput'] = obj({'currentPassword':string(format='password',maxLength=256),'newPassword':string(format='password',minLength=10,maxLength=256),'confirmPassword':string(format='password',minLength=10,maxLength=256)}, ['currentPassword','newPassword','confirmPassword'])
-S['AssignmentInput'] = obj({'title':string(maxLength=200),'profileId':string(description='Шаблон теста. Не передаётся, если указан formId.'),'formId':string(description='Фиксированная анкета, например autobiography. Тогда шаблон не нужен.'),'platoon':string(maxLength=80,description='Пустая строка — всем взводам.'),'activity':boolean(default=False),'motivation':boolean(default=False)}, ['title'])
+S['AssignmentInput'] = obj({'title':string(maxLength=200),'profileId':string(description='Шаблон теста. Не передаётся, если указан formId.'),'formId':string(description='Фиксированная анкета, например autobiography. Тогда шаблон не нужен.'),'platoon':string(maxLength=80,description='Пустая строка — всем взводам.'),'activity':boolean(default=False),'motivation':boolean(default=False),'methods':boolean(default=False,description='Методики уровней Я-концепции из таблицы 8 руководителя: добавляются целиком вместе с ВПМ (модуль V).')}, ['title'])
 S['AssignmentInput']['example'] = {'title':'Входное тестирование','profileId':'ID-шаблона','platoon':'101','activity':False,'motivation':False}
 S['AssignmentStatusInput'] = obj({'active':boolean()}, ['active'])
 S['AssignmentStatusInput']['example'] = {'active':False}
@@ -140,6 +140,12 @@ endpoint('/sessions/{id}/reopen','post','reopenSession','Результаты','
 endpoint('/sessions/{id}/revoke','post','revokeSession','Результаты','Пометить сессию как отозванную',description='Без тела. Устанавливает исторический флаг revoked; доступ к назначению управляется PATCH /assignments/{id}.',codes=[404])
 endpoint('/sessions/{id}/plan','put','updateSessionPlan','Результаты','Сохранить план сопровождения','OK','PlanInput',codes=[404])
 endpoint('/reports/groups','get','getGroupReport','Результаты','Агрегированный отчёт по взводам',arr(ref('GroupReport')))
+S['MethodsStudent']=obj({'sessionId':string(),'studentId':string(),'name':string(),'group':string()}, ['sessionId','studentId','name','group'])
+S['MethodsLevelGroup']=obj({'level':string(enum=['high','medium','low',''],description='Пусто — уровень не определён: ответы на методику неполные.'),'levelText':string(),'students':arr(ref('MethodsStudent'))}, ['level','levelText','students'])
+S['MethodsSummaryRow']=obj({'id':string(),'name':string(),'kind':string(enum=['method','activity']),'component':string(enum=['CS','EV','DP']),'levels':arr(ref('MethodsLevelGroup'))}, ['id','name','kind','levels'])
+S['MethodsSummary']=obj({'group':string(),'groups':arr(string()),'sessions':integer(description='Учтено тестирований: последнее завершённое с методиками у каждого студента.'),'rows':arr(ref('MethodsSummaryRow'))}, ['group','groups','sessions','rows'])
+methods=endpoint('/reports/methods','get','getMethodsSummary','Результаты','Уровни методик по взводу','MethodsSummary',description='По каждой шкале методик (ВПМ, Зверьков — Эйдман, эмоциональная устойчивость, волевые качества, анкета деятельностного компонента) и каждому виду деятельности — студенты на каждом уровне. Уровни считает программа по ключам методик; текста модели нет.')
+methods.setdefault('parameters',[]).append({'name':'group','in':'query','required':False,'description':'Номер взвода; без него — все взводы.','schema':string()})
 endpoint('/exports/answers.csv','get','exportAnswersCSV','Экспорт','Экспорт ответов в CSV')
 paths['/exports/answers.csv']['get']['responses']['200']={'description':'CSV с ответами.','headers':{'Content-Disposition':{'schema':string(),'description':'attachment; filename="vuc-answers.csv"'}},'content':{'text/csv':{'schema':string()}}}
 for path in ['/reports/groups','/exports/answers.csv']:
@@ -158,6 +164,7 @@ S['EvidenceChoice']=obj({'id':string(),'text':string(),'selected':string(),'inte
 S['EvidenceTrend']=obj({'available':boolean(),'reason':string(),'previous':number(nullable=True),'delta':number(nullable=True),'previousDate':string(),'previousSessionId':string()})
 S['EvidenceRow']=obj({'id':string(),'name':string(),'block':string(),'definition':string(),'limitations':string(),'selfImage':integer(nullable=True),'statements':number(nullable=True),'coverage':integer(),'total':integer(),'choices':arr(ref('EvidenceChoice')),'trend':ref('EvidenceTrend')})
 S['Report']['properties']['evidence']=arr(ref('EvidenceRow'))
+S['Report']['properties']['methods']={'type':'object','additionalProperties':True,'description':'Портрет по методикам (только у сессий с методиками): methods — уровни шкал по ключам, components и images — Я-реальное и Я-идеальное, signs и conditions — показатели без уровней, kinds — виды деятельности с уровнем по анкете, openAnswers — рассказы о деятельности.'}
 S['Report']['properties']['interpretationNote']=string()
 S['FormSubmission']['properties']['answers']={'type':'object','additionalProperties':True,'description':'Ключ — id поля верхнего уровня. choice — строка, multi — массив строк, text/textarea — строка, date/month/year — ГГГГ-ММ-ДД / ГГГГ-ММ / ГГГГ, group — массив объектов.'}
 S['FormProgress']=obj({'complete':arr(string()),'missing':{'type':'object','additionalProperties':arr(string())},'total':integer()}, ['complete','missing','total'])

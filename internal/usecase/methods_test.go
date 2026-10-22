@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"vucdiagnostic/internal/domain/model"
@@ -137,5 +138,38 @@ func TestSessionsWithoutMethodsHaveNoPortrait(t *testing.T) {
 		if methodModule(item.Module) {
 			t.Fatalf("%s asked without the methods", item.ID)
 		}
+	}
+}
+
+func TestMethodsSummaryCountsTheLatestSessionOfEveryStudent(t *testing.T) {
+	f := newTestPortraitFixture(t, true)
+	db := mustSnapshot(t, f.service.repo)
+	session := db.Sessions[0].Session
+	summary, err := f.service.MethodsSummaryFor(f.teacherID, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Sessions != 1 || len(summary.Rows) != len(f.service.bank.Methods)+len(f.service.bank.ActivityKinds) || !slices.Equal(summary.Groups, []string{"101"}) {
+		t.Fatalf("summary: %+v", summary)
+	}
+	levels := map[string]string{}
+	for _, m := range f.service.TestPortrait(session).Methods {
+		levels[m.ID] = m.Level
+	}
+	for _, row := range summary.Rows {
+		if row.Kind != "method" {
+			continue
+		}
+		for _, g := range row.Levels {
+			if len(g.Students) == 1 && (g.Level != levels[row.ID] || g.Students[0].SessionID != session.ID) {
+				t.Fatalf("%s: %+v", row.ID, g)
+			}
+		}
+	}
+	if other, err := f.service.MethodsSummaryFor("someone-else", ""); err != nil || other.Sessions != 0 {
+		t.Fatalf("another teacher: %+v %v", other, err)
+	}
+	if empty, _ := f.service.MethodsSummaryFor(f.teacherID, "999"); empty.Sessions != 0 {
+		t.Fatalf("other platoon: %+v", empty)
 	}
 }

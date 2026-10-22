@@ -87,7 +87,7 @@ func TestFormRoutesNeedTheRightLogin(t *testing.T) {
 	requireCode(t, callAccount(t, s.a, "PUT "+s.path("/consent"), body, stranger), 403)
 	requireCode(t, callAccount(t, s.a, "PUT "+s.path("/sections/about"), map[string]any{"answers": map[string]any{}, "revision": 0}, s.teacher), 401)
 	requireCode(t, callAccount(t, s.a, s.path("/completion"), map[string]any{"revision": 0}, s.teacher), 401)
-	for _, route := range []string{"/api/v1/forms/autobiography", "/api/v1/forms/autobiography/overview", "/api/v1/forms/autobiography/potential", "/api/v1/submissions/" + s.submission} {
+	for _, route := range []string{"/api/v1/forms/autobiography", "/api/v1/forms/autobiography/overview", "/api/v1/forms/autobiography/potential", "/api/v1/submissions/" + s.submission, "/api/v1/reports/methods?group=101"} {
 		requireCode(t, callAccount(t, s.a, route, nil, nil), 401)
 		requireCode(t, callAccount(t, s.a, route, nil, s.student), 401)
 		requireCode(t, callAccount(t, s.a, route, nil, s.teacher), 200)
