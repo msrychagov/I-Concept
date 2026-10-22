@@ -71,7 +71,8 @@ services:
   # docker compose --profile ai up -d ollama
   # docker compose exec ollama ollama pull qwen3:1.7b
   ollama:
-    image: ollama/ollama:latest
+    # Pinned: ollama/ollama:latest (0.40.x) has no llama-server for CPU on arm64.
+    image: ollama/ollama:0.12.6
     profiles: ["ai"]
     restart: unless-stopped
     ports:
