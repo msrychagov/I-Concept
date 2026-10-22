@@ -185,10 +185,14 @@ func (c *Client) send(request *http.Request) ([]byte, int, error) {
 // Complete asks the model for one answer that follows the schema. A rejected
 // token is replaced once.
 func (c *Client) Complete(ctx context.Context, completion usecase.Completion) (usecase.Reply, error) {
+	limit := maxTokens
+	if completion.MaxTokens > 0 {
+		limit = completion.MaxTokens
+	}
 	body := map[string]any{
 		"model":       c.config.Model,
 		"temperature": temperature,
-		"max_tokens":  maxTokens,
+		"max_tokens":  limit,
 		"messages": []map[string]string{
 			{"role": "system", "content": completion.System},
 			{"role": "user", "content": completion.User},

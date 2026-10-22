@@ -42,6 +42,8 @@ type portraitTask struct {
 	Check func(output map[string]any, payload *object) []string
 	// Visible says whether this teacher may see the portrait of the source.
 	Visible func(db model.Database, s Source, teacherID string) bool
+	// MaxTokens limits the answer; zero keeps the model's default.
+	MaxTokens int
 }
 
 const (
@@ -340,7 +342,7 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 			case <-time.After(l.pause):
 			}
 		}
-		reply, err := m.Complete(ctx, Completion{System: task.Prompt.Instruction, User: user, Schema: task.Prompt.Schema})
+		reply, err := m.Complete(ctx, Completion{System: task.Prompt.Instruction, User: user, Schema: task.Prompt.Schema, MaxTokens: task.MaxTokens})
 		if ctx.Err() != nil {
 			return
 		}
