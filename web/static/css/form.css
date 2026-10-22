@@ -461,3 +461,66 @@
         grid-template-columns: 1fr
     }
 }
+
+/* Portrait by the test: levels of the methods and the text of the model */
+.test-portrait h3 {
+    margin-bottom: .6rem
+}
+
+.potential-level.level-low {
+    background: #f6ebe7;
+    color: #7a3b28
+}
+
+.test-portrait-levels td small, .test-portrait-levels th small {
+    display: block;
+    color: var(--muted);
+    font-size: .8rem;
+    font-weight: 400
+}
+
+.test-portrait-levels td {
+    vertical-align: middle
+}
+
+.test-portrait-group th {
+    background: var(--paper, #f5f3ec);
+    color: var(--ink);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: .9rem
+}
+
+.test-portrait-text {
+    margin-top: 1.2rem
+}
+
+.test-portrait-text h4 {
+    margin: 1rem 0 .3rem
+}
+
+.test-portrait-text p, .test-portrait-text ul {
+    margin: 0 0 .5rem
+}
+
+/* The levels table fits the result dialog on a phone: names wrap, the level stays visible. */
+.result-dialog .table-scroll table.test-portrait-levels {
+    min-width: 0;
+    width: 100%
+}
+
+.test-portrait-levels td:first-child {
+    hyphens: auto;
+    overflow-wrap: break-word
+}
+
+@media (max-width: 600px) {
+    .test-portrait-levels td:nth-child(2) small {
+        display: none
+    }
+
+    .test-portrait-levels th, .test-portrait-levels td {
+        padding-left: .4rem;
+        padding-right: .4rem
+    }
+}
