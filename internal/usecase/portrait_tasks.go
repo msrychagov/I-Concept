@@ -211,15 +211,16 @@ var cause = regexp.MustCompile(`(?i)повлия|благодаря|привел
 
 // influence finds softer verbs of influence; they are checked only in link,
 // the section about how conditions, activity and the self go together.
-var influence = regexp.MustCompile(`(?i)ограничива|сдержива|усилива|способству|снижа[ею]т|поддержива`)
+var influence = regexp.MustCompile(`(?i)ограничива|сдержива|усилива|способству|снижа[ею]т`)
 
 // diagnosis finds clinical words and conclusions about fitness or beliefs.
 var diagnosis = regexp.MustCompile(`(?i)диагноз|расстройств|патолог|непригод|пригоден к|лояльн|к сожалению`)
 
-// shortLevel finds a level put on a 1–5 score by a short form or an adverb
-// («коллективизм низок», «низко оценивает»); the full forms name the levels
-// of the methods and are checked against them.
-var shortLevel = regexp.MustCompile(`(?i)(^|[^а-яё])(низок|низка|низки|низко|высок|высока|высоки|высоко)([^а-яё]|$)`)
+// shortLevel finds a level put on a 1–5 score by a short adjective
+// («коллективизм низок»). Adverbs («высоко оценивает») retell the student's own
+// rating and pass; the full forms name the levels of the methods and are
+// checked against them.
+var shortLevel = regexp.MustCompile(`(?i)(^|[^а-яё])(низок|низка|низки|высок|высока|высоки)([^а-яё]|$)`)
 
 var levelWord = regexp.MustCompile(`(?i)низк|средн|высок`)
 

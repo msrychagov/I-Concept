@@ -163,6 +163,12 @@ func TestTestAnswerCheckKeepsTheRules(t *testing.T) {
 		"verb in core": {func(a map[string]any) {
 			a["core"].(map[string]any)["ev"] = "Устойчивость усиливает саморегуляцию."
 		}, ""},
+		"adverb of rating": {func(a map[string]any) {
+			a["environment"] = "Студент высоко оценивает доступность ресурсов."
+		}, ""},
+		"supporting": {func(a map[string]any) {
+			a["link"] = "Условия, которые студент оценивает выше, сочетаются с поддерживающим наставничеством."
+		}, ""},
 		"level in kind": {func(a map[string]any) {
 			a["activity"].([]any)[0].(map[string]any)["text"] = "Активность на занятиях высока."
 		}, ""},
