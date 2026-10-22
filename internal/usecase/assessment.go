@@ -190,6 +190,9 @@ func (a *Service) analyze(s model.Session, all []model.SessionRecord) map[string
 	engine := a.engineFor(s)
 	result := engine.analyzeSnapshot(s, all)
 	result["psychological"] = engine.psychologicalReport(s)
+	if portrait := a.TestPortrait(s); portrait != nil {
+		result["methods"] = portrait
+	}
 	return result
 }
 func (a *Service) analyzeSnapshot(s model.Session, all []model.SessionRecord) map[string]any {
