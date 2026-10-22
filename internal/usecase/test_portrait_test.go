@@ -10,6 +10,7 @@ import (
 
 // goodTestAnswer answers the test instruction the way it asks, for the input it is given.
 func goodTestAnswer(user string) map[string]any {
+	user, _, _ = strings.Cut(user, "\n\n"+retryNote)
 	var input struct {
 		Kinds []struct {
 			Kind  string `json:"вид"`
@@ -158,7 +159,13 @@ func TestTestAnswerCheckKeepsTheRules(t *testing.T) {
 		}, "причина вместо сочетания"},
 		"influence verb": {func(a map[string]any) {
 			a["link"] = "Слабая обратная связь ограничивает соборность."
-		}, "причина вместо сочетания"},
+		}, "влияние вместо сочетания"},
+		"verb in core": {func(a map[string]any) {
+			a["core"].(map[string]any)["ev"] = "Устойчивость усиливает саморегуляцию."
+		}, ""},
+		"level in kind": {func(a map[string]any) {
+			a["activity"].([]any)[0].(map[string]any)["text"] = "Активность на занятиях высока."
+		}, ""},
 		"level of score": {func(a map[string]any) {
 			a["signs"] = "Коллективизм низок, уважение выражено сильнее."
 		}, "уровень у балла 1–5"},

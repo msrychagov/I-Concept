@@ -203,10 +203,14 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 	}
 }
 
-// influence finds a cause or an influence where the portrait must describe
-// only how things go together; it is checked in every section but support
-// and growth (decided 22 October 2026).
-var influence = regexp.MustCompile(`(?i)повлия|благодаря|привел[оаи]? к|привело к|в результате|под влиянием|обусловл|ограничива|сдержива|усилива|способству|снижа[ею]т|поддержива`)
+// cause finds the words of a cause the user forbade on 22 October 2026: the
+// portrait shows how things go together, not what influenced what. Checked in
+// every section but support and growth.
+var cause = regexp.MustCompile(`(?i)повлия|благодаря|привел[оаи]? к|привело к|в результате|под влиянием|обусловл`)
+
+// influence finds softer verbs of influence; they are checked only in link,
+// the section about how conditions, activity and the self go together.
+var influence = regexp.MustCompile(`(?i)ограничива|сдержива|усилива|способству|снижа[ею]т|поддержива`)
 
 // diagnosis finds clinical words and conclusions about fitness or beliefs.
 var diagnosis = regexp.MustCompile(`(?i)диагноз|расстройств|патолог|непригод|пригоден к|лояльн|к сожалению`)
@@ -299,13 +303,18 @@ func checkTestAnswer(output map[string]any, payload *object) []string {
 	slices.Sort(keys)
 	for _, key := range keys {
 		text := sections[key]
-		if found := influence.FindString(text); found != "" {
+		if found := cause.FindString(text); found != "" {
 			problems = append(problems, fmt.Sprintf("%s: причина вместо сочетания («%s»)", key, strings.ToLower(found)))
+		}
+		if found := influence.FindString(text); key == "link" && found != "" {
+			problems = append(problems, fmt.Sprintf("%s: влияние вместо сочетания («%s»)", key, strings.ToLower(found)))
 		}
 		if found := diagnosis.FindString(text); found != "" {
 			problems = append(problems, fmt.Sprintf("%s: недопустимое слово («%s»)", key, strings.ToLower(found)))
 		}
-		if key == "signs" || key == "environment" || key == "link" || strings.HasPrefix(key, "activity.") {
+		// Only these sections speak of 1–5 scores alone; elsewhere the levels of
+		// the methods and the questionnaire are named rightly.
+		if key == "signs" || key == "environment" {
 			if found := shortLevel.FindStringSubmatch(text); found != nil {
 				problems = append(problems, fmt.Sprintf("%s: уровень у балла 1–5 («%s»)", key, strings.ToLower(found[2])))
 			}
