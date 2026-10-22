@@ -35,7 +35,7 @@ func (a *Service) StartAssignment(student model.Account, id string) (any, error)
 			}
 		}
 		now := time.Now().UTC().Format(time.RFC3339)
-		s := model.Session{ID: uuid(), StudentID: student.ID, AssignmentID: id, Kind: "student", Participant: student.Name, Group: student.Platoon, Wave: assignment.Title, Profile: clone(assignment.Profile), BankVersion: assignment.Profile.BankVersion, Created: now, Updated: now, Seed: uint32(time.Now().UnixNano()), Activity: assignment.Activity, Motivation: assignment.Motivation, Answers: map[string]int{}, Notes: map[string]string{}, Plan: []model.PlanItem{}, TeacherID: assignment.OwnerID}
+		s := model.Session{ID: uuid(), StudentID: student.ID, AssignmentID: id, Kind: "student", Participant: student.Name, Group: student.Platoon, Wave: assignment.Title, Profile: clone(assignment.Profile), BankVersion: assignment.Profile.BankVersion, Created: now, Updated: now, Seed: uint32(time.Now().UnixNano()), Activity: assignment.Activity, Motivation: assignment.Motivation, Methods: assignment.Methods, Answers: map[string]int{}, Notes: map[string]string{}, Plan: []model.PlanItem{}, TeacherID: assignment.OwnerID}
 		if s.BankVersion == "" {
 			s.BankVersion = a.bank.Version
 		}
@@ -88,11 +88,24 @@ func (a *Service) AssignmentCommandFor(teacherID string, b Input, op string) (an
 					}
 				}
 			}
-			p.Questions = a.assignmentQuestions(p, boolean(b, "activity"), boolean(b, "motivation"))
+			// The methods of the first chapter are added whole, with the motivation
+			// questionnaire (module V) they are counted with.
+			if boolean(b, "methods") {
+				ids := map[string]bool{}
+				for _, item := range p.Questions {
+					ids[item.ID] = true
+				}
+				for _, item := range a.bank.Items {
+					if (methodModule(item.Module) || item.Module == "V") && !ids[item.ID] {
+						p.Questions = append(p.Questions, clone(item))
+					}
+				}
+			}
+			p.Questions = a.assignmentQuestions(p, boolean(b, "activity"), boolean(b, "motivation"), boolean(b, "methods"))
 			if len(p.Questions) == 0 {
 				return nil, failure(Invalid, map[string]any{"error": "В выбранном шаблоне нет доступных вопросов."})
 			}
-			as := model.Assignment{ID: uuid(), Title: title, Platoon: platoon, Profile: clone(p), Activity: boolean(b, "activity"), Motivation: boolean(b, "motivation"), Active: true, Created: time.Now().UTC().Format(time.RFC3339), OwnerID: teacherID}
+			as := model.Assignment{ID: uuid(), Title: title, Platoon: platoon, Profile: clone(p), Activity: boolean(b, "activity"), Motivation: boolean(b, "motivation"), Methods: boolean(b, "methods"), Active: true, Created: time.Now().UTC().Format(time.RFC3339), OwnerID: teacherID}
 			db.Assignments = append(db.Assignments, as)
 
 			return map[string]any{"ok": true}, nil

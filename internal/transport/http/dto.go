@@ -40,6 +40,7 @@ type assignmentRequest struct {
 	Platoon    string `json:"platoon"`
 	Activity   bool   `json:"activity"`
 	Motivation bool   `json:"motivation"`
+	Methods    bool   `json:"methods"`
 }
 type assignmentStatusRequest struct {
 	Active *bool `json:"active"`

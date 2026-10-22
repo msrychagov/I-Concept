@@ -6,10 +6,38 @@ import (
 	"vucdiagnostic/internal/domain/model"
 )
 
-//go:embed bank.json pilot-2.0.json psychological.json activity.json
+//go:embed bank.json pilot-2.0.json psychological.json activity.json methods.json
 var files embed.FS
 
+// Load returns pilot-2.4: pilot-2.3 and the methods of the first chapter
+// (methods.json) with their keys and levels.
 func Load() (model.Bank, error) {
+	bank, err := load23()
+	if err != nil {
+		return bank, err
+	}
+	data, err := files.ReadFile("methods.json")
+	if err != nil {
+		return bank, err
+	}
+	var addition model.Bank
+	if err := json.Unmarshal(data, &addition); err != nil {
+		return bank, err
+	}
+	bank.Version = addition.Version
+	for key, value := range addition.Modules {
+		bank.Modules[key] = value
+	}
+	for key, value := range addition.Instructions {
+		bank.Instructions[key] = value
+	}
+	bank.Items = append(bank.Items, addition.Items...)
+	bank.Methods = addition.Methods
+	bank.ActivityKinds = addition.ActivityKinds
+	return bank, nil
+}
+
+func load23() (model.Bank, error) {
 	bank, err := load22()
 	if err != nil {
 		return bank, err
@@ -78,5 +106,9 @@ func Previous() ([]model.Bank, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []model.Bank{bank, recent, previous}, nil
+	activity, err := load23()
+	if err != nil {
+		return nil, err
+	}
+	return []model.Bank{bank, recent, previous, activity}, nil
 }

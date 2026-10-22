@@ -6,6 +6,41 @@ type Bank struct {
 	Modules      map[string]string `json:"modules"`
 	Indicators   []Indicator       `json:"indicators"`
 	Items        []Item            `json:"items"`
+	// Methods are validated methods with a key: their levels are counted by
+	// rules, not by the mean of an indicator. ActivityKinds link the kinds of
+	// activity of the first chapter to the questions that describe them.
+	Methods       []Method       `json:"methods,omitempty"`
+	ActivityKinds []ActivityKind `json:"activityKinds,omitempty"`
+}
+
+// Method is one scale of a method: "sum" adds the option scores of its items
+// and finds the level in Levels; "level" takes the mean rank of the levels of
+// the chosen options (low 1, medium 2, high 3).
+type Method struct {
+	ID        string      `json:"id"`
+	Name      string      `json:"name"`
+	Method    string      `json:"method"`
+	Component string      `json:"component"`
+	Scoring   string      `json:"scoring"`
+	Items     []string    `json:"items"`
+	Levels    []LevelBand `json:"levels,omitempty"`
+}
+
+type LevelBand struct {
+	Min   int    `json:"min"`
+	Max   int    `json:"max"`
+	Level string `json:"level"`
+}
+
+// ActivityKind gets its level from Items (questions whose options carry a
+// level); Indicators, Frequency and Methods only describe it.
+type ActivityKind struct {
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	Items      []string `json:"items"`
+	Indicators []string `json:"indicators,omitempty"`
+	Frequency  []string `json:"frequency,omitempty"`
+	Methods    []string `json:"methods,omitempty"`
 }
 
 type Indicator struct {

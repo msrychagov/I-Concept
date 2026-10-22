@@ -12,7 +12,7 @@ func TestAssignmentSelectionPreservesScalesAndSnapshot(t *testing.T) {
 	p.ID = "selection-template"
 	p.Questions = clone(a.bank.Items)
 	original := clone(p)
-	selected := a.assignmentQuestions(p, false, false)
+	selected := a.assignmentQuestions(p, false, false, false)
 	if len(selected) >= len(a.itemsFor(model.Session{Kind: "student", Profile: p})) {
 		t.Fatal("full bank was not reduced")
 	}

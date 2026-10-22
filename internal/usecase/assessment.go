@@ -35,7 +35,7 @@ func (a *Service) itemsFor(s model.Session) []model.Item {
 	out := []model.Item{}
 	engine := a.engineFor(s)
 	for _, i := range engine.bank.Items {
-		ok := s.Kind == "observer" && i.Module == "E" || s.Kind != "observer" && (i.Module != "E" && i.Module != "F" && i.Module != "V" || i.Module == "F" && s.Activity || i.Module == "V" && s.Motivation)
+		ok := s.Kind == "observer" && i.Module == "E" || s.Kind != "observer" && (i.Module != "E" && i.Module != "F" && i.Module != "V" && !methodModule(i.Module) || i.Module == "F" && s.Activity || i.Module == "V" && (s.Motivation || s.Methods) || methodModule(i.Module) && s.Methods)
 		if ok && a.indicatorEnabled(s.Profile, i.Indicator) {
 			out = append(out, i)
 		}

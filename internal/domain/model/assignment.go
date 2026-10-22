@@ -8,6 +8,7 @@ type Assignment struct {
 	FormID     string  `json:"formId,omitempty"`
 	Activity   bool    `json:"activity"`
 	Motivation bool    `json:"motivation"`
+	Methods    bool    `json:"methods,omitempty"`
 	Active     bool    `json:"active"`
 	Created    string  `json:"created"`
 	OwnerID    string  `json:"ownerId,omitempty"`
