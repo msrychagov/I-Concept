@@ -11,6 +11,7 @@ import (
 
 // goodPortrait answers the way the instruction asks, for the input it is given.
 func goodPortrait(user string) map[string]any {
+	user, _, _ = strings.Cut(user, "\n\n"+retryNote)
 	var input struct {
 		Levels   map[string]string `json:"уровни"`
 		Criminal string            `json:"уголовная_ответственность"`
@@ -412,5 +413,31 @@ func TestTheNewestInstructionVersionIsTheOneThatIsUsed(t *testing.T) {
 	task, ok := s.portraits.task("autobiography")
 	if !ok || task.Version != "v10" || task.Prompt.Instruction != "десятая" || len(s.portraits.tasks) != 1 {
 		t.Fatalf("task: %+v", task)
+	}
+}
+
+func TestRetryTellsTheModelWhatTheCheckFound(t *testing.T) {
+	f := newAutobiographyFixture(t)
+	messages := []string{}
+	m := &fakeModel{name: "fake", reply: func(call int, c Completion) (string, error) {
+		messages = append(messages, c.User)
+		answer := goodPortrait(c.User)
+		if call == 1 {
+			answer["attention"].(map[string]any)["consider"] = []any{"Женат — обстоятельство, влияющее на нагрузку."}
+		}
+		data, _ := json.Marshal(answer)
+		return string(data), nil
+	}}
+	f.service.UseModel(m)
+	f.submit()
+	f.idle()
+	if f.portrait(f.submission).Status != portraitReady || len(messages) != 2 {
+		t.Fatalf("%d calls", len(messages))
+	}
+	if strings.Contains(messages[0], retryNote) || !strings.HasPrefix(messages[1], messages[0]+"\n\n"+retryNote) || !strings.Contains(messages[1], "вывод вместо факта") {
+		t.Fatalf("retry message: %q", messages[1][len(messages[0]):])
+	}
+	if stored := mustSnapshot(t, f.service.repo).Portraits[0].Input; stored != messages[0] {
+		t.Fatal("the stored input has the retry note")
 	}
 }
