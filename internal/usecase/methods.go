@@ -36,8 +36,8 @@ type MethodLevel struct {
 	Method    string `json:"method"`
 	Component string `json:"component"`
 	Score     *int   `json:"score,omitempty"`
-	Min       int    `json:"min,omitempty"`
-	Max       int    `json:"max,omitempty"`
+	Min       int    `json:"min"`
+	Max       int    `json:"max"`
 	Level     string `json:"level"`
 	LevelText string `json:"levelText"`
 	Answered  int    `json:"answered"`
