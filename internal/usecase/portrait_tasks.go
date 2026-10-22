@@ -182,7 +182,8 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 	return portraitTask{
 		ID: testPortraitTask, Version: prompt.Version, Prompt: prompt,
 		// The portrait has nine sections: about 2000 tokens of Russian text.
-		MaxTokens: 4000,
+		// More rules than in the autobiography: more tries, each with the notes.
+		MaxTokens: 4000, Attempts: 5,
 		Accepts: func(db model.Database, s Source) bool {
 			session, ok := findSession(db, s)
 			return ok && session.Completed && session.Methods && a.TestPortrait(session) != nil

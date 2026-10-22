@@ -44,6 +44,8 @@ type portraitTask struct {
 	Visible func(db model.Database, s Source, teacherID string) bool
 	// MaxTokens limits the answer; zero keeps the model's default.
 	MaxTokens int
+	// Attempts is how many times the model may answer; zero means portraitAttempts.
+	Attempts int
 }
 
 const (
@@ -338,7 +340,11 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 	// zero the same message gives the same mistake. The stored input stays
 	// the data alone.
 	message := user
-	for attempt := 1; attempt <= portraitAttempts; attempt++ {
+	attempts := portraitAttempts
+	if task.Attempts > 0 {
+		attempts = task.Attempts
+	}
+	for attempt := 1; attempt <= attempts; attempt++ {
 		if attempt > 1 {
 			select {
 			case <-ctx.Done():
