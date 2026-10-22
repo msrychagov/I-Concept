@@ -42,6 +42,10 @@ type portraitTask struct {
 	Check func(output map[string]any, payload *object) []string
 	// Visible says whether this teacher may see the portrait of the source.
 	Visible func(db model.Database, s Source, teacherID string) bool
+	// MaxTokens limits the answer; zero keeps the model's default.
+	MaxTokens int
+	// Attempts is how many times the model may answer; zero means portraitAttempts.
+	Attempts int
 }
 
 const (
@@ -332,7 +336,15 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 	user := modelText(canonicalJSON(payload))
 	reason, detail := "Модель не ответила.", "no attempt was made"
 	started := time.Now()
-	for attempt := 1; attempt <= portraitAttempts; attempt++ {
+	// A retry tells the model what the check found: with a temperature near
+	// zero the same message gives the same mistake. The stored input stays
+	// the data alone.
+	message := user
+	attempts := portraitAttempts
+	if task.Attempts > 0 {
+		attempts = task.Attempts
+	}
+	for attempt := 1; attempt <= attempts; attempt++ {
 		if attempt > 1 {
 			select {
 			case <-ctx.Done():
@@ -340,7 +352,7 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 			case <-time.After(l.pause):
 			}
 		}
-		reply, err := m.Complete(ctx, Completion{System: task.Prompt.Instruction, User: user, Schema: task.Prompt.Schema})
+		reply, err := m.Complete(ctx, Completion{System: task.Prompt.Instruction, User: message, Schema: task.Prompt.Schema, MaxTokens: task.MaxTokens})
 		if ctx.Err() != nil {
 			return
 		}
@@ -355,6 +367,7 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 		if len(problems) > 0 {
 			reason = "Ответ модели не прошёл проверку: " + strings.Join(problems[:min(len(problems), 3)], "; ") + "."
 			detail = fmt.Sprintf("attempt %d: %s", attempt, strings.Join(problems, "; "))
+			message = user + "\n\n" + retryNote + strings.Join(problems, "; ") + "."
 			continue
 		}
 		data, _ := json.Marshal(output)
@@ -378,6 +391,9 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 	}
 	fail(reason, detail, time.Since(started).Seconds())
 }
+
+// retryNote opens the list of problems sent with a retry.
+const retryNote = "Предыдущий ответ не прошёл проверку программы. Исправь эти места и ответь заново по той же схеме, соблюдая все правила инструкции: "
 
 // modelText turns the canonical input into the text the model gets: the same
 // JSON with an indent of one space, as in the comparison of the models.

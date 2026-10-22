@@ -29,6 +29,7 @@ type Session struct {
 	Seed               uint32            `json:"seed"`
 	Activity           bool              `json:"activity"`
 	Motivation         bool              `json:"motivation"`
+	Methods            bool              `json:"methods,omitempty"`
 	Consent            bool              `json:"consent"`
 	ConsentAt          string            `json:"consentAt,omitempty"`
 	Completed          bool              `json:"completed"`

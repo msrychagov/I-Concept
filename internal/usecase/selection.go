@@ -7,15 +7,16 @@ import (
 
 // assignmentQuestions samples once, before the assignment snapshot is saved.
 // Limits are a workload policy, not a claim of psychometric validation.
-func (a *Service) assignmentQuestions(p model.Profile, activity, motivation bool) []model.Item {
+func (a *Service) assignmentQuestions(p model.Profile, activity, motivation, methods bool) []model.Item {
 	engine := a.engineFor(model.Session{Profile: p, BankVersion: p.BankVersion})
-	eligible := a.itemsFor(model.Session{Kind: "student", Profile: p, BankVersion: p.BankVersion, Activity: activity, Motivation: motivation})
+	eligible := a.itemsFor(model.Session{Kind: "student", Profile: p, BankVersion: p.BankVersion, Activity: activity, Motivation: motivation, Methods: methods})
 	groups := map[string][]model.Item{}
 	keys := []string{}
 	selected := map[string]bool{}
 	for _, item := range eligible {
-		// Images R/I/Z/N and fixed motivation/activity blocks are linked sets.
-		if item.Module == "A" || item.Module == "V" || item.Module == "F" {
+		// Images R/I/Z/N, fixed motivation/activity blocks and the methods with
+		// a key are linked sets: a method counts only with all its questions.
+		if item.Module == "A" || item.Module == "V" || item.Module == "F" || methodModule(item.Module) {
 			selected[item.ID] = true
 			continue
 		}

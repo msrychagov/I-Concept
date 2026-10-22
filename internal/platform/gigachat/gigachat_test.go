@@ -120,6 +120,19 @@ func TestCompleteSendsTheRequestAsTheComparisonDid(t *testing.T) {
 	}
 }
 
+func TestCompleteTakesTheLimitOfTheTask(t *testing.T) {
+	s := &service{}
+	client, _ := newClient(t, s)
+	long := question
+	long.MaxTokens = 4000
+	if _, err := client.Complete(context.Background(), long); err != nil {
+		t.Fatal(err)
+	}
+	if s.lastBody["max_tokens"] != 4000.0 {
+		t.Fatalf("max_tokens %v", s.lastBody["max_tokens"])
+	}
+}
+
 func TestOAuthRequestHasBasicKeyAndRqUID(t *testing.T) {
 	s := &service{}
 	client, _ := newClient(t, s)

@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "properties": {
+    "portrait": {"type": "string", "description": "Целостная характеристика Я-концепции, 5–7 предложений"},
+    "core": {
+      "type": "object",
+      "properties": {
+        "cs": {"type": "string", "description": "Ценностно-смысловой компонент"},
+        "ev": {"type": "string", "description": "Эмоционально-волевой компонент"},
+        "dp": {"type": "string", "description": "Деятельностно-практический компонент"}
+      },
+      "required": ["cs", "ev", "dp"]
+    },
+    "signs": {"type": "string", "description": "Любовь, соборность, патриотизм"},
+    "images": {"type": "string", "description": "Я-реальное и Я-идеальное"},
+    "environment": {"type": "string", "description": "Восприятие условий среды ВУЦ"},
+    "activity": {
+      "type": "array",
+      "description": "Четыре вида деятельности в заданном порядке",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {"type": "string"},
+          "level": {"type": "string"},
+          "text": {"type": "string"}
+        },
+        "required": ["kind", "level", "text"]
+      }
+    },
+    "link": {"type": "string", "description": "Сочетание условий, деятельности и Я-концепции"},
+    "support": {"type": "array", "items": {"type": "string"}, "description": "На что опереться"},
+    "growth": {"type": "array", "items": {"type": "string"}, "description": "Над чем работать"}
+  },
+  "required": ["portrait", "core", "signs", "images", "environment", "activity", "link", "support", "growth"]
+}

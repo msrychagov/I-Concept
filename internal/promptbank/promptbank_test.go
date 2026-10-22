@@ -24,17 +24,22 @@ func TestAutobiographyV1(t *testing.T) {
 	}
 }
 
-// The latest version is the text of Вики/Автобиография/Сравнение моделей/Инструкция.md word for
-// word; the file is in the working folder, not in the repository.
+// The latest version of each task is the text of its Инструкция.md in the
+// wiki word for word; the wiki is in the working folder, not in the repository.
 func TestLatestVersionMatchesTheWikiWhenItIsThere(t *testing.T) {
-	wiki, err := os.ReadFile("../../../Вики/Автобиография/Сравнение моделей/Инструкция.md")
-	if err != nil {
-		t.Skip("the wiki folder is not next to the repository")
-	}
-	prompts, _ := Load()
-	prompt, _ := Latest(prompts, "autobiography")
-	if !strings.Contains(string(wiki), "```text\n"+prompt.Instruction+"\n```") || !strings.Contains(string(wiki), "```json\n"+string(prompt.Schema)+"\n```") {
-		t.Fatalf("the latest version %s differs from Инструкция.md: a changed wording must be a new version folder", prompt.Version)
+	for task, path := range map[string]string{
+		"autobiography": "../../../Вики/Автобиография/Сравнение моделей/Инструкция.md",
+		"test":          "../../../Вики/Тестирование/Инструкция.md",
+	} {
+		wiki, err := os.ReadFile(path)
+		if err != nil {
+			t.Skip("the wiki folder is not next to the repository")
+		}
+		prompts, _ := Load()
+		prompt, ok := Latest(prompts, task)
+		if !ok || !strings.Contains(string(wiki), "```text\n"+prompt.Instruction+"\n```") || !strings.Contains(string(wiki), "```json\n"+string(prompt.Schema)+"\n```") {
+			t.Fatalf("%s: the latest version %s differs from %s: a changed wording must be a new version folder", task, prompt.Version, path)
+		}
 	}
 }
 

@@ -16,6 +16,9 @@ func (a *Service) RegisterPrompts(prompts ...promptbank.Prompt) {
 	if prompt, ok := promptbank.Latest(prompts, autobiographyForm); ok {
 		a.registerPortraitTask(a.autobiographyTask(prompt))
 	}
+	if prompt, ok := promptbank.Latest(prompts, testPortraitTask); ok {
+		a.registerPortraitTask(a.testTask(prompt))
+	}
 }
 
 // findSubmission returns the submitted autobiography a source points to.
@@ -154,6 +157,193 @@ func considerProblems(points []any, payload *object) []string {
 	}
 	if record, _ := payload.values["уголовная_ответственность"].(string); record == "привлекался" && !details {
 		problems = append(problems, "attention.consider: нет «подробности — в ответах студента»")
+	}
+	return problems
+}
+
+// testPortraitTask writes the portrait of the first chapter by a finished test
+// session with the methods: the levels are counted by methods.go, the model
+// only writes the text (Вики/Тестирование/Инструкция.md).
+const testPortraitTask = "test"
+
+func findSession(db model.Database, s Source) (model.Session, bool) {
+	if s.Kind != "session" {
+		return model.Session{}, false
+	}
+	for _, record := range db.Sessions {
+		if record.Session.ID == s.ID {
+			return record.Session, true
+		}
+	}
+	return model.Session{}, false
+}
+
+func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
+	return portraitTask{
+		ID: testPortraitTask, Version: prompt.Version, Prompt: prompt,
+		// The portrait has nine sections: about 2000 tokens of Russian text.
+		// More rules than in the autobiography: more tries, each with the notes.
+		MaxTokens: 4000, Attempts: 5,
+		Accepts: func(db model.Database, s Source) bool {
+			session, ok := findSession(db, s)
+			return ok && session.Completed && session.Methods && a.TestPortrait(session) != nil
+		},
+		Payload: func(a *Service, db model.Database, s Source) (*object, error) {
+			session, _ := findSession(db, s)
+			data := a.TestPortrait(session)
+			if data == nil {
+				return nil, problem(Invalid, "В тестировании нет методик.")
+			}
+			return testPayload(data), nil
+		},
+		Check: checkTestAnswer,
+		Visible: func(db model.Database, s Source, teacherID string) bool {
+			session, ok := findSession(db, s)
+			return ok && teacherOwnsSession(db, teacherID, session)
+		},
+	}
+}
+
+// cause finds the words of a cause the user forbade on 22 October 2026: the
+// portrait shows how things go together, not what influenced what. Checked in
+// every section but support and growth.
+var cause = regexp.MustCompile(`(?i)повлия|благодаря|привел[оаи]? к|привело к|в результате|под влиянием|обусловл`)
+
+// influence finds softer verbs of influence; they are checked only in link,
+// the section about how conditions, activity and the self go together.
+var influence = regexp.MustCompile(`(?i)ограничива|сдержива|усилива|способству|снижа[ею]т`)
+
+// diagnosis finds clinical words and conclusions about fitness or beliefs.
+var diagnosis = regexp.MustCompile(`(?i)диагноз|расстройств|патолог|непригод|пригоден к|лояльн|к сожалению`)
+
+// shortLevel finds a level put on a 1–5 score by a short adjective
+// («коллективизм низок»). Adverbs («высоко оценивает») retell the student's own
+// rating and pass; the full forms name the levels of the methods and are
+// checked against them.
+var shortLevel = regexp.MustCompile(`(?i)(^|[^а-яё])(низок|низка|низки|высок|высока|высоки)([^а-яё]|$)`)
+
+var levelWord = regexp.MustCompile(`(?i)низк|средн|высок`)
+
+func objectList(value any) []*object {
+	list, _ := value.([]any)
+	result := []*object{}
+	for _, item := range list {
+		if o, ok := item.(*object); ok {
+			result = append(result, o)
+		}
+	}
+	return result
+}
+
+func objectText(o *object, key string) string {
+	text, _ := o.values[key].(string)
+	return text
+}
+
+// checkTestAnswer returns what is wrong with an answer to the test
+// instruction. A problem names the section, never quotes the answer.
+func checkTestAnswer(output map[string]any, payload *object) []string {
+	problems := []string{}
+	sections := map[string]string{}
+	for _, key := range []string{"portrait", "signs", "images", "environment", "link"} {
+		text, _ := output[key].(string)
+		if strings.TrimSpace(text) == "" {
+			problems = append(problems, "нет раздела "+key)
+		}
+		sections[key] = text
+	}
+	core, _ := output["core"].(map[string]any)
+	for _, key := range []string{"cs", "ev", "dp"} {
+		text, _ := core[key].(string)
+		if strings.TrimSpace(text) == "" {
+			problems = append(problems, "нет раздела core."+key)
+		}
+		sections["core."+key] = text
+	}
+	kinds := objectList(payload.values["виды_деятельности"])
+	items, _ := output["activity"].([]any)
+	if len(items) != len(kinds) {
+		problems = append(problems, fmt.Sprintf("видов деятельности %d вместо %d", len(items), len(kinds)))
+	}
+	for n, item := range items {
+		record, _ := item.(map[string]any)
+		text, _ := record["text"].(string)
+		sections[fmt.Sprintf("activity.%d", n+1)] = text
+		if n >= len(kinds) {
+			continue
+		}
+		kind, _ := record["kind"].(string)
+		level, _ := record["level"].(string)
+		want := kinds[n]
+		switch {
+		case !strings.EqualFold(strings.TrimSpace(kind), objectText(want, "вид")):
+			problems = append(problems, fmt.Sprintf("activity.%d: не тот вид или порядок", n+1))
+		case strings.TrimSpace(level) != objectText(want, "уровень"):
+			problems = append(problems, fmt.Sprintf("activity.%d: уровень изменён", n+1))
+		case strings.TrimSpace(text) == "":
+			problems = append(problems, fmt.Sprintf("activity.%d: нет текста", n+1))
+		}
+	}
+	for _, key := range []string{"support", "growth"} {
+		list, ok := output[key].([]any)
+		strs := ok && len(list) > 0 && len(list) <= attentionLimit
+		for _, item := range list {
+			if text, isText := item.(string); !isText || strings.TrimSpace(text) == "" {
+				strs = false
+			} else if found := diagnosis.FindString(text); found != "" {
+				problems = append(problems, fmt.Sprintf("%s: недопустимое слово («%s»)", key, strings.ToLower(found)))
+			}
+		}
+		if !strs {
+			problems = append(problems, key+": нужно от 1 до 5 пунктов")
+		}
+	}
+	keys := make([]string, 0, len(sections))
+	for key := range sections {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+	for _, key := range keys {
+		text := sections[key]
+		if found := cause.FindString(text); found != "" {
+			problems = append(problems, fmt.Sprintf("%s: причина вместо сочетания («%s»)", key, strings.ToLower(found)))
+		}
+		if found := influence.FindString(text); key == "link" && found != "" {
+			problems = append(problems, fmt.Sprintf("%s: влияние вместо сочетания («%s»)", key, strings.ToLower(found)))
+		}
+		if found := diagnosis.FindString(text); found != "" {
+			problems = append(problems, fmt.Sprintf("%s: недопустимое слово («%s»)", key, strings.ToLower(found)))
+		}
+		// Only these sections speak of 1–5 scores alone; elsewhere the levels of
+		// the methods and the questionnaire are named rightly.
+		if key == "signs" || key == "environment" {
+			if found := shortLevel.FindStringSubmatch(text); found != nil {
+				problems = append(problems, fmt.Sprintf("%s: уровень у балла 1–5 («%s»)", key, strings.ToLower(found[2])))
+			}
+		}
+	}
+	// A level written right after the name of a method must be its own.
+	for _, method := range objectList(payload.values["методики"]) {
+		name, want := strings.ToLower(objectText(method, "показатель")), objectText(method, "уровень")
+		if name == "" || want == "не определён" {
+			continue
+		}
+		for _, key := range []string{"portrait", "core.cs", "core.ev", "core.dp"} {
+			text := strings.ToLower(sections[key])
+			for at := strings.Index(text, name); at >= 0; {
+				tail := []rune(text[at+len(name):])
+				window := string(tail[:min(len(tail), 40)])
+				if found := levelWord.FindString(window); found != "" && !strings.HasPrefix(want, found) {
+					problems = append(problems, fmt.Sprintf("%s: уровень показателя «%s» не тот", key, objectText(method, "показатель")))
+					break
+				}
+				next := strings.Index(text[at+len(name):], name)
+				if next < 0 {
+					break
+				}
+				at += len(name) + next
+			}
+		}
 	}
 	return problems
 }

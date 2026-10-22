@@ -14,10 +14,11 @@ type TextModel interface {
 }
 
 // Completion is one request: the instruction, the data and the schema the
-// answer must follow.
+// answer must follow. MaxTokens limits the answer; zero keeps the model's default.
 type Completion struct {
 	System, User string
 	Schema       json.RawMessage
+	MaxTokens    int
 }
 
 // Reply is the answer text, the model version that gave it, the tokens spent

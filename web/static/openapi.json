@@ -3437,6 +3437,64 @@
         ]
       }
     },
+    "/reports/methods": {
+      "get": {
+        "operationId": "getMethodsSummary",
+        "tags": [
+          "Результаты"
+        ],
+        "summary": "Уровни методик по взводу",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MethodsSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "По каждой шкале методик (ВПМ, Зверьков — Эйдман, эмоциональная устойчивость, волевые качества, анкета деятельностного компонента) и каждому виду деятельности — студенты на каждом уровне. Уровни считает программа по ключам методик; текста модели нет.",
+        "parameters": [
+          {
+            "name": "group",
+            "in": "query",
+            "required": false,
+            "description": "Номер взвода; без него — все взводы.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
     "/exports/answers.csv": {
       "get": {
         "operationId": "exportAnswersCSV",
@@ -4616,6 +4674,9 @@
           "motivation": {
             "type": "boolean"
           },
+          "methods": {
+            "type": "boolean"
+          },
           "consent": {
             "type": "boolean"
           },
@@ -4716,6 +4777,20 @@
               "$ref": "#/components/schemas/Item"
             },
             "nullable": true
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Method"
+            },
+            "nullable": true
+          },
+          "activityKinds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityKind"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false,
@@ -4723,6 +4798,114 @@
           "version",
           "modules",
           "indicators",
+          "items"
+        ]
+      },
+      "Method": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "component": {
+            "type": "string"
+          },
+          "scoring": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelBand"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "method",
+          "component",
+          "scoring",
+          "items"
+        ]
+      },
+      "LevelBand": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "integer"
+          },
+          "max": {
+            "type": "integer"
+          },
+          "level": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "min",
+          "max",
+          "level"
+        ]
+      },
+      "ActivityKind": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "indicators": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "frequency": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
           "items"
         ]
       },
@@ -5012,6 +5195,9 @@
             "type": "boolean"
           },
           "motivation": {
+            "type": "boolean"
+          },
+          "methods": {
             "type": "boolean"
           },
           "active": {
@@ -5795,6 +5981,11 @@
           "motivation": {
             "type": "boolean",
             "default": false
+          },
+          "methods": {
+            "type": "boolean",
+            "default": false,
+            "description": "Методики уровней Я-концепции из таблицы 8 руководителя: добавляются целиком вместе с ВПМ (модуль V)."
           }
         },
         "additionalProperties": false,
@@ -6478,6 +6669,11 @@
               "$ref": "#/components/schemas/EvidenceRow"
             }
           },
+          "methods": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Портрет по методикам (только у сессий с методиками): methods — уровни шкал по ключам, components и images — Я-реальное и Я-идеальное, signs и conditions — показатели без уровней, kinds — виды деятельности с уровнем по анкете, openAnswers — рассказы о деятельности."
+          },
           "interpretationNote": {
             "type": "string"
           }
@@ -6581,6 +6777,130 @@
         "additionalProperties": false,
         "required": [
           "plan"
+        ]
+      },
+      "MethodsStudent": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "sessionId",
+          "studentId",
+          "name",
+          "group"
+        ]
+      },
+      "MethodsLevelGroup": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              ""
+            ],
+            "description": "Пусто — уровень не определён: ответы на методику неполные."
+          },
+          "levelText": {
+            "type": "string"
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MethodsStudent"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "level",
+          "levelText",
+          "students"
+        ]
+      },
+      "MethodsSummaryRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "method",
+              "activity"
+            ]
+          },
+          "component": {
+            "type": "string",
+            "enum": [
+              "CS",
+              "EV",
+              "DP"
+            ]
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MethodsLevelGroup"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "levels"
+        ]
+      },
+      "MethodsSummary": {
+        "type": "object",
+        "properties": {
+          "group": {
+            "type": "string"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sessions": {
+            "type": "integer",
+            "description": "Учтено тестирований: последнее завершённое с методиками у каждого студента."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MethodsSummaryRow"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "group",
+          "groups",
+          "sessions",
+          "rows"
         ]
       },
       "PsychologicalAnswer": {
