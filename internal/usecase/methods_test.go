@@ -173,3 +173,31 @@ func TestMethodsSummaryCountsTheLatestSessionOfEveryStudent(t *testing.T) {
 		t.Fatalf("other platoon: %+v", empty)
 	}
 }
+
+func TestDemoHasFinishedSessionsWithMethods(t *testing.T) {
+	a := testApp(t)
+	db, err := a.demoDatabase()
+	if err != nil {
+		t.Fatal(err)
+	}
+	finished := 0
+	for _, record := range db.Sessions {
+		s := record.Session
+		if !s.Methods {
+			continue
+		}
+		finished++
+		portrait := a.TestPortrait(s)
+		for _, m := range portrait.Methods {
+			if m.Level == "" {
+				t.Fatalf("%s: %s has no level", s.Participant, m.ID)
+			}
+		}
+		if len(portrait.OpenAnswers) == 0 || len(portrait.Images) != 24 {
+			t.Fatalf("%s: %d stories, %d images", s.Participant, len(portrait.OpenAnswers), len(portrait.Images))
+		}
+	}
+	if finished != 2 {
+		t.Fatalf("finished with methods: %d", finished)
+	}
+}

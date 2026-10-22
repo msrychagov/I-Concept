@@ -118,6 +118,7 @@ func (a *Service) demoDatabase() (model.Database, error) {
 	if err := a.addDemoAutobiography(&db, created, now, teacherID); err != nil {
 		return model.Database{}, err
 	}
+	a.addDemoMethods(&db, full, created, now, teacherID)
 	return db, nil
 }
 
