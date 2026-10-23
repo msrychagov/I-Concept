@@ -5020,6 +5020,74 @@
         ]
       }
     },
+    "/students/me/submissions/{id}/answers": {
+      "get": {
+        "operationId": "getOwnFormAnswers",
+        "tags": [
+          "Анкеты"
+        ],
+        "summary": "Свои сданные ответы (эссе)",
+        "security": [
+          {
+            "studentCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnFormAnswers"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Только своя сданная анкета, и только такая, что показывается автору (эссе). Автобиография и черновик — 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
     "/forms/{formId}": {
       "get": {
         "operationId": "getForm",
@@ -6068,6 +6136,13 @@
               "nullable": true
             },
             "nullable": true
+          },
+          "studentView": {
+            "type": "boolean"
+          },
+          "texts": {
+            "$ref": "#/components/schemas/FormTexts",
+            "nullable": true
           }
         },
         "additionalProperties": false,
@@ -6079,6 +6154,26 @@
           "sections"
         ]
       },
+      "FormTexts": {
+        "type": "object",
+        "properties": {
+          "consent": {
+            "type": "string"
+          },
+          "doneTitle": {
+            "type": "string"
+          },
+          "doneText": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "consent",
+          "doneTitle",
+          "doneText"
+        ]
+      },
       "FormSection": {
         "type": "object",
         "properties": {
@@ -6086,6 +6181,9 @@
             "type": "string"
           },
           "title": {
+            "type": "string"
+          },
+          "hint": {
             "type": "string"
           },
           "fields": {
@@ -6107,6 +6205,9 @@
         "type": "object",
         "properties": {
           "id": {
+            "type": "string"
+          },
+          "number": {
             "type": "string"
           },
           "label": {
@@ -6852,6 +6953,46 @@
           "cohorts"
         ]
       },
+      "OwnFormAnswers": {
+        "type": "object",
+        "properties": {
+          "form": {
+            "$ref": "#/components/schemas/Form"
+          },
+          "submission": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "answers": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "savedSections": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "completedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "answers"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "form",
+          "submission"
+        ]
+      },
       "ManageStudentInput": {
         "type": "object",
         "properties": {
@@ -7059,6 +7200,10 @@
           "formId": {
             "type": "string",
             "description": "Только у анкет. answered и total тогда — заполненные разделы и их число; sessionId — id анкеты."
+          },
+          "studentView": {
+            "type": "boolean",
+            "description": "Только у анкет, которые автор может перечитать после сдачи (эссе): ответы — GET /students/me/submissions/{id}/answers."
           }
         },
         "additionalProperties": false,

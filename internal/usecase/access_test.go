@@ -34,7 +34,7 @@ func TestNormalizeOwnershipAdoptsOnlyUnambiguousLegacyData(t *testing.T) {
 		t.Fatal(err)
 	}
 	db = mustSnapshot(t, many.repo)
-	if assignmentApplies(db.Assignments[0], db.Students[2]) || inTeacherScope(db.Assignments[0].OwnerID, "teacher-1") || inTeacherScope(db.Assignments[0].OwnerID, "teacher-2") {
+	if assignmentApplies(db, db.Assignments[0], db.Students[2]) || inTeacherScope(db.Assignments[0].OwnerID, "teacher-1") || inTeacherScope(db.Assignments[0].OwnerID, "teacher-2") {
 		t.Fatal("ambiguous legacy data was exposed to an arbitrary account")
 	}
 }

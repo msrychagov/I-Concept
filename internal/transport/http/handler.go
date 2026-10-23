@@ -23,6 +23,7 @@ func New(service *usecase.Service, files fs.FS, config Config) *Handler {
 	h.mux.HandleFunc("/research", h.research)
 	h.mux.HandleFunc("/survey", func(w http.ResponseWriter, r *http.Request) { h.serveAsset(w, "pages/survey.html") })
 	h.mux.HandleFunc("/autobiography", func(w http.ResponseWriter, r *http.Request) { h.serveAsset(w, "pages/form.html") })
+	h.mux.HandleFunc("/essay", func(w http.ResponseWriter, r *http.Request) { h.serveAsset(w, "pages/form.html") })
 	h.mux.HandleFunc("/assets/", h.asset)
 	h.apiRoutes()
 	h.mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
