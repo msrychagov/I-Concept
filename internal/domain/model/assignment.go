@@ -12,4 +12,7 @@ type Assignment struct {
 	Active     bool    `json:"active"`
 	Created    string  `json:"created"`
 	OwnerID    string  `json:"ownerId,omitempty"`
+	// CohortID is the cohort an essay is assigned to: its students are all
+	// students of the platoons of the cohort, whoever invited them.
+	CohortID string `json:"cohortId,omitempty"`
 }
