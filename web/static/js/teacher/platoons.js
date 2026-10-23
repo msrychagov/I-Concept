@@ -1,7 +1,8 @@
 window.teacherPlatoons = async function ({view, api, esc}) {
-    view.innerHTML = '<div id="platoon-management" class="platoon-management"><p role="status">Загрузка взводов…</p></div><div id="instructor-management" class="platoon-management"></div>';
+    view.innerHTML = '<div id="platoon-management" class="platoon-management"><p role="status">Загрузка взводов…</p></div><div id="cohort-management" class="platoon-management"></div><div id="instructor-management" class="platoon-management"></div>';
     const root = view.firstElementChild;
-    window.teacherInstructors({view: view.lastElementChild, api, esc});
+    window.teacherCohorts({view: view.children[1], api, esc});
+    window.teacherInstructors({view: view.children[2], api, esc});
     let state, selected = '', issued = null;
     const options = (current = '') => state.platoons.map(p => `<option value="${esc(p.id)}" ${p.id === current ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
     const message = (text, error = false) => {
