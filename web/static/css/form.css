@@ -547,3 +547,140 @@
         padding-right: .4rem
     }
 }
+
+/* Essay: analysis of one essay and summary of a cohort */
+.essay-tag {
+    display: inline-block;
+    padding: 0 .5em;
+    margin-right: .3em;
+    border-radius: 999px;
+    background: #0000000d;
+    border: 1px solid var(--line, #0002);
+    font-size: .8rem;
+    white-space: nowrap
+}
+
+.essay-tag.inference {
+    background: #fcf8ec;
+    border-color: #e6cf9a;
+    color: #655627
+}
+
+.essay-points {
+    margin: .4rem 0 1rem;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: .7rem
+}
+
+.essay-moment {
+    margin: 0 0 1rem
+}
+
+.essay-moment p {
+    margin: .2rem 0
+}
+
+.quote-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-top: .35rem
+}
+
+.quote-chip {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    max-width: 100%;
+    padding: .3rem .6rem;
+    text-align: left;
+    font: inherit;
+    font-size: .9rem;
+    font-style: italic;
+    color: var(--ink);
+    background: #0000000a;
+    border: 1px solid var(--line, #0002);
+    border-left: 3px solid var(--gold, #ad9653);
+    border-radius: 6px;
+    cursor: pointer;
+    overflow-wrap: anywhere
+}
+
+.quote-chip.static {
+    cursor: default
+}
+
+.quote-chip small {
+    font-style: normal;
+    color: var(--muted)
+}
+
+.quote-full {
+    margin: .8rem 0;
+    padding: .6rem 1rem;
+    border-left: 3px solid var(--gold, #ad9653);
+    background: #0000000a
+}
+
+.quote-full p {
+    margin: .3rem 0 .6rem
+}
+
+.change-pair {
+    margin: 0 0 1rem
+}
+
+.change-pair p {
+    margin: .2rem 0
+}
+
+.change-quotes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem
+}
+
+.essay-sources summary {
+    display: inline-block;
+    cursor: pointer;
+    padding: 0 .6em;
+    border-radius: 999px;
+    border: 1px solid var(--line, #0002);
+    font-size: .85rem;
+    color: var(--muted)
+}
+
+.essay-sources ul {
+    margin: .5rem 0 0;
+    padding-left: 1rem;
+    display: grid;
+    gap: .5rem;
+    list-style: none
+}
+
+.essay-previous {
+    margin: 1rem 0
+}
+
+.essay-teacher {
+    margin: 0 0 1rem
+}
+
+.essay-left {
+    margin-top: 1rem;
+    padding: .6rem 1rem;
+    border: 1px dashed var(--line, #0003);
+    border-radius: 8px
+}
+
+.assignment-row.is-current {
+    background: #0000000a
+}
+
+@media (max-width: 760px) {
+    .change-quotes {
+        grid-template-columns: 1fr
+    }
+}
