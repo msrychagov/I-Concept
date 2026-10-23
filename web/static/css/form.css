@@ -557,7 +557,8 @@
     background: #0000000d;
     border: 1px solid var(--line, #0002);
     font-size: .8rem;
-    white-space: nowrap
+    max-width: 100%;
+    overflow-wrap: anywhere
 }
 
 .essay-tag.inference {
