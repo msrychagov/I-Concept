@@ -53,7 +53,7 @@ window.teacherInstructors = async function ({view, api, esc}) {
 
     function render() {
         view.innerHTML = `<section class="surface settings-section" aria-labelledby="instructors-title"><h2 id="instructors-title">Преподаватели ВУЦ · ${list.length}</h2>
-   <p class="muted">Общий список ВУЦ: его видят и правят все преподаватели ВУЦ. По нему программа узнаёт преподавателя в текстах студентов, как бы его ни назвали — «полковник Иванов» или «Игорь Петрович». Учётные записи в список сами не попадают: добавьте всех, кто преподаёт.</p>
+   <p class="muted">Общий список ВУЦ: его видят и правят все преподаватели ВУЦ. По нему в разборах эссе упоминания одного преподавателя собираются вместе, как бы его ни назвали — «полковник Иванов» или «Игорь Петрович». Учётные записи в список сами не попадают: добавьте всех, кто преподаёт.</p>
    <p id="instructor-feedback" role="status" aria-live="polite"></p>
    <form id="add-instructor" aria-label="Добавить преподавателя">${fields()}<button type="submit">Добавить преподавателя</button></form>
    ${list.length ? `<div style="overflow-x:auto"><table class="instructor-table"><thead><tr><th>Преподаватель</th><th>Звание</th><th>Изменил</th><th>Действия</th></tr></thead><tbody>${list.map(row).join('')}</tbody></table></div>` : '<p class="muted">В списке пока никого нет.</p>'}
