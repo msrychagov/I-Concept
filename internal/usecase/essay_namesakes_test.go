@@ -80,6 +80,18 @@ func TestNamesakeLabelIsTakenOffWhenTheWordsDoNotTellThemApart(t *testing.T) {
 	}
 }
 
+func TestWordsOfAnEntryAreWrittenOnceInTheOrderTheyCome(t *testing.T) {
+	db := namesakeDB()
+	record := cleanedTeachers(t, db, "Игорь Петрович помог мне, спасибо Игорю Петровичу.", "[преподаватель 3]")
+	if record["who"] != "Игорь Петрович" {
+		t.Fatalf("%v", record)
+	}
+	record = cleanedTeachers(t, db, "Кузнецов объяснил тему. Благодарю Кузнецова.", "[преподаватель 1]")
+	if record["who"] != "Кузнецов" {
+		t.Fatalf("%v", record)
+	}
+}
+
 func TestNamesakeLabelStaysWhenTheWordsTellThemApart(t *testing.T) {
 	petrov := model.Instructor{ID: "i7", Number: 7, Surname: "Петров", Name: "Игорь", Patronymic: "Петрович", Rank: "подполковник"}
 	cases := map[string]struct {

@@ -75,37 +75,56 @@ func attributesOf(i model.Instructor) map[string]string {
 }
 
 // foundIn says which attributes of the instructor are in the texts, and the
-// words as the student wrote them, in the order they come.
+// words as the student wrote them: the first hit of each attribute, in the
+// order they come, so «Игорь Петрович … Игоря Петровича» is written once.
 func foundIn(i model.Instructor, texts []string) (map[string]bool, []string) {
+	type hit struct {
+		text, token int
+		word        string
+	}
 	found := map[string]bool{}
-	words := []string{}
-	for _, text := range texts {
+	first := map[string]hit{} // by attribute and word of it
+	for at, text := range texts {
 		written, normal := tokens(text)
 		for kind, value := range attributesOf(i) {
 			parts := strings.Fields(value)
 			if len(parts) == 0 {
 				continue
 			}
-			every := true
-			var hits []int
+			var hits []hit
 			for _, part := range parts {
-				at := slices.IndexFunc(normal, func(token string) bool { return isWordOf(token, part) })
-				if at < 0 {
-					every = false
+				token := slices.IndexFunc(normal, func(token string) bool { return isWordOf(token, part) })
+				if token < 0 {
+					hits = nil
 					break
 				}
-				hits = append(hits, at)
+				hits = append(hits, hit{at, token, written[token]})
 			}
-			if !every {
+			if hits == nil {
 				continue
 			}
 			found[kind] = true
-			for _, at := range hits {
-				if !slices.Contains(words, written[at]) {
-					words = append(words, written[at])
+			for n, h := range hits {
+				key := kind + "/" + strings.Fields(value)[n]
+				if _, seen := first[key]; !seen {
+					first[key] = h
 				}
 			}
 		}
+	}
+	ordered := make([]hit, 0, len(first))
+	for _, h := range first {
+		ordered = append(ordered, h)
+	}
+	slices.SortFunc(ordered, func(x, y hit) int {
+		if x.text != y.text {
+			return x.text - y.text
+		}
+		return x.token - y.token
+	})
+	words := []string{}
+	for _, h := range ordered {
+		words = append(words, h.word)
 	}
 	return found, words
 }
