@@ -118,6 +118,7 @@ func TestPostgresIntegration(t *testing.T) {
 		d.Logins = append(d.Logins, model.Login{Hash: "login-hash", StudentID: d.Students[0].ID, Expires: time.Now().UTC().Add(time.Hour)})
 		d.Invitations = append(d.Invitations, model.Invitation{Hash: "invite-hash", Role: "student", IssuerID: d.Students[0].ID, PlatoonID: d.Platoons[0].ID})
 		d.Sessions = append(d.Sessions, model.SessionRecord{Session: model.Session{ID: "external-archive", StudentID: "external-student", AssignmentID: "external-assignment", TeacherID: d.Students[0].ID, Revoked: true}})
+		d.Instructors = append(d.Instructors, model.Instructor{ID: "instructor-1", VUC: "Демонстрационный ВУЦ", Surname: "Иванов", Name: "Игорь", Patronymic: "Петрович", Rank: "полковник"})
 		d.Portraits = append(d.Portraits, model.Portrait{ID: "portrait-key", Task: "autobiography", TaskVersion: "v1", Fingerprint: "print", Model: "test-model", Created: "2026-10-19T10:00:00Z", Input: `{"б":1,"а":2}`, Output: []byte(`{"summary":"текст"}`), Usage: model.PortraitUsage{In: 10, Out: 5}, Seconds: 1.5})
 		return nil
 	}); err != nil {
@@ -126,6 +127,9 @@ func TestPostgresIntegration(t *testing.T) {
 	db, err = r.ReadSnapshot()
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(db.Instructors) != 1 || db.Instructors[0].Rank != "полковник" {
+		t.Fatalf("instructor not stored as written: %+v", db.Instructors)
 	}
 	if len(db.Portraits) != 1 || db.Portraits[0].Input != `{"б":1,"а":2}` || db.Portraits[0].Usage.Out != 5 {
 		t.Fatalf("portrait not stored as written: %+v", db.Portraits)

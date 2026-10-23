@@ -11,10 +11,11 @@ type Database struct {
 	Submissions []FormSubmission `json:"submissions"`
 	Invitations []Invitation     `json:"invitations,omitempty"`
 	Portraits   []Portrait       `json:"portraits,omitempty"`
+	Instructors []Instructor     `json:"instructors,omitempty"`
 }
 
 func (d Database) Empty() bool {
-	return len(d.VUCs)+len(d.Platoons)+len(d.Students)+len(d.Assignments)+len(d.Logins)+len(d.Profiles)+len(d.Sessions)+len(d.Submissions)+len(d.Invitations)+len(d.Portraits) == 0
+	return len(d.VUCs)+len(d.Platoons)+len(d.Students)+len(d.Assignments)+len(d.Logins)+len(d.Profiles)+len(d.Sessions)+len(d.Submissions)+len(d.Invitations)+len(d.Portraits)+len(d.Instructors) == 0
 }
 
 type VUC struct {

@@ -34,7 +34,10 @@ func readSnapshot(ctx context.Context, tx pgx.Tx) (db model.Database, err error)
 	if db.Submissions, err = submissions.list(ctx, tx); err != nil {
 		return
 	}
-	db.Portraits, err = portraits.list(ctx, tx)
+	if db.Portraits, err = portraits.list(ctx, tx); err != nil {
+		return
+	}
+	db.Instructors, err = instructors.list(ctx, tx)
 	return
 }
 
@@ -50,6 +53,7 @@ func saveSnapshot(ctx context.Context, tx pgx.Tx, before, after model.Database) 
 		func() error { return sessions.sync(ctx, tx, before.Sessions, after.Sessions) },
 		func() error { return submissions.sync(ctx, tx, before.Submissions, after.Submissions) },
 		func() error { return portraits.sync(ctx, tx, before.Portraits, after.Portraits) },
+		func() error { return instructors.sync(ctx, tx, before.Instructors, after.Instructors) },
 	}
 	for _, operation := range operations {
 		if err := operation(); err != nil {
