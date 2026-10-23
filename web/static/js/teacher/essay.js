@@ -136,10 +136,18 @@ window.teacherEssays = async function ({view, api, esc}) {
     const quotes = (list, esc, source = 'current') => `<div class="quote-list">${(list || []).map(q => quote(q, source, esc)).join('')}</div>`;
     const tags = (p, esc) => `${p.about ? `<span class="essay-tag">${esc(p.about)}</span>` : ''}${p.basis === 'вывод по тексту' ? '<span class="essay-tag inference">вывод по тексту</span>' : ''}`;
 
+    // Two instructors fit a name they share; rarely more.
+    const fitWord = list => list.length === 2 ? 'подходят двое' : 'подходят несколько';
+
     function who(label) {
         const found = instructors?.find(i => `[преподаватель ${i.number}]` === label);
-        if (!found) return {text: label, listed: false};
-        return {text: [found.surname, found.name, found.patronymic].filter(Boolean).join(' ') + (found.rank ? ', ' + found.rank : ''), listed: true};
+        if (!found) return {text: label, short: label, listed: false};
+        const initials = [found.name, found.patronymic].filter(Boolean).map(n => n[0] + '.').join(' ');
+        return {
+            text: [found.surname, found.name, found.patronymic].filter(Boolean).join(' ') + (found.rank ? ', ' + found.rank : ''),
+            short: found.surname + (initials ? ' ' + initials : '') + (found.rank ? ', ' + found.rank : ''),
+            listed: true
+        };
     }
 
     window.portraitRenderers.essay = {
@@ -147,7 +155,8 @@ window.teacherEssays = async function ({view, api, esc}) {
             const points = (title, list) => `<div><h3>${title}</h3>${list.length ? `<ul class="essay-points">${list.map(p => `<li>${tags(p, esc)} ${esc(p.text)}${quotes(p.quotes, esc)}</li>`).join('')}</ul>` : '<p class="muted">Нет.</p>'}</div>`;
             const teachers = o.teachers.length ? `<section><h3>Преподаватели</h3><ul class="essay-points">${o.teachers.map(t => {
                 const w = who(t.who);
-                return `<li><b>${esc(w.text)}</b>${w.listed ? '' : ' <small class="muted">(как назвал автор)</small>'} <span class="essay-tag">${esc(t.kind)}</span> ${esc(t.text)}${quotes(t.quotes, esc)}</li>`;
+                const fit = (t.candidates || []).map(l => who(l).short).join('; ');
+                return `<li><b>${esc(w.text)}</b>${t.candidates ? ` <span class="essay-tag">${fitWord(t.candidates)}: ${esc(fit)}</span>` : w.listed ? '' : ' <small class="muted">(как назвал автор)</small>'} <span class="essay-tag">${esc(t.kind)}</span> ${esc(t.text)}${quotes(t.quotes, esc)}</li>`;
             }).join('')}</ul></section>` : '';
             const change = o.change.length ? `<section><h3>Что изменилось</h3>${o.change.map(c => `<div class="change-pair"><b>${esc(c.moment)}</b><p>${esc(c.text)}</p><div class="change-quotes"><div><small class="muted">Было</small>${quotes([c.before], esc, 'previous')}</div><div><small class="muted">Стало</small>${quotes([c.after], esc)}</div></div></div>`).join('')}</section>` : '';
             return `<section class="portrait-summary"><h3>Путь автора</h3><p>${esc(o.summary)}</p></section>
@@ -225,7 +234,7 @@ ${o.change.length ? `<h3>Что обычно меняется</h3>${o.change.map
         if (!listed.length && !unlisted.length) return '<p class="muted">Преподавателей в эссе не называли.</p>';
         const line = (l, name = '') => `<li>${name}<span class="essay-tag">${esc(l.kind)}</span> <button type="button" class="link" data-essay="${esc(l.submissionId)}">${esc(l.student)}</button> <small class="muted">взвод ${esc(l.platoon)}</small>: ${esc(l.text)}${l.quotes.length ? `<div class="quote-list">${l.quotes.map(q => `<span class="quote-chip static"><span>«${esc(q.quote)}»</span><small>вопрос ${esc(q.question)}</small></span>`).join('')}</div>` : ''}</li>`;
         return `${listed.map(e => `<div class="essay-teacher"><b>${esc(e.who)}</b> <small class="muted">благодарностей ${e.thanks}, проблем ${e.problems}, упоминаний ${e.mentions}</small><ul class="essay-points">${e.lines.map(line).join('')}</ul></div>`).join('')}
-${unlisted.length ? `<div class="essay-teacher"><b>Не сопоставлены со списком</b> <small class="muted">как написал автор</small><ul class="essay-points">${unlisted.map(l => `${line(l, `<b>${esc(l.who)}</b> `)}`).join('')}</ul></div>` : ''}`;
+${unlisted.length ? `<div class="essay-teacher"><b>Не сопоставлены со списком</b> <small class="muted">как написал автор</small><ul class="essay-points">${unlisted.map(l => `${line(l, `<b>${esc(l.who)}</b>${l.candidates ? ` <span class="essay-tag">${fitWord(l.candidates)}: ${esc(l.candidates.join('; '))}</span>` : ''} `)}`).join('')}</ul></div>` : ''}`;
     }
 
     function drawSummary() {

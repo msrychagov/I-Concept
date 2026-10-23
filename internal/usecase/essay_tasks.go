@@ -31,6 +31,7 @@ func (a *Service) essayTask(prompt promptbank.Prompt) portraitTask {
 			submission, _ := findSubmission(db, s)
 			return a.essayPayload(db, submission)
 		},
+		Clean: cleanEssayAnswer,
 		Check: checkEssayAnswer,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			submission, ok := findSubmission(db, s)
@@ -210,6 +211,18 @@ func checkEssayAnswer(output map[string]any, payload *object) []string {
 			continue
 		}
 		who := textOf(record["who"])
+		// An entry the program took the label off lists the labels of those who fit.
+		if candidates, has := record["candidates"]; has {
+			list, _ := asList(candidates)
+			for _, item := range list {
+				if label := textOf(item); !slices.Contains(labels, label) {
+					problems = append(problems, where+": кандидат не из списка преподавателей")
+				}
+			}
+			if len(list) < 2 || who == "" || strings.Contains(who, "[преподаватель") {
+				problems = append(problems, where+": у записи с кандидатами нужны слова автора и не меньше двух кандидатов")
+			}
+		}
 		switch {
 		case who == "":
 			problems = append(problems, where+": не сказано, кто")

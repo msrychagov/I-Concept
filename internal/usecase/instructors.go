@@ -201,3 +201,17 @@ func instructorByLabel(db model.Database, vuc, label string) (model.Instructor, 
 	}
 	return model.Instructor{}, false
 }
+
+// instructorShort is «Кузнецов И. П., майор»: enough to tell namesakes apart.
+func instructorShort(i model.Instructor) string {
+	short := i.Surname
+	for _, part := range []string{i.Name, i.Patronymic} {
+		if r := []rune(part); len(r) > 0 {
+			short += " " + string(r[0]) + "."
+		}
+	}
+	if i.Rank != "" {
+		short += ", " + i.Rank
+	}
+	return short
+}

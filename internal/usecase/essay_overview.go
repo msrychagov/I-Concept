@@ -367,13 +367,16 @@ func sameSet(x, y []string) bool {
 // lines as the authors wrote them.
 func (a *Service) teacherBlock(db model.Database, vuc string, authors []essayAuthor) map[string]any {
 	type line struct {
-		Kind         string      `json:"kind"`
-		Student      string      `json:"student"`
-		Platoon      string      `json:"platoon"`
-		SubmissionID string      `json:"submissionId"`
-		Text         string      `json:"text"`
-		Who          string      `json:"who,omitempty"`
-		Quotes       []quoteView `json:"quotes"`
+		Kind         string `json:"kind"`
+		Student      string `json:"student"`
+		Platoon      string `json:"platoon"`
+		SubmissionID string `json:"submissionId"`
+		Text         string `json:"text"`
+		Who          string `json:"who,omitempty"`
+		// Candidates are the instructors that fit a name two of them share,
+		// «Кузнецов И. П., майор»; such an entry counts for none of them.
+		Candidates []string    `json:"candidates,omitempty"`
+		Quotes     []quoteView `json:"quotes"`
 	}
 	type entry struct {
 		Who      string `json:"who"`
@@ -391,6 +394,13 @@ func (a *Service) teacherBlock(db model.Database, vuc string, authors []essayAut
 			record := asMap(raw)
 			who := textOf(record["who"])
 			item := line{Kind: textOf(record["kind"]), Student: student.Name, Platoon: student.Platoon, SubmissionID: author.Submission.ID, Text: textOf(record["text"]), Quotes: quotesOf("", record["quotes"])}
+			if candidates, has := asList(record["candidates"]); has {
+				for _, label := range candidates {
+					if other, found := instructorByLabel(db, vuc, textOf(label)); found {
+						item.Candidates = append(item.Candidates, instructorShort(other))
+					}
+				}
+			}
 			instructor, ok := instructorByLabel(db, vuc, who)
 			if !ok {
 				if instructorLabelText.MatchString(who) {
