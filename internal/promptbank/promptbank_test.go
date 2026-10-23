@@ -30,6 +30,8 @@ func TestLatestVersionMatchesTheWikiWhenItIsThere(t *testing.T) {
 	for task, path := range map[string]string{
 		"autobiography": "../../../Вики/Автобиография/Сравнение моделей/Инструкция.md",
 		"test":          "../../../Вики/Тестирование/Инструкция.md",
+		"essay":         "../../../Вики/Эссе выпускника/Инструкция.md",
+		"essay-cohort":  "../../../Вики/Эссе выпускника/Инструкция по выпуску.md",
 	} {
 		wiki, err := os.ReadFile(path)
 		if err != nil {
@@ -39,6 +41,19 @@ func TestLatestVersionMatchesTheWikiWhenItIsThere(t *testing.T) {
 		prompt, ok := Latest(prompts, task)
 		if !ok || !strings.Contains(string(wiki), "```text\n"+prompt.Instruction+"\n```") || !strings.Contains(string(wiki), "```json\n"+string(prompt.Schema)+"\n```") {
 			t.Fatalf("%s: the latest version %s differs from %s: a changed wording must be a new version folder", task, prompt.Version, path)
+		}
+	}
+}
+
+func TestEssayPromptsAreEmbedded(t *testing.T) {
+	prompts, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for task, want := range map[string]string{"essay": `"required": ["summary", "moments", "positive", "negative", "attention", "teachers", "change", "conclusion"]`, "essay-cohort": `"required": ["overview", "moments", "positive", "negative", "attention", "paths", "environment", "conclusion", "change"]`} {
+		prompt, ok := Latest(prompts, task)
+		if !ok || prompt.Version != "v1" || !strings.HasSuffix(prompt.Instruction, "Пиши по-русски, деловым языком.") || !strings.Contains(string(prompt.Schema), want) {
+			t.Errorf("%s: %+v", task, prompt.Version)
 		}
 	}
 }

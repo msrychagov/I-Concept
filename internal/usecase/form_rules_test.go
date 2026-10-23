@@ -18,7 +18,13 @@ func autobiography(t *testing.T) model.Form {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return forms[0]
+	for _, form := range forms {
+		if form.ID == autobiographyForm {
+			return form
+		}
+	}
+	t.Fatal("autobiography is not embedded")
+	return model.Form{}
 }
 
 func section(t *testing.T, form model.Form, id string) model.FormSection {

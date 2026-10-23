@@ -533,7 +533,41 @@
     width: 100%
 }
 
+.platoon-management .cohort-fields {
+    display: grid;
+    grid-template-columns: minmax(200px, 2fr) minmax(120px, 1fr);
+    gap: 12px 16px;
+    width: 100%
+}
+
+.platoon-management .cohort-fields label {
+    margin: 0
+}
+
+.platoon-management .cohort-fields input {
+    width: 100%
+}
+
+.platoon-management .cohort-platoons {
+    width: 100%;
+    margin: 0;
+    padding: 8px 12px 12px;
+    border: 1px solid #0003;
+    border-radius: 8px
+}
+
+.platoon-management .cohort-platoon {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 16px 0 0
+}
+
 @media (max-width: 600px) {
+    .platoon-management .cohort-fields {
+        grid-template-columns: 1fr
+    }
+
     .instructor-table thead {
         display: none
     }
@@ -556,6 +590,23 @@
         content: attr(data-label) ": ";
         color: var(--muted, #667)
     }
+}
+
+.own-answers {
+    margin-top: 1.5rem;
+    padding: 1.2rem
+}
+
+.own-answers-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px
+}
+
+.own-answers-head h2 {
+    margin: 0
 }
 
 .invite-code, .issued-code {

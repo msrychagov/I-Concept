@@ -34,7 +34,7 @@ window.formView = (() => {
                 if (!v.length) continue;
                 html += `<dt>${esc(f.label)}</dt><dd>${v.map((rec, n) => `<div class="answer-record"><b>${n + 1}.</b><dl class="answers-list">${rows(form, f.fields, rec, esc) || '<dt></dt><dd class="muted">Запись пуста</dd>'}</dl></div>`).join('')}</dd>`;
             } else {
-                html += `<dt>${esc(f.label)}</dt><dd>${valueText(form, f, v, esc)}</dd>`;
+                html += `<dt>${f.number ? esc(f.number) + '. ' : ''}${esc(f.label)}</dt><dd${f.number ? ` data-question="${esc(f.number)}"` : ''}>${valueText(form, f, v, esc)}</dd>`;
             }
         }
         return html;
@@ -45,7 +45,7 @@ window.formView = (() => {
         return form.sections.map((s, i) => {
             const body = rows(form, s.fields, submission.answers, esc);
             const saved = (submission.savedSections || []).includes(s.id);
-            return `<section class="answers-section"><h3>${i + 1}. ${esc(s.title)}</h3>${body ? `<dl class="answers-list">${body}</dl>` : `<p class="muted">${saved ? 'Ответов нет.' : 'Раздел не заполнялся.'}</p>`}</section>`;
+            return `<section class="answers-section"><h3>${i + 1}. ${esc(s.title)}</h3>${s.hint ? `<p class="muted">${esc(s.hint)}</p>` : ''}${body ? `<dl class="answers-list">${body}</dl>` : `<p class="muted">${saved ? 'Ответов нет.' : 'Раздел не заполнялся.'}</p>`}</section>`;
         }).join('');
     }
 

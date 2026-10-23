@@ -94,6 +94,9 @@ func (a *Service) FormSubmissionDetailFor(teacherID, id string) (any, error) {
 		if submission.FormID == autobiographyForm && submission.Completed {
 			result["potential"] = autobiographyPotential(form, submission.Answers)
 		}
+		if submission.FormID == essayForm {
+			result["essay"] = essayContext(db, submission)
+		}
 		return result, nil
 	}
 	return nil, problem(NotFound, "Анкета студента не найдена.")

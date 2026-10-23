@@ -10,6 +10,20 @@ type Form struct {
 	Intro    string                  `json:"intro"`
 	Sections []FormSection           `json:"sections"`
 	Refs     map[string][]FormOption `json:"refs,omitempty"`
+	// StudentView lets a student reread their own submitted answers (the essay);
+	// the autobiography is not shown back.
+	StudentView bool `json:"studentView,omitempty"`
+	// Texts replace the default words of the student screens, which speak of
+	// the autobiography.
+	Texts *FormTexts `json:"texts,omitempty"`
+}
+
+// FormTexts are the words of the student screens that depend on the form.
+type FormTexts struct {
+	Consent   string `json:"consent"`
+	DoneTitle string `json:"doneTitle"`
+	DoneText  string `json:"doneText"`
+	Review    string `json:"review"`
 }
 
 // Options returns the values a choice field can take: its own or its list's.
@@ -21,15 +35,20 @@ func (f Form) Options(field FormField) []FormOption {
 }
 
 type FormSection struct {
-	ID     string      `json:"id"`
-	Title  string      `json:"title"`
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	// Hint stands over the questions of the section.
+	Hint   string      `json:"hint,omitempty"`
 	Fields []FormField `json:"fields"`
 }
 
 // FormField is one question. Type is choice, multi, text, textarea, date,
 // month, year or group (repeatable records of nested fields).
 type FormField struct {
-	ID        string         `json:"id"`
+	ID string `json:"id"`
+	// Number is the number of the question as the author and the teacher see it
+	// («1.1»); the id cannot hold it, a dot separates group records in a path.
+	Number    string         `json:"number,omitempty"`
 	Label     string         `json:"label"`
 	Type      string         `json:"type"`
 	Hint      string         `json:"hint,omitempty"`

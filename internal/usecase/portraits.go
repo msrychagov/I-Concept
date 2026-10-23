@@ -27,8 +27,8 @@ import (
 // Equal input gives the stored text and the model is not called again; a new
 // instruction version or another model gives a new portrait and the old stays.
 
-// Source is what a portrait is about: a submitted form ("submission") or a
-// finished test session ("session").
+// Source is what a portrait is about: a submitted form ("submission"), a
+// finished test session ("session") or an assignment of an essay ("assignment").
 type Source struct{ Kind, ID string }
 
 type portraitTask struct {
@@ -38,6 +38,10 @@ type portraitTask struct {
 	Accepts func(db model.Database, s Source) bool
 	// Payload builds the anonymised input.
 	Payload func(a *Service, db model.Database, s Source) (*object, error)
+	// Clean mends an answer before it is checked and stored: it returns the
+	// answer without what the program can drop on its own and the number of
+	// changes. nil for the tasks that only check.
+	Clean func(a *Service, db model.Database, s Source, output map[string]any, payload *object) (map[string]any, int)
 	// Check returns the problems of an answer; an empty list means it is good.
 	Check func(output map[string]any, payload *object) []string
 	// Visible says whether this teacher may see the portrait of the source.
@@ -46,6 +50,16 @@ type portraitTask struct {
 	MaxTokens int
 	// Attempts is how many times the model may answer; zero means portraitAttempts.
 	Attempts int
+	// Manual tasks are made only when the teacher asks (retry), never by the
+	// queue after a source is saved or by opening the portrait.
+	Manual bool
+	// Stamp gives the source group and the ordered members of a portrait made
+	// for a group of sources; nil for the other tasks.
+	Stamp func(a *Service, db model.Database, s Source) (source string, sources []string)
+	// Keep lists the kinds of personal data (labels of personalPatterns) that
+	// are not cut out of the input of this task: the essay keeps the patronymic,
+	// or the model could not tell «Игорь Петрович» from the list of instructors.
+	Keep []string
 }
 
 const (
@@ -157,7 +171,7 @@ func (a *Service) prepare(db model.Database, task portraitTask, s Source) (*obje
 	if err != nil {
 		return nil, 0, err
 	}
-	masked, err := maskPersonal(payload)
+	masked, err := maskPersonal(payload, task.Keep...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -361,6 +375,12 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 			continue
 		}
 		output, problems := parseModelAnswer(reply.Text)
+		if len(problems) == 0 && task.Clean != nil {
+			var changes int
+			if output, changes = task.Clean(a, db, job.source, output, payload); changes > 0 {
+				log.Printf("portrait %s %.12s: answer cleaned, source %s %s, changes: %d", task.ID, key, job.source.Kind, job.source.ID, changes)
+			}
+		}
 		if len(problems) == 0 {
 			problems = task.Check(output, payload)
 		}
@@ -376,6 +396,9 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 			Model: m.Name(), ModelVersion: reply.Version, Created: time.Now().UTC().Format(time.RFC3339),
 			Input: user, Output: data, Usage: model.PortraitUsage{In: reply.In, Out: reply.Out}, Seconds: reply.Seconds,
 		}
+		if task.Stamp != nil {
+			portrait.Source, portrait.Sources = task.Stamp(a, db, job.source)
+		}
 		if err = a.repo.Update(func(db *model.Database) error {
 			if _, exists := findPortrait(*db, key); !exists {
 				db.Portraits = append(db.Portraits, portrait)
@@ -386,7 +409,7 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 			return
 		}
 		l.setState(key, nil)
-		log.Printf("portrait %s %.12s: ready (%.1f s, %d+%d tokens)", task.ID, key, reply.Seconds, reply.In, reply.Out)
+		log.Printf("portrait %s %.12s: ready (%.1f s, %d+%d tokens, attempt %d)", task.ID, key, reply.Seconds, reply.In, reply.Out, attempt)
 		return
 	}
 	fail(reason, detail, time.Since(started).Seconds())
@@ -441,9 +464,12 @@ type personalSpan struct {
 
 // personalSpans lists the pieces of a text that look like personal data, by
 // position, without overlaps.
-func personalSpans(text string) []personalSpan {
+func personalSpans(text string, keep ...string) []personalSpan {
 	spans := []personalSpan{}
 	for _, pattern := range personalPatterns {
+		if slices.Contains(keep, pattern.label) {
+			continue
+		}
 		for _, at := range pattern.re.FindAllStringIndex(text, -1) {
 			if pattern.label == "отчество" {
 				before, _ := utf8.DecodeLastRuneInString(text[:at[0]])
@@ -467,9 +493,10 @@ func personalSpans(text string) []personalSpan {
 	return merged
 }
 
-// maskText replaces every piece of personal data with personalMask and counts them.
-func maskText(text string) (string, int) {
-	spans := personalSpans(text)
+// maskText replaces every piece of personal data with personalMask and counts
+// them; the kinds in keep stay as they are.
+func maskText(text string, keep ...string) (string, int) {
+	spans := personalSpans(text, keep...)
 	if len(spans) == 0 {
 		return text, 0
 	}
@@ -487,7 +514,7 @@ func maskText(text string) (string, int) {
 // maskPersonal cuts personal data out of every text value of the input, in
 // place, and returns the number of cuts. A value of a kind it does not know
 // to hold no text is an error: the input is then not sent at all.
-func maskPersonal(payload *object) (int, error) {
+func maskPersonal(payload *object, keep ...string) (int, error) {
 	count := 0
 	var walk func(any) (any, error)
 	walk = func(value any) (any, error) {
@@ -495,13 +522,13 @@ func maskPersonal(payload *object) (int, error) {
 		case nil, bool, int, int64, float64:
 			return v, nil
 		case string:
-			text, n := maskText(v)
+			text, n := maskText(v, keep...)
 			count += n
 			return text, nil
 		case []string:
 			list := make([]string, len(v))
 			for i, item := range v {
-				text, n := maskText(item)
+				text, n := maskText(item, keep...)
 				list[i], count = text, count+n
 			}
 			return list, nil
@@ -541,7 +568,7 @@ func maskPersonal(payload *object) (int, error) {
 		return 0, err
 	}
 	// The cut must leave nothing behind.
-	if label := personalData(payload); label != "" {
+	if label := personalData(payload, keep...); label != "" {
 		return 0, fmt.Errorf("portrait: %s is left in the input after the cut", label)
 	}
 	return count, nil
@@ -549,7 +576,7 @@ func maskPersonal(payload *object) (int, error) {
 
 // personalData names the first kind of personal data found in any text value
 // of the input, or returns "".
-func personalData(payload *object) string {
+func personalData(payload *object, keep ...string) string {
 	var data any
 	_ = json.Unmarshal(canonicalJSON(payload), &data)
 	found := ""
@@ -560,7 +587,7 @@ func personalData(payload *object) string {
 		}
 		switch v := value.(type) {
 		case string:
-			if spans := personalSpans(v); len(spans) > 0 {
+			if spans := personalSpans(v, keep...); len(spans) > 0 {
 				found = spans[0].label
 			}
 		case []any:
@@ -598,7 +625,7 @@ func (a *Service) portraitSource(db model.Database, teacherID, taskID, sourceID 
 	if !ok {
 		return task, Source{}, missingPortrait()
 	}
-	for _, kind := range []string{"submission", "session"} {
+	for _, kind := range []string{"submission", "session", "assignment"} {
 		s := Source{kind, sourceID}
 		if task.Accepts(db, s) && task.Visible(db, s, teacherID) {
 			return task, s, nil
@@ -648,7 +675,7 @@ func (a *Service) portraitView(teacherID, taskID, sourceID string, retry bool) (
 	// another version of the instruction, is shown while the current model makes
 	// its own in the background; the next opening shows the new one.
 	if old, ok := storedPortrait(db, task, payloadFingerprint(payload)); ok {
-		if m != nil {
+		if m != nil && (!task.Manual || retry) {
 			a.enqueuePortrait(db, task, s, retry)
 		}
 		return ready(old), nil
@@ -656,6 +683,48 @@ func (a *Service) portraitView(teacherID, taskID, sourceID string, retry bool) (
 	if m == nil {
 		return PortraitView{Status: portraitOff}, nil
 	}
+	if task.Manual && !retry {
+		now, _ := a.portraitNow(db, task, s)
+		return now, nil
+	}
 	state := a.enqueuePortrait(db, task, s, retry)
 	return PortraitView{Status: state.Status, Reason: state.Reason}, nil
+}
+
+// portraitNone is the status of a portrait nobody has asked for yet.
+const portraitNone = "none"
+
+// portraitNow tells what is known about a portrait without queueing anything:
+// the stored text when there is one (of the current model or of any earlier
+// one made for the same input) and otherwise the state of the job. The second
+// value is the stored record, nil when there is none.
+func (a *Service) portraitNow(db model.Database, task portraitTask, s Source) (PortraitView, *model.Portrait) {
+	l := a.portraits
+	l.mu.Lock()
+	m := l.model
+	l.mu.Unlock()
+	payload, _, err := a.prepare(db, task, s)
+	if err != nil {
+		return PortraitView{Status: portraitFailed, Reason: "Не удалось собрать сведения для модели."}, nil
+	}
+	ready := func(p model.Portrait) (PortraitView, *model.Portrait) {
+		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: p.Output, Created: p.Created}}, &p
+	}
+	if m != nil {
+		if portrait, ok := findPortrait(db, portraitKey(task, m.Name(), payload)); ok {
+			return ready(portrait)
+		}
+	}
+	if old, ok := storedPortrait(db, task, payloadFingerprint(payload)); ok {
+		return ready(old)
+	}
+	if m == nil {
+		return PortraitView{Status: portraitOff}, nil
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if state, ok := l.states[portraitKey(task, m.Name(), payload)]; ok {
+		return PortraitView{Status: state.Status, Reason: state.Reason}, nil
+	}
+	return PortraitView{Status: portraitNone}, nil
 }

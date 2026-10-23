@@ -33,7 +33,7 @@ func (a *Service) studentForm(db *model.Database, loginToken, id string) (*model
 			continue
 		}
 		for _, as := range db.Assignments {
-			if as.ID == submission.AssignmentID && as.FormID == submission.FormID && as.Active && assignmentApplies(as, student) {
+			if as.ID == submission.AssignmentID && as.FormID == submission.FormID && as.Active && assignmentApplies(*db, as, student) {
 				return submission, form, nil
 			}
 		}
@@ -52,6 +52,28 @@ func (a *Service) FormOpen(loginToken, id string) (any, error) {
 		return nil, err
 	}
 	return map[string]any{"submission": submission, "form": withoutModelMarks(form), "progress": formProgress(form, *submission)}, nil
+}
+
+// FormOwnAnswers returns the answers a student submitted. Only the student's own
+// submitted answers of a form that is shown back (the essay) are given: the
+// autobiography is not, and a draft is read through FormOpen.
+func (a *Service) FormOwnAnswers(loginToken, id string) (any, error) {
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return nil, err
+	}
+	student, ok := accountIn(db, loginToken, "student")
+	if !ok {
+		return nil, problem(Unauthenticated, "Войдите в кабинет.")
+	}
+	for _, submission := range db.Submissions {
+		form, known := a.forms[submission.FormID]
+		if submission.ID != id || submission.StudentID != student.ID || !submission.Completed || !known || !form.StudentView {
+			continue
+		}
+		return map[string]any{"form": withoutModelMarks(form), "submission": map[string]any{"id": submission.ID, "answers": submission.Answers, "savedSections": submission.SavedSections, "completedAt": submission.CompletedAt}}, nil
+	}
+	return nil, problem(NotFound, "Эссе не найдено.")
 }
 
 // withoutModelMarks returns a copy of the form without the notes on what goes

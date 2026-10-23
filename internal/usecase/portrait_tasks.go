@@ -19,6 +19,12 @@ func (a *Service) RegisterPrompts(prompts ...promptbank.Prompt) {
 	if prompt, ok := promptbank.Latest(prompts, testPortraitTask); ok {
 		a.registerPortraitTask(a.testTask(prompt))
 	}
+	if prompt, ok := promptbank.Latest(prompts, essayForm); ok {
+		a.registerPortraitTask(a.essayTask(prompt))
+	}
+	if prompt, ok := promptbank.Latest(prompts, essayCohortTask); ok {
+		a.registerPortraitTask(a.cohortTask(prompt))
+	}
 }
 
 // findSubmission returns the submitted autobiography a source points to.

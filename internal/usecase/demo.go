@@ -111,7 +111,7 @@ func (a *Service) demoDatabase() (model.Database, error) {
 			continue
 		}
 		for j, as := range db.Assignments {
-			if !assignmentApplies(as, student) {
+			if !assignmentApplies(db, as, student) {
 				continue
 			}
 			if j == 0 && n%3 == 1 {
@@ -134,6 +134,7 @@ func (a *Service) demoDatabase() (model.Database, error) {
 		return model.Database{}, err
 	}
 	a.addDemoMethods(&db, full, created, now, teacherID)
+	a.addDemoEssays(&db, created, now, teacherID)
 	return db, nil
 }
 
@@ -152,7 +153,7 @@ func (a *Service) addDemoAutobiography(db *model.Database, created string, now t
 	}
 	students := []model.Account{}
 	for _, account := range db.Students {
-		if account.Role == "student" && assignmentApplies(as, account) {
+		if account.Role == "student" && assignmentApplies(*db, as, account) {
 			students = append(students, account)
 		}
 	}

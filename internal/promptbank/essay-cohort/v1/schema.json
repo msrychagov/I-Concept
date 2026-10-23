@@ -1,0 +1,86 @@
+{
+  "type": "object",
+  "properties": {
+    "overview": {"type": "string", "description": "Общая картина выпуска, 3–5 предложений"},
+    "moments": {
+      "type": "object",
+      "properties": {
+        "beliefs": {"$ref": "#/$defs/moment"},
+        "emotions": {"$ref": "#/$defs/moment"},
+        "values": {"$ref": "#/$defs/moment"},
+        "abilities": {"$ref": "#/$defs/moment"}
+      },
+      "required": ["beliefs", "emotions", "values", "abilities"]
+    },
+    "positive": {"type": "array", "description": "Общее положительное, 1–7 пунктов", "items": {"$ref": "#/$defs/point"}},
+    "negative": {"type": "array", "description": "Общее отрицательное, 0–7 пунктов", "items": {"$ref": "#/$defs/point"}},
+    "attention": {"type": "array", "description": "На что обратить внимание, 0–7 пунктов", "items": {"$ref": "#/$defs/point"}},
+    "paths": {
+      "type": "array",
+      "description": "Типичные пути становления Я-концепции, 1–4",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {"type": "string"},
+          "refs": {"type": "array", "items": {"type": "string"}}
+        },
+        "required": ["text", "refs"]
+      }
+    },
+    "environment": {
+      "type": "array",
+      "description": "Что в ВУЦ авторы связывают со своими изменениями, 1–5",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {"type": "string"},
+          "moment": {"type": "string", "enum": ["убеждения", "эмоции", "ценности", "восприятие своих возможностей"]},
+          "refs": {"type": "array", "items": {"type": "string"}}
+        },
+        "required": ["text", "moment", "refs"]
+      }
+    },
+    "conclusion": {
+      "type": "object",
+      "description": "Вывод по выпуску, 3–5 предложений",
+      "properties": {
+        "text": {"type": "string"},
+        "refs": {"type": "array", "items": {"type": "string"}}
+      },
+      "required": ["text", "refs"]
+    },
+    "change": {
+      "type": "array",
+      "description": "Что обычно меняется; пусто, если ни у кого нет прежнего эссе",
+      "items": {
+        "type": "object",
+        "properties": {
+          "moment": {"type": "string", "enum": ["убеждения", "эмоции", "ценности", "восприятие своих возможностей"]},
+          "text": {"type": "string"},
+          "refs": {"type": "array", "items": {"type": "string"}}
+        },
+        "required": ["moment", "text", "refs"]
+      }
+    }
+  },
+  "required": ["overview", "moments", "positive", "negative", "attention", "paths", "environment", "conclusion", "change"],
+  "$defs": {
+    "moment": {
+      "type": "object",
+      "properties": {
+        "text": {"type": "string"},
+        "refs": {"type": "array", "items": {"type": "string"}}
+      },
+      "required": ["text", "refs"]
+    },
+    "point": {
+      "type": "object",
+      "properties": {
+        "text": {"type": "string"},
+        "about": {"type": "string", "enum": ["о себе", "о ВУЦ"]},
+        "refs": {"type": "array", "items": {"type": "string"}}
+      },
+      "required": ["text", "about", "refs"]
+    }
+  }
+}

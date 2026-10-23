@@ -110,8 +110,8 @@ func TestPostgresIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(db.Students) != 10 || len(db.Platoons) != 3 || len(db.Assignments) != 4 || len(db.Submissions) != 2 || len(db.Sessions) == 0 {
-		t.Fatal("demo entities missing")
+	if len(db.Students) != 10 || len(db.Platoons) != 3 || len(db.Assignments) != 7 || len(db.Submissions) != 11 || len(db.Sessions) == 0 {
+		t.Fatalf("demo entities missing: %d students, %d platoons, %d assignments, %d submissions, %d sessions", len(db.Students), len(db.Platoons), len(db.Assignments), len(db.Submissions), len(db.Sessions))
 	}
 	// Cover authentication/invitation persistence alongside all demo entities.
 	if err := r.Update(func(d *model.Database) error {
@@ -119,6 +119,7 @@ func TestPostgresIntegration(t *testing.T) {
 		d.Invitations = append(d.Invitations, model.Invitation{Hash: "invite-hash", Role: "student", IssuerID: d.Students[0].ID, PlatoonID: d.Platoons[0].ID})
 		d.Sessions = append(d.Sessions, model.SessionRecord{Session: model.Session{ID: "external-archive", StudentID: "external-student", AssignmentID: "external-assignment", TeacherID: d.Students[0].ID, Revoked: true}})
 		d.Instructors = append(d.Instructors, model.Instructor{ID: "instructor-1", VUC: "Демонстрационный ВУЦ", Surname: "Иванов", Name: "Игорь", Patronymic: "Петрович", Rank: "полковник"})
+		d.Cohorts = append(d.Cohorts, model.Cohort{ID: "cohort-1", VUC: "Демонстрационный ВУЦ", Name: "Выпуск 2027", Year: 2027, PlatoonIDs: []string{d.Platoons[0].ID}, CreatedBy: d.Students[0].ID, Created: "2026-10-23T10:00:00Z"})
 		d.Portraits = append(d.Portraits, model.Portrait{ID: "portrait-key", Task: "autobiography", TaskVersion: "v1", Fingerprint: "print", Model: "test-model", Created: "2026-10-19T10:00:00Z", Input: `{"б":1,"а":2}`, Output: []byte(`{"summary":"текст"}`), Usage: model.PortraitUsage{In: 10, Out: 5}, Seconds: 1.5})
 		return nil
 	}); err != nil {
@@ -128,8 +129,24 @@ func TestPostgresIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(db.Instructors) != 1 || db.Instructors[0].Rank != "полковник" {
+	// The demo has instructors and a cohort of its own; the ones added above are found by id.
+	var instructor model.Instructor
+	for _, entry := range db.Instructors {
+		if entry.ID == "instructor-1" {
+			instructor = entry
+		}
+	}
+	if instructor.Rank != "полковник" {
 		t.Fatalf("instructor not stored as written: %+v", db.Instructors)
+	}
+	var cohort model.Cohort
+	for _, entry := range db.Cohorts {
+		if entry.ID == "cohort-1" {
+			cohort = entry
+		}
+	}
+	if cohort.Year != 2027 || len(cohort.PlatoonIDs) != 1 {
+		t.Fatalf("cohort not stored as written: %+v", db.Cohorts)
 	}
 	if len(db.Portraits) != 1 || db.Portraits[0].Input != `{"б":1,"а":2}` || db.Portraits[0].Usage.Out != 5 {
 		t.Fatalf("portrait not stored as written: %+v", db.Portraits)

@@ -560,3 +560,51 @@ func TestJournalSaysWhyAPortraitFailedButNotWhatWasSent(t *testing.T) {
 		})
 	}
 }
+
+func TestCleanMendsTheAnswerBeforeTheCheckAndTheJournalHoldsOnlyTheCount(t *testing.T) {
+	journalOut := captureJournal(t)
+	f := newPortraitFixture(t, nil)
+	task, _ := f.service.portraits.task("test-session")
+	task.Clean = func(a *Service, db model.Database, s Source, output map[string]any, payload *object) (map[string]any, int) {
+		output["summary"] = "Исправленный текст."
+		return output, 2
+	}
+	// The check demands the mended text: the model's own would fail it.
+	task.Check = func(output map[string]any, payload *object) []string {
+		if output["summary"] != "Исправленный текст." {
+			return []string{"текст не исправлен"}
+		}
+		return nil
+	}
+	f.service.portraits.tasks = []portraitTask{task}
+	f.service.UseModel(answering(`{"summary":"Секретный текст ответа."}`))
+	id := f.finish("clean@example.test")
+	f.idle()
+	view := f.view(id)
+	if view.Status != portraitReady || !strings.Contains(string(view.Portrait.Output), "Исправленный текст.") || strings.Contains(string(view.Portrait.Output), "Секретный") {
+		t.Fatalf("%+v", view)
+	}
+	log := journalOut.String()
+	if !strings.Contains(log, "answer cleaned") || !strings.Contains(log, "changes: 2") || strings.Contains(log, "Секретный") || strings.Contains(log, "Исправленный") {
+		t.Fatalf("journal: %s", log)
+	}
+}
+
+func TestTasksWithoutCleanAreChecked(t *testing.T) {
+	f := newPortraitFixture(t, nil)
+	for _, task := range f.service.portraits.tasks {
+		if task.Clean != nil {
+			t.Fatalf("%s has a Clean it must not have", task.ID)
+		}
+	}
+	prompts, err := promptbank.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.service.RegisterPrompts(prompts...)
+	for _, task := range f.service.portraits.tasks {
+		if (task.ID == autobiographyForm || task.ID == testPortraitTask) && task.Clean != nil {
+			t.Fatalf("%s must only be checked", task.ID)
+		}
+	}
+}

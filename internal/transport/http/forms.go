@@ -58,6 +58,10 @@ func (h *Handler) formSuggestions(w http.ResponseWriter, r *http.Request) {
 	value, err := h.service.FormSuggestions(loginToken(r, "student"), r.PathValue("id"), query.Get("field"), query.Get("q"))
 	h.respond(w, value, err)
 }
+func (h *Handler) formOwnAnswers(w http.ResponseWriter, r *http.Request) {
+	value, err := h.service.FormOwnAnswers(loginToken(r, "student"), r.PathValue("id"))
+	h.respond(w, value, err)
+}
 func (h *Handler) formDescription(w http.ResponseWriter, r *http.Request) {
 	value, err := h.service.FormDescription(r.PathValue("formId"))
 	h.respond(w, value, err)

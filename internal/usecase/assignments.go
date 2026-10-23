@@ -17,7 +17,7 @@ func (a *Service) StartAssignment(student model.Account, id string) (any, error)
 				break
 			}
 		}
-		if assignment.ID == "" || !assignment.Active || !assignmentApplies(assignment, student) {
+		if assignment.ID == "" || !assignment.Active || !assignmentApplies(*db, assignment, student) {
 			if assignment.FormID != "" {
 				return nil, failure(Forbidden, map[string]any{"error": "Задание недоступно."})
 			}
@@ -124,15 +124,39 @@ func (a *Service) AssignmentCommandFor(teacherID string, b Input, op string) (an
 	})
 }
 
-// assignForm assigns a fixed questionnaire; it needs no template.
+// assignForm assigns a fixed questionnaire; it needs no template. An essay is
+// given to a cohort of the teacher, not to a platoon.
 func (a *Service) assignForm(db *model.Database, teacherID string, b Input) (any, error) {
 	form, known := a.forms[str(b, "formId")]
 	title := strings.TrimSpace(str(b, "title"))
 	platoon := strings.TrimSpace(str(b, "platoon"))
+	cohortID := strings.TrimSpace(str(b, "cohortId"))
 	if !known || str(b, "profileId") != "" || title == "" || len(title) > 200 || len(platoon) > 80 {
 		return nil, failure(Invalid, map[string]any{"error": "Выберите анкету и укажите название задания."})
 	}
-	db.Assignments = append(db.Assignments, model.Assignment{ID: uuid(), Title: title, Platoon: platoon, FormID: form.ID, Active: true, Created: time.Now().UTC().Format(time.RFC3339), OwnerID: teacherID})
+	if form.ID != essayForm && cohortID != "" {
+		return nil, failure(Invalid, map[string]any{"error": "Выпуску выдаётся только эссе."})
+	}
+	if form.ID == essayForm {
+		if platoon != "" {
+			return nil, failure(Invalid, map[string]any{"error": "Эссе выдаётся выпуску, а не взводу."})
+		}
+		t, err := managementTeacher(*db, teacherID)
+		if err != nil {
+			return nil, err
+		}
+		cohort, ok := cohortIn(*db, cohortID, t.VUC)
+		if !ok {
+			return nil, problem(NotFound, "Выберите выпуск своего ВУЦ.")
+		}
+		if cohort.CreatedBy != t.ID {
+			return nil, problem(Forbidden, "Эссе выпуску выдаёт тот, кто его создал.")
+		}
+		if len(cohort.PlatoonIDs) == 0 {
+			return nil, problem(Invalid, "В выпуске нет взводов: добавьте их на странице «Управление взводом».")
+		}
+	}
+	db.Assignments = append(db.Assignments, model.Assignment{ID: uuid(), Title: title, Platoon: platoon, FormID: form.ID, CohortID: cohortID, Active: true, Created: time.Now().UTC().Format(time.RFC3339), OwnerID: teacherID})
 	return map[string]any{"ok": true}, nil
 }
 
@@ -147,11 +171,14 @@ func (a *Service) startForm(db *model.Database, student model.Account, assignmen
 			if submission.Completed {
 				return nil, failure(Conflict, map[string]any{"error": "Анкета уже сдана."})
 			}
-			return map[string]any{"url": "/autobiography?id=" + submission.ID}, nil
+			return map[string]any{"url": formPage(form.ID) + "?id=" + submission.ID}, nil
 		}
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
 	submission := model.FormSubmission{ID: uuid(), FormID: form.ID, FormVersion: form.Version, StudentID: student.ID, AssignmentID: assignment.ID, Created: now, Updated: now, SavedSections: []string{}, Answers: map[string]json.RawMessage{}}
 	db.Submissions = append(db.Submissions, submission)
-	return map[string]any{"url": "/autobiography?id=" + submission.ID}, nil
+	return map[string]any{"url": formPage(form.ID) + "?id=" + submission.ID}, nil
 }
+
+// formPage is the page where a student fills the form: /autobiography, /essay.
+func formPage(formID string) string { return "/" + formID }

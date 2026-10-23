@@ -1,0 +1,77 @@
+{
+  "type": "object",
+  "properties": {
+    "summary": {"type": "string", "description": "Путь автора по эссе, 3–5 предложений"},
+    "moments": {
+      "type": "object",
+      "properties": {
+        "beliefs": {"$ref": "#/$defs/moment"},
+        "emotions": {"$ref": "#/$defs/moment"},
+        "values": {"$ref": "#/$defs/moment"},
+        "abilities": {"$ref": "#/$defs/moment"}
+      },
+      "required": ["beliefs", "emotions", "values", "abilities"]
+    },
+    "positive": {"type": "array", "description": "Положительное, 1–5 пунктов", "items": {"$ref": "#/$defs/point"}},
+    "negative": {"type": "array", "description": "Отрицательное, 0–5 пунктов", "items": {"$ref": "#/$defs/point"}},
+    "attention": {"type": "array", "description": "На что обратить внимание, 0–5 пунктов", "items": {"$ref": "#/$defs/point"}},
+    "teachers": {
+      "type": "array",
+      "description": "Преподаватели, которых называет автор",
+      "items": {
+        "type": "object",
+        "properties": {
+          "who": {"type": "string"},
+          "kind": {"type": "string", "enum": ["благодарность", "проблема", "упоминание"]},
+          "text": {"type": "string"},
+          "quotes": {"type": "array", "items": {"$ref": "#/$defs/quote"}}
+        },
+        "required": ["who", "kind", "text", "quotes"]
+      }
+    },
+    "conclusion": {"$ref": "#/$defs/moment", "description": "Итог: как идёт становление Я-концепции автора, 2–4 предложения"},
+    "change": {
+      "type": "array",
+      "description": "Что изменилось с прежнего эссе; пусто, если прежнего нет",
+      "items": {
+        "type": "object",
+        "properties": {
+          "moment": {"type": "string", "enum": ["убеждения", "эмоции", "ценности", "восприятие своих возможностей"]},
+          "text": {"type": "string"},
+          "before": {"$ref": "#/$defs/quote"},
+          "after": {"$ref": "#/$defs/quote"}
+        },
+        "required": ["moment", "text", "before", "after"]
+      }
+    }
+  },
+  "required": ["summary", "moments", "positive", "negative", "attention", "teachers", "change", "conclusion"],
+  "$defs": {
+    "quote": {
+      "type": "object",
+      "properties": {
+        "question": {"type": "string", "description": "Номер вопроса, например 1.2"},
+        "quote": {"type": "string", "description": "Дословный кусок ответа, 3–30 слов"}
+      },
+      "required": ["question", "quote"]
+    },
+    "moment": {
+      "type": "object",
+      "properties": {
+        "text": {"type": "string"},
+        "quotes": {"type": "array", "items": {"$ref": "#/$defs/quote"}}
+      },
+      "required": ["text", "quotes"]
+    },
+    "point": {
+      "type": "object",
+      "properties": {
+        "text": {"type": "string"},
+        "about": {"type": "string", "enum": ["о себе", "о ВУЦ"]},
+        "basis": {"type": "string", "enum": ["сказано автором", "вывод по тексту"]},
+        "quotes": {"type": "array", "items": {"$ref": "#/$defs/quote"}}
+      },
+      "required": ["text", "about", "basis", "quotes"]
+    }
+  }
+}

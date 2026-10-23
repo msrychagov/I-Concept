@@ -46,7 +46,7 @@
         document.body.classList.add('is-cabinet');
         const s = data.student, active = data.assignments.filter(a => a.active && !a.completed),
             past = data.assignments.filter(a => !a.active || a.completed);
-        root.innerHTML = `<div class="portal"><header class="portal-head"><div><div class="eyebrow">Личный кабинет студента</div><h1>${esc(s.name)}</h1><p>Взвод ${esc(s.platoon)} · ${esc(s.email)}</p></div><button id="logout" class="secondary">Выйти</button></header><h2>Доступные тестирования (${active.length})</h2><div class="test-grid">${active.map(a => `<article class="test-card"><span class="status">${esc(a.status)}</span><h3>${esc(a.title)}</h3><p class="muted">Назначено ${new Date(a.created).toLocaleDateString('ru-RU')}</p>${a.answered !== undefined ? `<p>${a.formId ? 'Заполнено разделов' : 'Сохранено'} ${a.answered} из ${a.total}${a.formId ? '' : ' ответов'}</p>` : ''}<button data-start="${a.id}">${a.sessionId ? (a.formId ? 'Продолжить заполнение' : 'Продолжить') : (a.formId ? 'Начать заполнение' : 'Начать тестирование')}</button></article>`).join('') || '<p class="muted">Сейчас нет доступных заданий. Назначения преподавателя появятся здесь.</p>'}</div><h2 style="margin-top:2rem">История назначений</h2><div class="test-grid">${past.map(a => `<article class="test-card"><span class="status">${a.completed ? 'Пройдено' : 'Назначение закрыто'}</span><h3>${esc(a.title)}</h3><p class="muted">${a.completed ? 'Завершено ' + new Date(a.finishedAt).toLocaleDateString('ru-RU') : 'Недоступно для прохождения'}</p></article>`).join('') || '<p class="muted">Завершённых заданий пока нет.</p>'}</div><div id="cabinet-error" role="alert"></div></div>`;
+        root.innerHTML = `<div class="portal"><header class="portal-head"><div><div class="eyebrow">Личный кабинет студента</div><h1>${esc(s.name)}</h1><p>Взвод ${esc(s.platoon)} · ${esc(s.email)}</p></div><button id="logout" class="secondary">Выйти</button></header><h2>Доступные тестирования (${active.length})</h2><div class="test-grid">${active.map(a => `<article class="test-card"><span class="status">${esc(a.status)}</span><h3>${esc(a.title)}</h3><p class="muted">Назначено ${new Date(a.created).toLocaleDateString('ru-RU')}</p>${a.answered !== undefined ? `<p>${a.formId ? 'Заполнено разделов' : 'Сохранено'} ${a.answered} из ${a.total}${a.formId ? '' : ' ответов'}</p>` : ''}<button data-start="${a.id}">${a.sessionId ? (a.formId ? 'Продолжить заполнение' : 'Продолжить') : (a.formId ? 'Начать заполнение' : 'Начать тестирование')}</button></article>`).join('') || '<p class="muted">Сейчас нет доступных заданий. Назначения преподавателя появятся здесь.</p>'}</div><h2 style="margin-top:2rem">История назначений</h2><div class="test-grid">${past.map(a => `<article class="test-card"><span class="status">${a.completed ? 'Пройдено' : 'Назначение закрыто'}</span><h3>${esc(a.title)}</h3><p class="muted">${a.completed ? 'Завершено ' + new Date(a.finishedAt).toLocaleDateString('ru-RU') : 'Недоступно для прохождения'}</p>${a.completed && a.studentView ? `<button type="button" class="secondary" data-view-answers="${esc(a.sessionId)}">Посмотреть ответы</button>` : ''}</article>`).join('') || '<p class="muted">Завершённых заданий пока нет.</p>'}</div><section id="own-answers" class="surface own-answers" aria-live="polite" hidden></section><div id="cabinet-error" role="alert"></div></div>`;
         document.querySelector('#logout').onclick = async () => {
             const button = document.querySelector('#logout');
             button.disabled = true;
@@ -59,6 +59,25 @@
                 window.pageLoader.hide()
             }
         };
+        // The student rereads an own submitted essay; nothing here can be changed.
+        document.querySelectorAll('[data-view-answers]').forEach(b => b.onclick = async () => {
+            const box = document.querySelector('#own-answers');
+            b.disabled = true;
+            try {
+                const d = await api('/students/me/submissions/' + encodeURIComponent(b.dataset.viewAnswers) + '/answers');
+                box.innerHTML = `<div class="own-answers-head"><h2>${esc(d.form.title)}: ваши ответы</h2><button type="button" class="secondary" id="close-answers">Закрыть</button></div><p class="muted">Эссе сдано, изменить ответы нельзя.</p>${window.formView.answers(d.form, d.submission, esc)}`;
+                box.hidden = false;
+                box.querySelector('#close-answers').onclick = () => {
+                    box.hidden = true;
+                    box.innerHTML = ''
+                };
+                box.scrollIntoView({behavior: 'smooth', block: 'start'})
+            } catch (e) {
+                document.querySelector('#cabinet-error').innerHTML = `<p class="error">${esc(e.message)}</p>`
+            } finally {
+                b.disabled = false
+            }
+        });
         document.querySelectorAll('[data-start]').forEach(b => b.onclick = async () => {
             window.pageLoader.show('Открываем задание…');
             try {

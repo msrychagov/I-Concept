@@ -78,6 +78,8 @@
                 return window.teachingDashboard({view: section, api, esc});
             case 'autobiography':
                 return window.teacherAutobiography({view: section, api, esc});
+            case 'essay':
+                return window.teacherEssays({view: section, api, esc});
             case 'profiles':
                 return concept(section);
             case 'settings':

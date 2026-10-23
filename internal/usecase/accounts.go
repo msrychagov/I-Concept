@@ -40,11 +40,22 @@ func PublicAccount(account model.Account) map[string]any {
 	return map[string]any{"id": account.ID, "name": account.Name, "email": account.Email, "platoon": account.Platoon, "platoonId": account.PlatoonID, "vuc": account.VUC, "disabled": account.Disabled}
 }
 func studentPublic(account model.Account) map[string]any { return PublicAccount(account) }
-func assignmentOwnedByStudent(as model.Assignment, account model.Account) bool {
-	return !account.Disabled && as.OwnerID == account.OwnerID
+
+// assignmentOwnedByStudent says whether the assignment is meant for the student:
+// it was given by the teacher who invited them, or, for an essay of a cohort,
+// to a platoon of the cohort, whoever invited them.
+func assignmentOwnedByStudent(db model.Database, as model.Assignment, account model.Account) bool {
+	if account.Disabled {
+		return false
+	}
+	if as.CohortID != "" {
+		cohort, ok := cohortIn(db, as.CohortID, account.VUC)
+		return ok && cohortStudent(cohort, account)
+	}
+	return as.OwnerID == account.OwnerID
 }
-func assignmentApplies(as model.Assignment, account model.Account) bool {
-	if !assignmentOwnedByStudent(as, account) {
+func assignmentApplies(db model.Database, as model.Assignment, account model.Account) bool {
+	if !assignmentOwnedByStudent(db, as, account) {
 		return false
 	}
 	if account.VUC != "" && account.PlatoonID == "" {
@@ -206,7 +217,7 @@ func (a *Service) AssignedSession(loginToken, id string) (model.Session, bool) {
 			continue
 		}
 		for _, as := range db.Assignments {
-			if as.ID == s.AssignmentID && as.Active && assignmentApplies(as, student) {
+			if as.ID == s.AssignmentID && as.Active && assignmentApplies(db, as, student) {
 				return s, true
 			}
 		}
@@ -227,7 +238,7 @@ func (a *Service) AccountState(loginToken, role string) (any, error) {
 	}
 	list := []map[string]any{}
 	for _, as := range db.Assignments {
-		if !assignmentOwnedByStudent(as, s) {
+		if !assignmentOwnedByStudent(db, as, s) {
 			continue
 		}
 		if as.FormID != "" {
@@ -244,7 +255,7 @@ func (a *Service) AccountState(loginToken, role string) (any, error) {
 				break
 			}
 		}
-		if !assignmentApplies(as, s) && session == nil {
+		if !assignmentApplies(db, as, s) && session == nil {
 			continue
 		}
 		entry := map[string]any{"id": as.ID, "title": as.Title, "created": as.Created, "active": as.Active, "completed": false, "status": "Не начато"}
@@ -267,7 +278,7 @@ func (a *Service) AccountState(loginToken, role string) (any, error) {
 
 // formEntry describes a questionnaire assignment in the student's cabinet.
 func (a *Service) formEntry(db model.Database, as model.Assignment, student model.Account) (map[string]any, bool) {
-	if !assignmentOwnedByStudent(as, student) {
+	if !assignmentOwnedByStudent(db, as, student) {
 		return nil, false
 	}
 	var submission *model.FormSubmission
@@ -277,10 +288,13 @@ func (a *Service) formEntry(db model.Database, as model.Assignment, student mode
 			break
 		}
 	}
-	if !assignmentApplies(as, student) && submission == nil {
+	if !assignmentApplies(db, as, student) && submission == nil {
 		return nil, false
 	}
 	entry := map[string]any{"id": as.ID, "title": as.Title, "created": as.Created, "active": as.Active, "completed": false, "status": "Не начато", "formId": as.FormID}
+	if form, known := a.forms[as.FormID]; known && form.StudentView {
+		entry["studentView"] = true
+	}
 	if submission == nil {
 		return entry, true
 	}
