@@ -108,3 +108,23 @@ func TestInstructorsSurviveReopenAndOldFilesStillOpen(t *testing.T) {
 		t.Fatalf("instructor changed: %+v", got)
 	}
 }
+
+func TestCohortsSurviveReopen(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "data.json")
+	repo, err := Open(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cohort := model.Cohort{ID: "c1", VUC: "ВУЦ", Name: "Выпуск 2027", Year: 2027, PlatoonIDs: []string{"p1", "p2"}, CreatedBy: "t1", Created: "2026-10-23T10:00:00Z"}
+	if err = repo.Update(func(db *model.Database) error { db.Cohorts = append(db.Cohorts, cohort); return nil }); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := Open(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := reopened.Snapshot().Cohorts
+	if len(got) != 1 || got[0].Name != cohort.Name || len(got[0].PlatoonIDs) != 2 {
+		t.Fatalf("cohort changed: %+v", got)
+	}
+}
