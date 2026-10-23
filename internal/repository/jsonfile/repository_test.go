@@ -83,3 +83,28 @@ func TestPortraitsSurviveReopen(t *testing.T) {
 		t.Fatalf("portrait changed: %+v", got)
 	}
 }
+
+func TestInstructorsSurviveReopenAndOldFilesStillOpen(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "data.json")
+	if err := os.WriteFile(file, []byte(`{"students":[],"assignments":[],"logins":[],"profiles":[],"sessions":[],"submissions":[]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	repo, err := Open(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := repo.Snapshot().Instructors; len(got) != 0 {
+		t.Fatalf("old file has instructors: %+v", got)
+	}
+	instructor := model.Instructor{ID: "i1", VUC: "ВУЦ", Surname: "Иванов", Name: "Игорь", Patronymic: "Петрович", Rank: "полковник"}
+	if err = repo.Update(func(db *model.Database) error { db.Instructors = append(db.Instructors, instructor); return nil }); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := Open(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := reopened.Snapshot().Instructors; len(got) != 1 || got[0] != instructor {
+		t.Fatalf("instructor changed: %+v", got)
+	}
+}

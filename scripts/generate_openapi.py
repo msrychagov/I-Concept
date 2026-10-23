@@ -49,6 +49,10 @@ S['VUCInput'] = obj({'vuc':string(minLength=1,maxLength=200)}, ['vuc'])
 S['CreateVUCInput'] = obj({'name':string(minLength=1,maxLength=200)}, ['name'])
 S['VUCList'] = obj({'vucs':arr(ref('VUC'))}, ['vucs'])
 S['PlatoonManagement'] = obj({'vuc':string(),'platoons':arr(ref('Platoon')),'students':arr(ref('PublicAccount'))}, ['vuc','platoons','students'])
+S['InstructorInput'] = obj({'surname':string(minLength=1,maxLength=60),'name':string(minLength=1,maxLength=60),'patronymic':string(maxLength=60),'rank':string(maxLength=80,description='Свободный текст; у гражданского персонала пусто.')}, ['surname','name'])
+S['InstructorInput']['example'] = {'surname':'Иванов','name':'Игорь','patronymic':'Петрович','rank':'полковник'}
+S['InstructorEntry'] = {'allOf':[ref('Instructor'),obj({'updatedByName':string(description='Кто сохранил запись последним.')}, extra=True)]}
+S['InstructorList'] = obj({'vuc':string(),'instructors':arr(ref('InstructorEntry'))}, ['vuc','instructors'])
 S['ManageStudentInput'] = obj({'action':string(enum=['move','remove','disable','enable']),'platoonId':string(description='Обязательно для move; взвод в том же ВУЦ.')}, ['action'])
 S['TeacherProfileInput'] = obj({'name':string(maxLength=200),'email':string(format='email',maxLength=254),'currentPassword':string(format='password',maxLength=256,description='Обязательно при изменении электронной почты.')}, ['name','email'])
 S['PasswordInput'] = obj({'currentPassword':string(format='password',maxLength=256),'newPassword':string(format='password',minLength=10,maxLength=256),'confirmPassword':string(format='password',minLength=10,maxLength=256)}, ['currentPassword','newPassword','confirmPassword'])
@@ -105,6 +109,10 @@ endpoint('/admin/vucs','post','createVUC','Администрирование','
 endpoint('/teachers/me/platoons','post','createPlatoon','Управление взводом','Создать учебный взвод','Platoon','PlatoonInput',codes=[403,409])
 endpoint('/teachers/me/platoons/{id}','patch','renamePlatoon','Управление взводом','Переименовать взвод','Platoon','PlatoonInput',codes=[403,404,409])
 endpoint('/teachers/me/students/{id}','patch','manageStudent','Управление взводом','Изменить взвод или доступ студента','PublicAccount','ManageStudentInput',codes=[403,404])
+endpoint('/teachers/me/instructors','get','listInstructors','Управление взводом','Список преподавателей своего ВУЦ','InstructorList',description='Один список на ВУЦ: видит и правит любой преподаватель этого ВУЦ. По алфавиту. Нужен, чтобы программа сводила упоминания преподавателя в текстах студентов.',codes=[403])
+endpoint('/teachers/me/instructors','post','createInstructor','Управление взводом','Добавить преподавателя в список ВУЦ','Instructor','InstructorInput',status=201,description='Полные тёзки допускаются.',codes=[403])
+endpoint('/teachers/me/instructors/{id}','put','updateInstructor','Управление взводом','Исправить запись списка преподавателей','Instructor','InstructorInput',codes=[403,404])
+endpoint('/teachers/me/instructors/{id}','delete','deleteInstructor','Управление взводом','Удалить запись списка преподавателей','OK',codes=[404])
 endpoint('/admin/teachers/{id}/vuc','patch','assignTeacherVUC','Администрирование','Назначить ВУЦ существующему преподавателю','PublicAccount','VUCInput','admin',description='Для преподавателей без ВУЦ. Переносит принадлежащих им студентов и взводы, отзывает старые ссылки. Повторное назначение запрещено.',codes=[404,409])
 for action,title,body,status in [('register','Регистрация','RegisterInput',201),('login','Вход','LoginInput',200)]:
     op=endpoint('/auth/{role}/'+action,'post',action,'Авторизация',title,'AuthResponse',body,'auth',status,'Вход создаёт HttpOnly cookie vuc_teacher или vuc_student на 24 часа. Преподаватель регистрируется по одноразовому коду администратора. Студент — по 48-часовой ссылке преподавателя; взвод берётся из ссылки.',[401,403,404,409])

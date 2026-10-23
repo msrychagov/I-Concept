@@ -609,6 +609,350 @@
         ]
       }
     },
+    "/teachers/me/instructors": {
+      "get": {
+        "operationId": "listInstructors",
+        "tags": [
+          "Управление взводом"
+        ],
+        "summary": "Список преподавателей своего ВУЦ",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Один список на ВУЦ: видит и правит любой преподаватель этого ВУЦ. По алфавиту. Нужен, чтобы программа сводила упоминания преподавателя в текстах студентов."
+      },
+      "post": {
+        "operationId": "createInstructor",
+        "tags": [
+          "Управление взводом"
+        ],
+        "summary": "Добавить преподавателя в список ВУЦ",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Instructor"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверные поля или JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен размер запроса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Ожидается application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Полные тёзки допускаются.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstructorInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teachers/me/instructors/{id}": {
+      "put": {
+        "operationId": "updateInstructor",
+        "tags": [
+          "Управление взводом"
+        ],
+        "summary": "Исправить запись списка преподавателей",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Instructor"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверные поля или JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен размер запроса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Ожидается application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstructorInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "deleteInstructor",
+        "tags": [
+          "Управление взводом"
+        ],
+        "summary": "Удалить запись списка преподавателей",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OK"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
     "/admin/teachers/{id}/vuc": {
       "patch": {
         "operationId": "assignTeacherVUC",
@@ -4575,6 +4919,46 @@
   },
   "components": {
     "schemas": {
+      "Instructor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "vuc": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "patronymic": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "string"
+          },
+          "updatedBy": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vuc",
+          "number",
+          "surname",
+          "name"
+        ]
+      },
       "PlanItem": {
         "type": "object",
         "properties": {
@@ -5075,6 +5459,9 @@
           },
           "name": {
             "type": "string"
+          },
+          "lastInstructor": {
+            "type": "integer"
           }
         },
         "additionalProperties": false,
@@ -5877,6 +6264,77 @@
           "vuc",
           "platoons",
           "students"
+        ]
+      },
+      "InstructorInput": {
+        "type": "object",
+        "properties": {
+          "surname": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "patronymic": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "rank": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Свободный текст; у гражданского персонала пусто."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "surname",
+          "name"
+        ],
+        "example": {
+          "surname": "Иванов",
+          "name": "Игорь",
+          "patronymic": "Петрович",
+          "rank": "полковник"
+        }
+      },
+      "InstructorEntry": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Instructor"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "updatedByName": {
+                "type": "string",
+                "description": "Кто сохранил запись последним."
+              }
+            },
+            "additionalProperties": true
+          }
+        ]
+      },
+      "InstructorList": {
+        "type": "object",
+        "properties": {
+          "vuc": {
+            "type": "string"
+          },
+          "instructors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstructorEntry"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "vuc",
+          "instructors"
         ]
       },
       "ManageStudentInput": {

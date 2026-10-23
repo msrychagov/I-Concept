@@ -518,6 +518,46 @@
     align-items: flex-start
 }
 
+.platoon-management .instructor-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px 16px;
+    width: 100%
+}
+
+.platoon-management .instructor-fields label {
+    margin: 0
+}
+
+.platoon-management .instructor-fields input {
+    width: 100%
+}
+
+@media (max-width: 600px) {
+    .instructor-table thead {
+        display: none
+    }
+
+    .instructor-table tr, .instructor-table td {
+        display: block
+    }
+
+    .instructor-table td {
+        border: 0;
+        padding: 4px 0
+    }
+
+    .instructor-table tr {
+        padding: 12px 0;
+        border-bottom: 1px solid #0002
+    }
+
+    .instructor-table td[data-label]::before {
+        content: attr(data-label) ": ";
+        color: var(--muted, #667)
+    }
+}
+
 .invite-code, .issued-code {
     font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
     letter-spacing: .12em;
