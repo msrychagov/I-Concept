@@ -54,11 +54,31 @@ func goodEssay(user string) map[string]any {
 			change = append(change, map[string]any{"moment": name, "text": "Раньше было иначе.", "before": quoteOf(input.Previous[0]), "after": quoteOf(input.Essay[0])})
 		}
 	}
+	// An instructor of the list who is named in answer 2.4 is thanked; another
+	// name is written as the author wrote it.
+	teachers := []any{}
+	for _, row := range input.Essay {
+		if row.Number != "2.4" {
+			continue
+		}
+		who := ""
+		for _, entry := range input.Instructor {
+			if strings.Contains(row.Answer, "Иванов") && strings.Contains(entry.Who, "Иванов") {
+				who = entry.Label
+			}
+		}
+		if strings.Contains(row.Answer, "Сидоров") {
+			who = "полковник Сидоров"
+		}
+		if who != "" {
+			teachers = append(teachers, map[string]any{"who": who, "kind": "благодарность", "text": "Благодарит за помощь.", "quotes": []any{quoteOf(row)}})
+		}
+	}
 	return map[string]any{
 		"summary":  "Автор пришёл в ВУЦ с ожиданиями и привык к порядкам.",
 		"moments":  map[string]any{"beliefs": moment(), "emotions": moment(), "values": moment(), "abilities": moment()},
 		"positive": []any{map[string]any{"text": "Автор ценит помощь товарищей.", "about": "о себе", "basis": "сказано автором", "quotes": quote}},
-		"negative": []any{}, "attention": []any{}, "teachers": []any{}, "change": change,
+		"negative": []any{}, "attention": []any{map[string]any{"text": "Автору нужна поддержка в первые недели.", "about": "о ВУЦ", "basis": "вывод по тексту", "quotes": quote}}, "teachers": teachers, "change": change,
 		"conclusion": map[string]any{"text": "По ответам видно, что становление идёт.", "quotes": quote},
 	}
 }

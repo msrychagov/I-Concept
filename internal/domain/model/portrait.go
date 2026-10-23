@@ -20,6 +20,11 @@ type Portrait struct {
 	Output  json.RawMessage `json:"output"`
 	Usage   PortraitUsage   `json:"usage"`
 	Seconds float64         `json:"seconds"`
+	// Source and Sources are set by a task that is made for a group of other
+	// sources (the summary of an essay assignment): the id of that group and the
+	// ids of its members in the order the model got them, to read its references.
+	Source  string   `json:"source,omitempty"`
+	Sources []string `json:"sources,omitempty"`
 }
 
 type PortraitUsage struct {

@@ -5088,6 +5088,207 @@
         ]
       }
     },
+    "/essays": {
+      "get": {
+        "operationId": "getEssays",
+        "tags": [
+          "Эссе"
+        ],
+        "summary": "Выпуски и эссе преподавателя",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EssayOverview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Свои выпуски и выданные им эссе; по каждому эссе — студенты взводов выпуска со статусом эссе и разбора. Разбор по человеку — GET /portraits/essay/{submissionId}."
+      }
+    },
+    "/essays/assignments/{id}/summary": {
+      "get": {
+        "operationId": "getEssaySummary",
+        "tags": [
+          "Эссе"
+        ],
+        "summary": "Сводка по выдаче эссе выпуску",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EssaySummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Счётчики, блок «Преподаватели» и последняя составленная сводка модели. Сама не составляется.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "composeEssaySummary",
+        "tags": [
+          "Эссе"
+        ],
+        "summary": "Составить сводку по выдаче",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EssaySummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверные поля или JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Ставит сводку в очередь по эссе с готовым разбором (не меньше двух). Одинаковый набор разборов даёт ту же сводку без вызова модели.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
     "/forms/{formId}": {
       "get": {
         "operationId": "getForm",
@@ -6997,6 +7198,267 @@
           "submission"
         ]
       },
+      "EssayStudent": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "platoon": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "not_started",
+              "writing",
+              "submitted"
+            ]
+          },
+          "submissionId": {
+            "type": "string"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "answered": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "analysis": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "queued",
+              "working",
+              "failed",
+              "none",
+              "off"
+            ],
+            "description": "Состояние разбора сданного эссе."
+          },
+          "reason": {
+            "type": "string"
+          },
+          "hasPrevious": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "studentId",
+          "name",
+          "platoon",
+          "status",
+          "answered",
+          "total"
+        ]
+      },
+      "EssayCounts": {
+        "type": "object",
+        "properties": {
+          "students": {
+            "type": "integer"
+          },
+          "submitted": {
+            "type": "integer"
+          },
+          "notSubmitted": {
+            "type": "integer"
+          },
+          "analysed": {
+            "type": "integer"
+          },
+          "withoutAnalysis": {
+            "type": "integer"
+          },
+          "withPrevious": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "students",
+          "submitted",
+          "notSubmitted",
+          "analysed",
+          "withoutAnalysis",
+          "withPrevious"
+        ]
+      },
+      "EssayAssignment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "cohortId": {
+            "type": "string"
+          },
+          "cohortName": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/EssayCounts"
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EssayStudent"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "created",
+          "active",
+          "cohortId",
+          "cohortName",
+          "year",
+          "counts",
+          "students"
+        ]
+      },
+      "EssayOverview": {
+        "type": "object",
+        "properties": {
+          "cohorts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "year": {
+                  "type": "integer"
+                },
+                "platoons": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "name",
+                "year",
+                "platoons"
+              ]
+            }
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EssayAssignment"
+            }
+          },
+          "model": {
+            "type": "boolean",
+            "description": "Подключена ли языковая модель."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "cohorts",
+          "assignments",
+          "model"
+        ]
+      },
+      "EssaySummary": {
+        "type": "object",
+        "properties": {
+          "assignment": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "cohortName": {
+                "type": "string"
+              },
+              "year": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": true
+          },
+          "counts": {
+            "$ref": "#/components/schemas/EssayCounts"
+          },
+          "minimum": {
+            "type": "integer",
+            "description": "Наименьшее число эссе с разбором для сводки."
+          },
+          "canCompose": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "queued",
+              "working",
+              "failed",
+              "none",
+              "off"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "object",
+            "nullable": true,
+            "description": "Текст модели (output) и то, что добавляет программа (common): по каждому общему пункту — у скольких авторов он встречается и исходные пункты разборов; notIncluded — пункты «внимание», вошедшие в никакой общий. stale — с тех пор появились другие эссе.",
+            "additionalProperties": true
+          },
+          "teachers": {
+            "type": "object",
+            "description": "Блок «Преподаватели»: listed — сопоставленные со списком ВУЦ с числом благодарностей, проблем и упоминаний; unlisted — упоминания, как написал автор. Собирает программа, модель не нужна.",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "assignment",
+          "counts",
+          "minimum",
+          "canCompose",
+          "status",
+          "summary",
+          "teachers"
+        ]
+      },
       "ManageStudentInput": {
         "type": "object",
         "properties": {
@@ -8686,9 +9148,10 @@
               "working",
               "failed",
               "ready",
-              "off"
+              "off",
+              "none"
             ],
-            "description": "queued — в очереди, working — составляется, failed — не удалось (причина в reason), ready — готов, off — языковая модель не подключена."
+            "description": "queued — в очереди, working — составляется, failed — не удалось (причина в reason), ready — готов, off — языковая модель не подключена, none — сводку никто не запрашивал (задачи по кнопке)."
           },
           "portrait": {
             "$ref": "#/components/schemas/PortraitText"
