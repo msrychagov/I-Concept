@@ -39,7 +39,7 @@ func TestDemoEssaysCopyInTheWiki(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	order := []string{"a1", "b1", "v1", "a2", "b2", "g2"}
+	order := []string{"a1", "b1", "v1", "a2", "b2", "g2", "d2", "e2", "z2"}
 	for n, key := range order {
 		for _, essay := range demoEssays {
 			if essay.Key != key {

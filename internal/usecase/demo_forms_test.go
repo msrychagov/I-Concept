@@ -15,7 +15,7 @@ func TestDemoAutobiographyHasOneSubmittedAndOneStartedForm(t *testing.T) {
 		t.Fatalf("assignments: %+v", db.Assignments)
 	}
 	// The first two submissions are the autobiography; the essays follow.
-	if len(db.Submissions) != 8 || !db.Submissions[0].Completed || db.Submissions[1].Completed {
+	if len(db.Submissions) != 11 || !db.Submissions[0].Completed || db.Submissions[1].Completed {
 		t.Fatalf("submissions: %+v", db.Submissions)
 	}
 	form := s.forms["autobiography"]
@@ -38,7 +38,7 @@ func TestDemoEssaysAreTwoAssignmentsOfOneCohortWithTwoPairs(t *testing.T) {
 		t.Fatal(err)
 	}
 	db := mustSnapshot(t, s.repo)
-	if len(db.Cohorts) != 1 || db.Cohorts[0].Year != 2027 || len(db.Cohorts[0].PlatoonIDs) != 2 {
+	if len(db.Cohorts) != 1 || db.Cohorts[0].Year != 2027 || len(db.Cohorts[0].PlatoonIDs) != 3 {
 		t.Fatalf("cohorts: %+v", db.Cohorts)
 	}
 	early, final := db.Assignments[5], db.Assignments[6]
@@ -64,7 +64,7 @@ func TestDemoEssaysAreTwoAssignmentsOfOneCohortWithTwoPairs(t *testing.T) {
 			pairs++
 		}
 	}
-	if count[early.ID] != 3 || count[final.ID] != 3 || len(perStudent) != 4 || pairs != 2 {
+	if count[early.ID] != 3 || count[final.ID] != 6 || len(perStudent) != 7 || pairs != 2 {
 		t.Fatalf("essays per assignment %v, per student %v", count, perStudent)
 	}
 	// The students of the cohort see the open essay, whoever invited them; the earlier essay of a pair is found.
