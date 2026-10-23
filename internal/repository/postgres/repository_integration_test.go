@@ -129,10 +129,23 @@ func TestPostgresIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(db.Instructors) != 1 || db.Instructors[0].Rank != "полковник" {
+	// The demo has instructors and a cohort of its own; the ones added above are found by id.
+	var instructor model.Instructor
+	for _, entry := range db.Instructors {
+		if entry.ID == "instructor-1" {
+			instructor = entry
+		}
+	}
+	if instructor.Rank != "полковник" {
 		t.Fatalf("instructor not stored as written: %+v", db.Instructors)
 	}
-	if len(db.Cohorts) != 1 || db.Cohorts[0].Year != 2027 || len(db.Cohorts[0].PlatoonIDs) != 1 {
+	var cohort model.Cohort
+	for _, entry := range db.Cohorts {
+		if entry.ID == "cohort-1" {
+			cohort = entry
+		}
+	}
+	if cohort.Year != 2027 || len(cohort.PlatoonIDs) != 1 {
 		t.Fatalf("cohort not stored as written: %+v", db.Cohorts)
 	}
 	if len(db.Portraits) != 1 || db.Portraits[0].Input != `{"б":1,"а":2}` || db.Portraits[0].Usage.Out != 5 {
