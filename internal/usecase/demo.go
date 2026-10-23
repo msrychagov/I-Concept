@@ -134,6 +134,7 @@ func (a *Service) demoDatabase() (model.Database, error) {
 		return model.Database{}, err
 	}
 	a.addDemoMethods(&db, full, created, now, teacherID)
+	a.addDemoEssays(&db, created, now, teacherID)
 	return db, nil
 }
 
