@@ -23,6 +23,7 @@ type FormTexts struct {
 	Consent   string `json:"consent"`
 	DoneTitle string `json:"doneTitle"`
 	DoneText  string `json:"doneText"`
+	Review    string `json:"review"`
 }
 
 // Options returns the values a choice field can take: its own or its list's.

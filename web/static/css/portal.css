@@ -592,6 +592,23 @@
     }
 }
 
+.own-answers {
+    margin-top: 1.5rem;
+    padding: 1.2rem
+}
+
+.own-answers-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px
+}
+
+.own-answers-head h2 {
+    margin: 0
+}
+
 .invite-code, .issued-code {
     font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
     letter-spacing: .12em;

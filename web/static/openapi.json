@@ -6165,13 +6165,17 @@
           },
           "doneText": {
             "type": "string"
+          },
+          "review": {
+            "type": "string"
           }
         },
         "additionalProperties": false,
         "required": [
           "consent",
           "doneTitle",
-          "doneText"
+          "doneText",
+          "review"
         ]
       },
       "FormSection": {

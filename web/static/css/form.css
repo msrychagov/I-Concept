@@ -29,6 +29,29 @@
     font-size: .9rem
 }
 
+.form-field .q-number {
+    display: inline-block;
+    min-width: 2.2em;
+    color: var(--gold, #ad9653);
+    font-variant-numeric: tabular-nums
+}
+
+.form-field .char-count {
+    display: block;
+    margin-top: .25rem;
+    text-align: right;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums
+}
+
+.section-hint {
+    margin: 0 0 1.2rem;
+    padding: .7rem 1rem;
+    border-left: 3px solid var(--gold, #ad9653);
+    background: #0000000a;
+    color: var(--ink)
+}
+
 .form-field .choice-list {
     display: grid;
     gap: .5rem;

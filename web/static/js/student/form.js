@@ -1,4 +1,4 @@
-// Student questionnaire (autobiography): intro and consent, one screen per section, review and submit.
+// Student questionnaire (autobiography, essay): intro and consent, one screen per section, review and submit.
 (() => {
     'use strict';
     const app = document.querySelector('#app');
@@ -88,8 +88,10 @@
             }
             case 'text':
                 return `<input type="text" ${single} data-kind="text" maxlength="${f.maxLength || 300}" value="${esc(v)}" ${f.suggest ? `list="dl-${esc(path)}" autocomplete="off"` : ''}>${f.suggest ? `<datalist id="dl-${esc(path)}"></datalist>` : ''}`;
-            case 'textarea':
-                return `<textarea ${single} data-kind="text" rows="3" maxlength="${f.maxLength || 2000}">${esc(v)}</textarea>`;
+            case 'textarea': {
+                const limit = f.maxLength || 2000, long = limit >= 1000;
+                return `<textarea ${single} data-kind="text" rows="${long ? 6 : 3}" maxlength="${limit}">${esc(v)}</textarea>${long ? `<small class="char-count" aria-hidden="true">${[...(v || '')].length} / ${limit}</small>` : ''}`;
+            }
             case 'date':
                 return `<input type="date" ${single} data-kind="text" min="1900-01-01" max="${localToday()}" value="${esc(v)}">`;
             case 'month': {
@@ -123,7 +125,7 @@
         }
         const gap = missing.has(path);
         const wrap = ['choice', 'multi'].includes(f.type) && (optionsOf(f).length <= MAX_BUTTONS || f.type === 'multi');
-        const title = esc(f.label) + (f.required ? '<span class="req" aria-hidden="true">*</span>' : '');
+        const title = (f.number ? `<span class="q-number">${esc(f.number)}</span> ` : '') + esc(f.label) + (f.required ? '<span class="req" aria-hidden="true">*</span>' : '');
         const body = control(f, store, path);
         const hint = f.hint ? `<p class="hint">${esc(f.hint)}</p>` : '';
         const note = gap ? '<p class="field-error">Обязательное поле.</p>' : '';
@@ -175,11 +177,12 @@
         if (!data) return;
         const s = data.submission;
         if (view === 'done' || s.completed) {
-            app.innerHTML = `<main class="consent"><div class="eyebrow">Автобиография</div><h1>Автобиография сдана</h1><p>Спасибо. Сведения переданы преподавателю. Изменить ответы после сдачи нельзя.</p><a class="button" href="/student">Вернуться в кабинет</a></main>`;
+            const texts = data.form.texts || {};
+            app.innerHTML = `<main class="consent"><div class="eyebrow">${esc(data.form.title)}</div><h1>${esc(texts.doneTitle || 'Автобиография сдана')}</h1><p>${esc(texts.doneText || 'Спасибо. Сведения переданы преподавателю. Изменить ответы после сдачи нельзя.')}</p><a class="button" href="/student">Вернуться в кабинет</a></main>`;
             return;
         }
         if (!s.consent) {
-            app.innerHTML = `<div class="student-layout"><header class="student-header"><a href="/student">← Личный кабинет</a><span>${esc(data.form.title)}</span></header><main class="consent"><div class="eyebrow">Перед началом</div><h1>${esc(data.form.title)}</h1><p>${esc(data.form.intro)}</p><button id="consent" type="button">Согласен(на) заполнять автобиографию и сохранять сведения</button><div id="err"></div></main></div>`;
+            app.innerHTML = `<div class="student-layout"><header class="student-header"><a href="/student">← Личный кабинет</a><span>${esc(data.form.title)}</span></header><main class="consent"><div class="eyebrow">Перед началом</div><h1>${esc(data.form.title)}</h1>${data.form.intro.split('\n\n').map(p => `<p>${esc(p)}</p>`).join('')}<button id="consent" type="button">${esc(data.form.texts?.consent || 'Согласен(на) заполнять автобиографию и сохранять сведения')}</button><div id="err"></div></main></div>`;
             app.querySelector('#consent').onclick = giveConsent;
             return;
         }
@@ -197,7 +200,7 @@
         const i = sectionIndex(section.id), last = i === data.form.sections.length - 1;
         const missing = new Set(visited.has(section.id) ? data.progress.missing[section.id] || [] : []);
         const fields = renderFields(section.fields, values, {}, '', missing);
-        return `<div class="question-meta"><span>Раздел ${i + 1} из ${data.form.sections.length}</span><span>* — обязательно</span></div><h1 class="form-section-title">${esc(section.title)}</h1><form id="section-form" novalidate>${fields}</form><div id="err"></div><div class="question-footer"><button type="button" class="secondary" id="prev" ${i === 0 ? 'disabled' : ''}>Назад</button><span id="status" class="form-status" role="status"></span><button type="button" id="next">${last ? 'К проверке' : 'Далее'}</button></div>`;
+        return `<div class="question-meta"><span>Раздел ${i + 1} из ${data.form.sections.length}</span><span>* — обязательно</span></div><h1 class="form-section-title">${esc(section.title)}</h1>${section.hint ? `<p class="section-hint">${esc(section.hint)}</p>` : ''}<form id="section-form" novalidate>${fields}</form><div id="err"></div><div class="question-footer"><button type="button" class="secondary" id="prev" ${i === 0 ? 'disabled' : ''}>Назад</button><span id="status" class="form-status" role="status"></span><button type="button" id="next">${last ? 'К проверке' : 'Далее'}</button></div>`;
     }
 
     function labelFor(sectionId, path) {
@@ -205,14 +208,14 @@
         const [id, n, nested] = path.split('.');
         const f = section.fields.find(x => x.id === id);
         if (!f) return path;
-        if (nested === undefined) return f.label;
+        if (nested === undefined) return (f.number ? f.number + ' ' : '') + f.label;
         const inner = f.fields.find(x => x.id === nested);
         return `${f.label} № ${Number(n) + 1}: ${inner ? inner.label : nested}`;
     }
 
     function reviewHtml() {
         const p = data.progress, ready = p.complete.length === p.total;
-        return `<div class="eyebrow">Проверка</div><h1 class="form-section-title">Проверка и сдача</h1><p class="muted">Заполнено разделов: ${p.complete.length} из ${p.total}. Сдать автобиографию можно, когда заполнено всё обязательное. После сдачи ответы изменить нельзя.</p><ul class="review-list">${data.form.sections.map((s, i) => {
+        return `<div class="eyebrow">Проверка</div><h1 class="form-section-title">Проверка и сдача</h1><p class="muted">Заполнено разделов: ${p.complete.length} из ${p.total}. ${esc(data.form.texts?.review || 'Сдать автобиографию можно, когда заполнено всё обязательное. После сдачи ответы изменить нельзя.')}</p><ul class="review-list">${data.form.sections.map((s, i) => {
             const state = sectionState(s.id), gaps = p.missing[s.id] || [];
             return `<li class="${state}"><span class="review-mark">${state === 'done' ? '✓' : '!'}</span><div><button type="button" class="link" data-go="${esc(s.id)}">${i + 1}. ${esc(s.title)}</button>${state === 'done' ? '' : gaps.length ? `<ul>${gaps.slice(0, 6).map(g => `<li>${esc(labelFor(s.id, g))}</li>`).join('')}${gaps.length > 6 ? `<li>…и ещё ${gaps.length - 6}</li>` : ''}</ul>` : '<ul><li>Раздел нужно открыть и нажать «Далее»</li></ul>'}</div></li>`;
         }).join('')}</ul><label class="confirm-line"><input type="checkbox" id="confirm" ${ready ? '' : 'disabled'}> Подтверждаю, что сведения верны</label><div id="err"></div><div class="question-footer"><button type="button" class="secondary" id="prev">Назад</button><span></span><button type="button" id="submit" disabled>Сдать</button></div>`;
@@ -278,6 +281,8 @@
             if (kind === 'text') {
                 change(path, el.value, false);
                 if (el.tagName === 'INPUT' && el.list) suggest(el);
+                const counter = el.tagName === 'TEXTAREA' && el.nextElementSibling;
+                if (counter && counter.classList.contains('char-count')) counter.textContent = `${[...el.value].length} / ${el.maxLength}`;
             }
         });
         form.addEventListener('change', e => {
@@ -442,6 +447,7 @@
         }
         try {
             data = await api();
+            document.title = data.form.title + ' · ВУЦ';
             values = structuredClone(data.submission.answers || {});
             // Gaps of sections saved earlier are shown right away, also after a reload.
             data.submission.savedSections.forEach(id => visited.add(id));
