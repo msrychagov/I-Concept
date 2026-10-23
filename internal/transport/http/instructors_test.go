@@ -60,3 +60,31 @@ func TestCohortRoutes(t *testing.T) {
 	requireCode(t, callAccount(t, a, "DELETE /api/v1/teachers/me/cohorts/"+id, nil, teacher), 200)
 	requireCode(t, callAccount(t, a, "DELETE /api/v1/teachers/me/cohorts/"+id, nil, teacher), 404)
 }
+
+func TestEssayAssignmentRoute(t *testing.T) {
+	a := testApp(t)
+	email := "essays@example.test"
+	w := callAccount(t, a, "/api/v1/auth/teacher/register", map[string]any{"name": "Учитель Эссе", "email": email, "invite": testInvite(t, a, "teacher", email, ""), "password": "TestPassword2026!"}, nil)
+	requireCode(t, w, 201)
+	teacher := w.Result().Cookies()[0]
+	platoon := decoded(t, callAccount(t, a, "/api/v1/teachers/me/platoons", map[string]any{"name": "2401"}, teacher))["id"].(string)
+	cohort := decoded(t, callAccount(t, a, "/api/v1/teachers/me/cohorts", map[string]any{"name": "Выпуск 2027", "year": 2027, "platoonIds": []string{platoon}}, teacher))["id"].(string)
+
+	requireCode(t, callAccount(t, a, "/api/v1/assignments", map[string]any{"title": "Эссе", "formId": "essay", "cohortId": cohort}, teacher), 201)
+	requireCode(t, callAccount(t, a, "/api/v1/assignments", map[string]any{"title": "Эссе", "formId": "essay", "platoon": "2401"}, teacher), 400)
+	requireCode(t, callAccount(t, a, "/api/v1/assignments", map[string]any{"title": "Эссе", "formId": "essay", "cohortId": "nope"}, teacher), 404)
+
+	overview := decoded(t, callAccount(t, a, "/api/v1/essays", nil, teacher))
+	assignments := overview["assignments"].([]any)
+	if len(assignments) != 1 || assignments[0].(map[string]any)["cohortName"] != "Выпуск 2027" || len(overview["cohorts"].([]any)) != 1 {
+		t.Fatalf("overview: %+v", overview)
+	}
+	id := assignments[0].(map[string]any)["id"].(string)
+	summary := decoded(t, callAccount(t, a, "/api/v1/essays/assignments/"+id+"/summary", nil, teacher))
+	if summary["canCompose"] != false || summary["status"] != "off" {
+		t.Fatalf("summary: %+v", summary)
+	}
+	requireCode(t, callAccount(t, a, "POST /api/v1/essays/assignments/"+id+"/summary", nil, teacher), 400)
+	requireCode(t, callAccount(t, a, "/api/v1/essays/assignments/nope/summary", nil, teacher), 404)
+	requireCode(t, callAccount(t, a, "/api/v1/essays", nil, nil), 401)
+}

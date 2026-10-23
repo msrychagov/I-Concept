@@ -37,6 +37,7 @@ type assignmentRequest struct {
 	Title      string `json:"title"`
 	ProfileID  string `json:"profileId"`
 	FormID     string `json:"formId"`
+	CohortID   string `json:"cohortId"`
 	Platoon    string `json:"platoon"`
 	Activity   bool   `json:"activity"`
 	Motivation bool   `json:"motivation"`

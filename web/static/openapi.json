@@ -7552,7 +7552,11 @@
           "platoon": {
             "type": "string",
             "maxLength": 80,
-            "description": "Пустая строка — всем взводам."
+            "description": "Пустая строка — всем взводам. Для эссе не передаётся."
+          },
+          "cohortId": {
+            "type": "string",
+            "description": "Только для эссе (formId essay): выпуск своего ВУЦ, созданный этим преподавателем; эссе получают студенты его взводов."
           },
           "activity": {
             "type": "boolean",
