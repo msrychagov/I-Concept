@@ -20,8 +20,8 @@ func (a *Service) essayTask(prompt promptbank.Prompt) portraitTask {
 		ID: essayForm, Version: prompt.Version, Prompt: prompt,
 		// Four moments, three lists, teachers, a comparison and a conclusion, with
 		// a quote under each point: more than the autobiography; tries are many
-		// because a quote must be word for word.
-		MaxTokens: 5000, Attempts: 5,
+		// because a quote must be word for word. 5000 tokens cut off the JSON of a long answer on the first run on GigaChat.
+		MaxTokens: 8000, Attempts: 5,
 		Keep: []string{"отчество"},
 		Accepts: func(db model.Database, s Source) bool {
 			submission, ok := findSubmission(db, s)
