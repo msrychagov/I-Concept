@@ -5,7 +5,7 @@ import (
 	"vucdiagnostic/internal/domain/model"
 )
 
-//go:embed autobiography.json refs/*.json
+//go:embed autobiography.json essay.json refs/*.json
 var files embed.FS
 
 // Load returns the fixed questionnaires built into the binary.
