@@ -164,3 +164,30 @@ func TestInstructorLabelsAreStable(t *testing.T) {
 		t.Fatalf("other center resolved: %+v", found)
 	}
 }
+
+func TestDemoHasInstructors(t *testing.T) {
+	a := testApp(t)
+	if _, err := a.ResetDemo(); err != nil {
+		t.Fatal(err)
+	}
+	db := mustSnapshot(t, a.repo)
+	labels := instructorLabels(db, "Демонстрационный ВУЦ")
+	if len(labels) != 7 || labels[0] != (InstructorLabel{"[преподаватель 1]", "Иванов Игорь Петрович, полковник"}) ||
+		labels[4] != (InstructorLabel{"[преподаватель 5]", "Петрова Анна Сергеевна"}) || labels[6].Label != "[преподаватель 7]" {
+		t.Fatalf("demo labels: %+v", labels)
+	}
+	// The next entry continues the numbering.
+	var teacherID string
+	for _, account := range db.Students {
+		if account.Role == "teacher" {
+			teacherID = account.ID
+		}
+	}
+	value, err := a.SaveInstructor(teacherID, "", InstructorInput{Surname: "Новиков", Name: "Павел"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if number := value.(model.Instructor).Number; number != 8 {
+		t.Fatalf("next number after demo: %d", number)
+	}
+}

@@ -88,6 +88,21 @@ func (a *Service) demoDatabase() (model.Database, error) {
 	for n, name := range names {
 		addAccount("student", name, fmt.Sprint(101+n/3), fmt.Sprintf("student%d@example.test", n+1), "StudentDemo2026!", teacherID)
 	}
+	// Invented instructors: namesakes on purpose, so that essays have cases the
+	// model must not merge (the same name and patronymic, the same surname).
+	for n, entry := range [][4]string{
+		{"Иванов", "Игорь", "Петрович", "полковник"},
+		{"Сидоров", "Игорь", "Петрович", "майор"},
+		{"Кузнецов", "Илья", "Павлович", "старший лейтенант"},
+		{"Кузнецов", "Никита", "Львович", "лейтенант"},
+		{"Петрова", "Анна", "Сергеевна", ""},
+		{"Ковальчук", "Олег", "Ильич", "подполковник"},
+		{"Белоцерковский", "Юрий", "Андреевич", "капитан"},
+	} {
+		db.Instructors = append(db.Instructors, model.Instructor{ID: uuid(), VUC: "Демонстрационный ВУЦ", Number: n + 1,
+			Surname: entry[0], Name: entry[1], Patronymic: entry[2], Rank: entry[3], UpdatedBy: teacherID, Updated: created})
+	}
+	db.VUCs[0].LastInstructor = len(db.Instructors)
 	full.OwnerID, short.OwnerID = teacherID, teacherID
 	db.Profiles = []model.Profile{full, short}
 	db.Assignments = []model.Assignment{{ID: uuid(), Title: "Входное тестирование", Profile: short, Active: true, Created: created, OwnerID: teacherID}, {ID: uuid(), Title: "Диагностика взвода 101", Platoon: "101", Profile: full, Active: true, Created: created, OwnerID: teacherID}, {ID: uuid(), Title: "Завершённый этап", Profile: short, Active: false, Created: created, OwnerID: teacherID}}
