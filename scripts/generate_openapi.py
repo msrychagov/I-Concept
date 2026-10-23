@@ -53,6 +53,10 @@ S['InstructorInput'] = obj({'surname':string(minLength=1,maxLength=60),'name':st
 S['InstructorInput']['example'] = {'surname':'Иванов','name':'Игорь','patronymic':'Петрович','rank':'полковник'}
 S['InstructorEntry'] = {'allOf':[ref('Instructor'),obj({'updatedByName':string(description='Кто сохранил запись последним.')}, extra=True)]}
 S['InstructorList'] = obj({'vuc':string(),'instructors':arr(ref('InstructorEntry'))}, ['vuc','instructors'])
+S['CohortInput'] = obj({'name':string(minLength=1,maxLength=80),'year':integer(minimum=2000,maximum=2100),'platoonIds':arr(string())}, ['name','year','platoonIds'])
+S['CohortInput']['example'] = {'name':'Выпуск 2027','year':2027,'platoonIds':['ID-взвода']}
+S['CohortEntry'] = {'allOf':[ref('Cohort'),obj({'createdByName':string(),'mine':boolean(description='Выпуск создан вызывающим преподавателем.'),'assignments':integer(description='Сколько эссе выдано выпуску.'),'students':integer(description='Студентов во взводах выпуска.')}, extra=True)]}
+S['CohortList'] = obj({'vuc':string(),'platoons':arr(ref('Platoon')),'cohorts':arr(ref('CohortEntry'))}, ['vuc','platoons','cohorts'])
 S['ManageStudentInput'] = obj({'action':string(enum=['move','remove','disable','enable']),'platoonId':string(description='Обязательно для move; взвод в том же ВУЦ.')}, ['action'])
 S['TeacherProfileInput'] = obj({'name':string(maxLength=200),'email':string(format='email',maxLength=254),'currentPassword':string(format='password',maxLength=256,description='Обязательно при изменении электронной почты.')}, ['name','email'])
 S['PasswordInput'] = obj({'currentPassword':string(format='password',maxLength=256),'newPassword':string(format='password',minLength=10,maxLength=256),'confirmPassword':string(format='password',minLength=10,maxLength=256)}, ['currentPassword','newPassword','confirmPassword'])
@@ -113,6 +117,10 @@ endpoint('/teachers/me/instructors','get','listInstructors','Управлени�
 endpoint('/teachers/me/instructors','post','createInstructor','Управление взводом','Добавить преподавателя в список ВУЦ','Instructor','InstructorInput',status=201,description='Полные тёзки допускаются.',codes=[403])
 endpoint('/teachers/me/instructors/{id}','put','updateInstructor','Управление взводом','Исправить запись списка преподавателей','Instructor','InstructorInput',codes=[403,404])
 endpoint('/teachers/me/instructors/{id}','delete','deleteInstructor','Управление взводом','Удалить запись списка преподавателей','OK',codes=[404])
+endpoint('/teachers/me/cohorts','get','listCohorts','Эссе','Выпуски своего ВУЦ','CohortList',description='Выпуск — название, год и взводы. Виден всем преподавателям ВУЦ: взвод входит только в один выпуск. Изменяет, удаляет и выдаёт эссе выпуску только его создатель.',codes=[403])
+endpoint('/teachers/me/cohorts','post','createCohort','Эссе','Создать выпуск','Cohort','CohortInput',status=201,codes=[403,404,409])
+endpoint('/teachers/me/cohorts/{id}','put','updateCohort','Эссе','Изменить выпуск','Cohort','CohortInput',codes=[403,404,409])
+endpoint('/teachers/me/cohorts/{id}','delete','deleteCohort','Эссе','Удалить выпуск','OK',description='Нельзя, если выпуску выдавали эссе.',codes=[403,404,409])
 endpoint('/admin/teachers/{id}/vuc','patch','assignTeacherVUC','Администрирование','Назначить ВУЦ существующему преподавателю','PublicAccount','VUCInput','admin',description='Для преподавателей без ВУЦ. Переносит принадлежащих им студентов и взводы, отзывает старые ссылки. Повторное назначение запрещено.',codes=[404,409])
 for action,title,body,status in [('register','Регистрация','RegisterInput',201),('login','Вход','LoginInput',200)]:
     op=endpoint('/auth/{role}/'+action,'post',action,'Авторизация',title,'AuthResponse',body,'auth',status,'Вход создаёт HttpOnly cookie vuc_teacher или vuc_student на 24 часа. Преподаватель регистрируется по одноразовому коду администратора. Студент — по 48-часовой ссылке преподавателя; взвод берётся из ссылки.',[401,403,404,409])

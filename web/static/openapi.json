@@ -953,6 +953,390 @@
         ]
       }
     },
+    "/teachers/me/cohorts": {
+      "get": {
+        "operationId": "listCohorts",
+        "tags": [
+          "Эссе"
+        ],
+        "summary": "Выпуски своего ВУЦ",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CohortList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Выпуск — название, год и взводы. Виден всем преподавателям ВУЦ: взвод входит только в один выпуск. Изменяет, удаляет и выдаёт эссе выпуску только его создатель."
+      },
+      "post": {
+        "operationId": "createCohort",
+        "tags": [
+          "Эссе"
+        ],
+        "summary": "Создать выпуск",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cohort"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверные поля или JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Конфликт: занятая почта, завершённая сессия или устаревшая revision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен размер запроса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Ожидается application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CohortInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teachers/me/cohorts/{id}": {
+      "put": {
+        "operationId": "updateCohort",
+        "tags": [
+          "Эссе"
+        ],
+        "summary": "Изменить выпуск",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cohort"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверные поля или JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Конфликт: занятая почта, завершённая сессия или устаревшая revision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен размер запроса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Ожидается application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CohortInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "deleteCohort",
+        "tags": [
+          "Эссе"
+        ],
+        "summary": "Удалить выпуск",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OK"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Конфликт: занятая почта, завершённая сессия или устаревшая revision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Нельзя, если выпуску выдавали эссе.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
     "/admin/teachers/{id}/vuc": {
       "patch": {
         "operationId": "assignTeacherVUC",
@@ -4919,6 +5303,46 @@
   },
   "components": {
     "schemas": {
+      "Cohort": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "vuc": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer"
+          },
+          "platoonIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vuc",
+          "name",
+          "year",
+          "platoonIds",
+          "createdBy",
+          "created"
+        ]
+      },
       "Instructor": {
         "type": "object",
         "properties": {
@@ -5594,6 +6018,9 @@
             "type": "string"
           },
           "ownerId": {
+            "type": "string"
+          },
+          "cohortId": {
             "type": "string"
           }
         },
@@ -6335,6 +6762,94 @@
         "required": [
           "vuc",
           "instructors"
+        ]
+      },
+      "CohortInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 2000,
+            "maximum": 2100
+          },
+          "platoonIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "year",
+          "platoonIds"
+        ],
+        "example": {
+          "name": "Выпуск 2027",
+          "year": 2027,
+          "platoonIds": [
+            "ID-взвода"
+          ]
+        }
+      },
+      "CohortEntry": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Cohort"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "createdByName": {
+                "type": "string"
+              },
+              "mine": {
+                "type": "boolean",
+                "description": "Выпуск создан вызывающим преподавателем."
+              },
+              "assignments": {
+                "type": "integer",
+                "description": "Сколько эссе выдано выпуску."
+              },
+              "students": {
+                "type": "integer",
+                "description": "Студентов во взводах выпуска."
+              }
+            },
+            "additionalProperties": true
+          }
+        ]
+      },
+      "CohortList": {
+        "type": "object",
+        "properties": {
+          "vuc": {
+            "type": "string"
+          },
+          "platoons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Platoon"
+            }
+          },
+          "cohorts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CohortEntry"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "vuc",
+          "platoons",
+          "cohorts"
         ]
       },
       "ManageStudentInput": {
