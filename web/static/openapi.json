@@ -4928,6 +4928,9 @@
           "vuc": {
             "type": "string"
           },
+          "number": {
+            "type": "integer"
+          },
           "surname": {
             "type": "string"
           },
@@ -4951,6 +4954,7 @@
         "required": [
           "id",
           "vuc",
+          "number",
           "surname",
           "name"
         ]
@@ -5455,6 +5459,9 @@
           },
           "name": {
             "type": "string"
+          },
+          "lastInstructor": {
+            "type": "integer"
           }
         },
         "additionalProperties": false,

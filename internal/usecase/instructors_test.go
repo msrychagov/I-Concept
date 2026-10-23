@@ -108,3 +108,59 @@ func TestInstructorListRejectsInvalidInputAndAccounts(t *testing.T) {
 		t.Fatalf("rejected input stored: %+v", got)
 	}
 }
+
+func TestInstructorLabelsAreStable(t *testing.T) {
+	a := instructorApp(t)
+	save := func(teacherID string, input InstructorInput) model.Instructor {
+		t.Helper()
+		value, err := a.SaveInstructor(teacherID, "", input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return value.(model.Instructor)
+	}
+	ivanov := save("t1", InstructorInput{Surname: "Иванов", Name: "Игорь", Patronymic: "Петрович", Rank: "полковник"})
+	petrova := save("t2", InstructorInput{Surname: "Петрова", Name: "Анна"})
+	last := save("t1", InstructorInput{Surname: "Сидоров", Name: "Олег"})
+	other := save("t3", InstructorInput{Surname: "Чужой", Name: "Иван"})
+	if ivanov.Number != 1 || petrova.Number != 2 || last.Number != 3 || other.Number != 1 {
+		t.Fatalf("numbers: %d %d %d, other center %d", ivanov.Number, petrova.Number, last.Number, other.Number)
+	}
+	// An edit keeps the label; a deleted number is not given again.
+	if _, err := a.SaveInstructor("t2", ivanov.ID, InstructorInput{Surname: "Иванов", Name: "Игорь", Patronymic: "Петрович", Rank: "генерал-майор"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.DeleteInstructor("t1", last.ID); err != nil {
+		t.Fatal(err)
+	}
+	if next := save("t1", InstructorInput{Surname: "Новиков", Name: "Павел"}); next.Number != 4 {
+		t.Fatalf("deleted number reused: %d", next.Number)
+	}
+	db := mustSnapshot(t, a.repo)
+	want := []InstructorLabel{
+		{"[преподаватель 1]", "Иванов Игорь Петрович, генерал-майор"},
+		{"[преподаватель 2]", "Петрова Анна"},
+		{"[преподаватель 4]", "Новиков Павел"},
+	}
+	got := instructorLabels(db, "ВУЦ один")
+	if len(got) != len(want) {
+		t.Fatalf("labels: %+v", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("label %d: %+v, want %+v", i, got[i], want[i])
+		}
+	}
+	if found, ok := instructorByLabel(db, "ВУЦ один", "[преподаватель 2]"); !ok || found.ID != petrova.ID {
+		t.Fatalf("label 2: %+v %v", found, ok)
+	}
+	for _, label := range []string{"[преподаватель 3]", "[преподаватель 9]", "преподаватель 1", "Иванов"} {
+		if _, ok := instructorByLabel(db, "ВУЦ один", label); ok {
+			t.Errorf("%q resolved", label)
+		}
+	}
+	// A label of another center is not trusted.
+	if found, ok := instructorByLabel(db, "ВУЦ два", "[преподаватель 2]"); ok {
+		t.Fatalf("other center resolved: %+v", found)
+	}
+}

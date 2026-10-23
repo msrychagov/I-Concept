@@ -3,8 +3,11 @@ package model
 // Instructor is a teacher of a military training center as students name them
 // in texts. It is not an account: some instructors never register.
 type Instructor struct {
-	ID         string `json:"id"`
-	VUC        string `json:"vuc"`
+	ID  string `json:"id"`
+	VUC string `json:"vuc"`
+	// Number gives the label «[преподаватель N]» a language model writes
+	// instead of the name. It is never reused within the center.
+	Number     int    `json:"number"`
 	Surname    string `json:"surname"`
 	Name       string `json:"name"`
 	Patronymic string `json:"patronymic,omitempty"`

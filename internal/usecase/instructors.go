@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -94,13 +95,13 @@ func (a *Service) SaveInstructor(teacherID, id string, input InstructorInput) (a
 		entry := model.Instructor{Surname: input.Surname, Name: input.Name, Patronymic: input.Patronymic, Rank: input.Rank,
 			UpdatedBy: t.ID, Updated: time.Now().UTC().Format(time.RFC3339)}
 		if id == "" {
-			entry.ID, entry.VUC = uuid(), t.VUC
+			entry.ID, entry.VUC, entry.Number = uuid(), t.VUC, nextInstructorNumber(db, t.VUC)
 			db.Instructors = append(db.Instructors, entry)
 			return entry, nil
 		}
 		for i, instructor := range db.Instructors {
 			if instructor.ID == id && sameVUC(instructor.VUC, t.VUC) {
-				entry.ID, entry.VUC = instructor.ID, instructor.VUC
+				entry.ID, entry.VUC, entry.Number = instructor.ID, instructor.VUC, instructor.Number
 				db.Instructors[i] = entry
 				return entry, nil
 			}
@@ -127,3 +128,64 @@ func (a *Service) DeleteInstructor(teacherID, id string) (any, error) {
 
 // normalWord lowercases and treats «ё» as «е» for sorting.
 func normalWord(value string) string { return strings.ReplaceAll(strings.ToLower(value), "ё", "е") }
+
+// nextInstructorNumber takes the next label number of the center. A number of
+// a deleted entry is not given again: essay analyses keep the label.
+func nextInstructorNumber(db *model.Database, vuc string) int {
+	number := 0
+	for _, instructor := range db.Instructors {
+		if sameVUC(instructor.VUC, vuc) && instructor.Number > number {
+			number = instructor.Number
+		}
+	}
+	for i := range db.VUCs {
+		if sameVUC(db.VUCs[i].Name, vuc) {
+			number = max(number, db.VUCs[i].LastInstructor) + 1
+			db.VUCs[i].LastInstructor = number
+			return number
+		}
+	}
+	return number + 1
+}
+
+// InstructorLabel is an entry of the list as a language model gets it: the
+// label it writes instead of the name and who stands behind the label.
+type InstructorLabel struct {
+	Label string `json:"метка"`
+	Who   string `json:"кто"`
+}
+
+func instructorLabel(i model.Instructor) string {
+	return fmt.Sprintf("[преподаватель %d]", i.Number)
+}
+
+// instructorWho is the full name with the rank: «Иванов Игорь Петрович, полковник».
+func instructorWho(i model.Instructor) string {
+	who := strings.Join(strings.Fields(i.Surname+" "+i.Name+" "+i.Patronymic), " ")
+	if i.Rank != "" {
+		who += ", " + i.Rank
+	}
+	return who
+}
+
+// instructorLabels is the list of a center for a model input, by label number.
+func instructorLabels(db model.Database, vuc string) []InstructorLabel {
+	list := centerInstructors(db, vuc)
+	sort.SliceStable(list, func(i, j int) bool { return list[i].Number < list[j].Number })
+	labels := []InstructorLabel{}
+	for _, instructor := range list {
+		labels = append(labels, InstructorLabel{instructorLabel(instructor), instructorWho(instructor)})
+	}
+	return labels
+}
+
+// instructorByLabel finds whom a label in a model answer stands for. A label
+// outside the list of the center is not trusted.
+func instructorByLabel(db model.Database, vuc, label string) (model.Instructor, bool) {
+	for _, instructor := range centerInstructors(db, vuc) {
+		if instructorLabel(instructor) == label {
+			return instructor, true
+		}
+	}
+	return model.Instructor{}, false
+}

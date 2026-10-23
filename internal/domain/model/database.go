@@ -21,6 +21,8 @@ func (d Database) Empty() bool {
 type VUC struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+	// LastInstructor is the last label number given in the instructor list.
+	LastInstructor int `json:"lastInstructor,omitempty"`
 }
 
 type Platoon struct {
