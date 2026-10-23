@@ -46,6 +46,10 @@ type portraitTask struct {
 	MaxTokens int
 	// Attempts is how many times the model may answer; zero means portraitAttempts.
 	Attempts int
+	// Keep lists the kinds of personal data (labels of personalPatterns) that
+	// are not cut out of the input of this task: the essay keeps the patronymic,
+	// or the model could not tell «Игорь Петрович» from the list of instructors.
+	Keep []string
 }
 
 const (
@@ -157,7 +161,7 @@ func (a *Service) prepare(db model.Database, task portraitTask, s Source) (*obje
 	if err != nil {
 		return nil, 0, err
 	}
-	masked, err := maskPersonal(payload)
+	masked, err := maskPersonal(payload, task.Keep...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -441,9 +445,12 @@ type personalSpan struct {
 
 // personalSpans lists the pieces of a text that look like personal data, by
 // position, without overlaps.
-func personalSpans(text string) []personalSpan {
+func personalSpans(text string, keep ...string) []personalSpan {
 	spans := []personalSpan{}
 	for _, pattern := range personalPatterns {
+		if slices.Contains(keep, pattern.label) {
+			continue
+		}
 		for _, at := range pattern.re.FindAllStringIndex(text, -1) {
 			if pattern.label == "отчество" {
 				before, _ := utf8.DecodeLastRuneInString(text[:at[0]])
@@ -467,9 +474,10 @@ func personalSpans(text string) []personalSpan {
 	return merged
 }
 
-// maskText replaces every piece of personal data with personalMask and counts them.
-func maskText(text string) (string, int) {
-	spans := personalSpans(text)
+// maskText replaces every piece of personal data with personalMask and counts
+// them; the kinds in keep stay as they are.
+func maskText(text string, keep ...string) (string, int) {
+	spans := personalSpans(text, keep...)
 	if len(spans) == 0 {
 		return text, 0
 	}
@@ -487,7 +495,7 @@ func maskText(text string) (string, int) {
 // maskPersonal cuts personal data out of every text value of the input, in
 // place, and returns the number of cuts. A value of a kind it does not know
 // to hold no text is an error: the input is then not sent at all.
-func maskPersonal(payload *object) (int, error) {
+func maskPersonal(payload *object, keep ...string) (int, error) {
 	count := 0
 	var walk func(any) (any, error)
 	walk = func(value any) (any, error) {
@@ -495,13 +503,13 @@ func maskPersonal(payload *object) (int, error) {
 		case nil, bool, int, int64, float64:
 			return v, nil
 		case string:
-			text, n := maskText(v)
+			text, n := maskText(v, keep...)
 			count += n
 			return text, nil
 		case []string:
 			list := make([]string, len(v))
 			for i, item := range v {
-				text, n := maskText(item)
+				text, n := maskText(item, keep...)
 				list[i], count = text, count+n
 			}
 			return list, nil
@@ -541,7 +549,7 @@ func maskPersonal(payload *object) (int, error) {
 		return 0, err
 	}
 	// The cut must leave nothing behind.
-	if label := personalData(payload); label != "" {
+	if label := personalData(payload, keep...); label != "" {
 		return 0, fmt.Errorf("portrait: %s is left in the input after the cut", label)
 	}
 	return count, nil
@@ -549,7 +557,7 @@ func maskPersonal(payload *object) (int, error) {
 
 // personalData names the first kind of personal data found in any text value
 // of the input, or returns "".
-func personalData(payload *object) string {
+func personalData(payload *object, keep ...string) string {
 	var data any
 	_ = json.Unmarshal(canonicalJSON(payload), &data)
 	found := ""
@@ -560,7 +568,7 @@ func personalData(payload *object) string {
 		}
 		switch v := value.(type) {
 		case string:
-			if spans := personalSpans(v); len(spans) > 0 {
+			if spans := personalSpans(v, keep...); len(spans) > 0 {
 				found = spans[0].label
 			}
 		case []any:
