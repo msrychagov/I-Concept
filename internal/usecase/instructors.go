@@ -87,11 +87,13 @@ func (a *Service) SaveInstructor(teacherID, id string, input InstructorInput) (a
 	if err != nil {
 		return nil, err
 	}
-	return a.transaction(func(db *model.Database) (any, error) {
+	vuc := ""
+	result, err := a.transaction(func(db *model.Database) (any, error) {
 		t, err := managementTeacher(*db, teacherID)
 		if err != nil {
 			return nil, err
 		}
+		vuc = t.VUC
 		entry := model.Instructor{Surname: input.Surname, Name: input.Name, Patronymic: input.Patronymic, Rank: input.Rank,
 			UpdatedBy: t.ID, Updated: time.Now().UTC().Format(time.RFC3339)}
 		if id == "" {
@@ -108,14 +110,20 @@ func (a *Service) SaveInstructor(teacherID, id string, input InstructorInput) (a
 		}
 		return nil, problem(NotFound, "Преподаватель не найден в списке вашего ВУЦ.")
 	})
+	if err == nil {
+		a.queueEssayPortraits(vuc)
+	}
+	return result, err
 }
 
 func (a *Service) DeleteInstructor(teacherID, id string) (any, error) {
-	return a.transaction(func(db *model.Database) (any, error) {
+	vuc := ""
+	result, err := a.transaction(func(db *model.Database) (any, error) {
 		t, err := managementTeacher(*db, teacherID)
 		if err != nil {
 			return nil, err
 		}
+		vuc = t.VUC
 		for i, instructor := range db.Instructors {
 			if instructor.ID == id && sameVUC(instructor.VUC, t.VUC) {
 				db.Instructors = append(db.Instructors[:i], db.Instructors[i+1:]...)
@@ -124,6 +132,10 @@ func (a *Service) DeleteInstructor(teacherID, id string) (any, error) {
 		}
 		return nil, problem(NotFound, "Преподаватель не найден в списке вашего ВУЦ.")
 	})
+	if err == nil {
+		a.queueEssayPortraits(vuc)
+	}
+	return result, err
 }
 
 // normalWord lowercases and treats «ё» as «е» for sorting.
