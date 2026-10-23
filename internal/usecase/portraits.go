@@ -38,6 +38,10 @@ type portraitTask struct {
 	Accepts func(db model.Database, s Source) bool
 	// Payload builds the anonymised input.
 	Payload func(a *Service, db model.Database, s Source) (*object, error)
+	// Clean mends an answer before it is checked and stored: it returns the
+	// answer without what the program can drop on its own and the number of
+	// changes. nil for the tasks that only check.
+	Clean func(a *Service, db model.Database, s Source, output map[string]any, payload *object) (map[string]any, int)
 	// Check returns the problems of an answer; an empty list means it is good.
 	Check func(output map[string]any, payload *object) []string
 	// Visible says whether this teacher may see the portrait of the source.
@@ -371,6 +375,12 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 			continue
 		}
 		output, problems := parseModelAnswer(reply.Text)
+		if len(problems) == 0 && task.Clean != nil {
+			var changes int
+			if output, changes = task.Clean(a, db, job.source, output, payload); changes > 0 {
+				log.Printf("portrait %s %.12s: answer cleaned, source %s %s, changes: %d", task.ID, key, job.source.Kind, job.source.ID, changes)
+			}
+		}
 		if len(problems) == 0 {
 			problems = task.Check(output, payload)
 		}
@@ -399,7 +409,7 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 			return
 		}
 		l.setState(key, nil)
-		log.Printf("portrait %s %.12s: ready (%.1f s, %d+%d tokens)", task.ID, key, reply.Seconds, reply.In, reply.Out)
+		log.Printf("portrait %s %.12s: ready (%.1f s, %d+%d tokens, attempt %d)", task.ID, key, reply.Seconds, reply.In, reply.Out, attempt)
 		return
 	}
 	fail(reason, detail, time.Since(started).Seconds())
