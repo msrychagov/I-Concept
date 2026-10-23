@@ -366,12 +366,12 @@ func TestCheckCohortAnswer(t *testing.T) {
 		"too many paths": {false, func(o map[string]any) {
 			path := map[string]any{"text": "Путь.", "refs": []any{"1.path", "2.path"}}
 			o["paths"] = []any{path, path, path, path, path}
-		}, "paths: путей должно быть от 1 до 4"},
+		}, "paths: путей должно быть не больше 4"},
 		"too many points": {false, func(o map[string]any) {
 			point := o["positive"].([]any)[0]
 			o["positive"] = []any{point, point, point, point, point, point, point, point}
-		}, "positive: пунктов должно быть от 1 до 7"},
-		"no environment": {false, func(o map[string]any) { o["environment"] = []any{} }, "environment: пунктов должно быть от 1 до 5"},
+		}, "positive: пунктов должно быть не больше 7"},
+		"no environment is fine after cleaning": {false, func(o map[string]any) { o["environment"] = []any{}; o["paths"] = []any{}; o["positive"] = []any{} }, ""},
 		"a count in words": {false, func(o map[string]any) {
 			o["overview"] = "Большинство авторов пишут о товарищах."
 		}, "overview: слово о количестве"},
@@ -502,5 +502,144 @@ func TestTeacherSeesTheEarlierEssayEvenFromAnotherTeacher(t *testing.T) {
 	previous, ok := context["previous"].(map[string]any)
 	if !ok || previous["id"] != first || context["assignmentTitle"] != "Выпускное" {
 		t.Fatalf("context: %+v", context)
+	}
+}
+
+// cleaned runs the answer through the cleaning and the check, as the layer does.
+func cleaned(t *testing.T, payload *object, output map[string]any) (map[string]any, int, []string) {
+	t.Helper()
+	back := roundTrip(t, output)
+	back, changes := cleanCohortAnswer(nil, model.Database{}, Source{}, back, payload)
+	return back, changes, checkCohortAnswer(back, payload)
+}
+
+func TestCleaningKeepsASourcePointInTheFirstCommonPointOnly(t *testing.T) {
+	payload := cohortPayloadFor(false)
+	output := goodCohortFor(false)
+	point := func(text string, refs ...any) map[string]any {
+		return map[string]any{"text": text, "about": "о себе", "refs": refs}
+	}
+	output["positive"] = []any{point("Первый.", "1.pos.1", "2.pos.1"), point("Второй.", "1.pos.1", "3.pos.1", "3.pos.2"), point("Третий.", "2.pos.2", "3.pos.2")}
+	got, changes, problems := cleaned(t, payload, output)
+	if len(problems) != 0 {
+		t.Fatalf("problems: %v", problems)
+	}
+	positive := got["positive"].([]any)
+	refs := func(i int) []any { return positive[i].(map[string]any)["refs"].([]any) }
+	// The second point lost the repeated 1.pos.1 and is left with one author (3.pos.1 and 3.pos.2), so it goes;
+	// its sources are free again and the third point keeps 3.pos.2.
+	if len(positive) != 2 || fmt.Sprint(refs(0)) != "[1.pos.1 2.pos.1]" || fmt.Sprint(refs(1)) != "[2.pos.2 3.pos.2]" || changes != 2 {
+		t.Fatalf("positive: %v, %d changes", positive, changes)
+	}
+}
+
+func TestCleaningDropsWrongAndMissingReferencesAndThinPoints(t *testing.T) {
+	payload := cohortPayloadFor(false)
+	output := goodCohortFor(false)
+	output["attention"] = []any{
+		map[string]any{"text": "Вид не тот.", "about": "о ВУЦ", "refs": []any{"1.pos.1", "2.att.1", "3.att.1"}},
+		map[string]any{"text": "Нет такой.", "about": "о ВУЦ", "refs": []any{"1.att.9", "2.att.1"}},
+	}
+	output["environment"] = []any{map[string]any{"text": "Связь.", "moment": "эмоции", "refs": []any{"1.emotions", "1.values"}}}
+	got, changes, problems := cleaned(t, payload, output)
+	if len(problems) != 0 {
+		t.Fatalf("problems: %v", problems)
+	}
+	attention := got["attention"].([]any)
+	if len(attention) != 1 || fmt.Sprint(attention[0].(map[string]any)["refs"]) != "[2.att.1 3.att.1]" || len(got["environment"].([]any)) != 0 || changes < 4 {
+		t.Fatalf("attention %v, environment %v, %d changes", attention, got["environment"], changes)
+	}
+}
+
+func TestCleaningLeavesNoPathsForThreeAuthorsOfOneEach(t *testing.T) {
+	payload := cohortPayloadFor(false)
+	output := goodCohortFor(false)
+	output["paths"] = []any{
+		map[string]any{"text": "Путь.", "refs": []any{"1.path"}},
+		map[string]any{"text": "Путь.", "refs": []any{"2.path"}},
+		map[string]any{"text": "Путь.", "refs": []any{"3.path"}},
+	}
+	got, _, problems := cleaned(t, payload, output)
+	if len(problems) != 0 || len(got["paths"].([]any)) != 0 {
+		t.Fatalf("paths %v, problems %v", got["paths"], problems)
+	}
+	// An author who is in an earlier path is taken out of a later one.
+	output["paths"] = []any{
+		map[string]any{"text": "Первый.", "refs": []any{"1.path", "2.path"}},
+		map[string]any{"text": "Второй.", "refs": []any{"2.conclusion", "3.conclusion"}},
+	}
+	got, _, problems = cleaned(t, payload, output)
+	if len(problems) != 0 || len(got["paths"].([]any)) != 1 {
+		t.Fatalf("paths %v, problems %v", got["paths"], problems)
+	}
+}
+
+func TestAnswerIsRefusedWhenAMomentTheConclusionOrChangeIsLeftWithoutAuthors(t *testing.T) {
+	payload := cohortPayloadFor(true)
+	for name, c := range map[string]struct {
+		mutate func(map[string]any)
+		want   string
+	}{
+		"a moment of one author": {func(o map[string]any) {
+			o["moments"].(map[string]any)["values"].(map[string]any)["refs"] = []any{"1.values", "2.emotions", "9.values"}
+		}, "moments.values: ссылки нужны не меньше чем на 2 разных авторов"},
+		"a conclusion of one author": {func(o map[string]any) { o["conclusion"].(map[string]any)["refs"] = []any{"1.conclusion", "1.path"} }, "conclusion: ссылки нужны не меньше чем на 2 разных авторов"},
+		"a change record without references": {func(o map[string]any) {
+			o["change"].([]any)[1].(map[string]any)["refs"] = []any{"1.change.beliefs"}
+		}, "change, запись 2: ссылки нужны не меньше чем на 1"},
+		"no overview": {func(o map[string]any) { o["overview"] = "" }, "overview: пустой текст"},
+		"a quantity word in a point that stays": {func(o map[string]any) {
+			o["positive"].([]any)[0].(map[string]any)["text"] = "Все авторы пишут."
+		}, "positive, пункт 1: слово о количестве"},
+	} {
+		output := goodCohortFor(true)
+		c.mutate(output)
+		_, _, problems := cleaned(t, payload, output)
+		if joined := strings.Join(problems, " | "); !strings.Contains(joined, c.want) {
+			t.Errorf("%s: want %q, got %q", name, c.want, joined)
+		}
+	}
+	// A record of change keeps only the references of its own moment and is never dropped.
+	output := goodCohortFor(true)
+	output["change"].([]any)[0].(map[string]any)["refs"] = []any{"1.change.beliefs", "2.change.emotions", "x"}
+	got, changes, problems := cleaned(t, payload, output)
+	record := got["change"].([]any)[0].(map[string]any)
+	if len(problems) != 0 || fmt.Sprint(record["refs"]) != "[1.change.beliefs]" || changes != 2 {
+		t.Fatalf("record %v, %d changes, problems %v", record, changes, problems)
+	}
+}
+
+// A model that repeats refs is not refused any more: the summary is stored cleaned.
+func TestSummaryIsStoredCleanedWhenTheModelRepeatsReferences(t *testing.T) {
+	f := newEssayPortraitFixture(t)
+	journalOut := captureJournal(t)
+	m := bothTasksModel(func(answer map[string]any) {
+		point := answer["positive"].([]any)[0]
+		answer["positive"] = []any{point, point}
+		answer["paths"] = []any{
+			map[string]any{"text": "Путь.", "refs": []any{"1.path", "2.path"}},
+			map[string]any{"text": "Путь.", "refs": []any{"3.path"}},
+		}
+		answer["attention"].([]any)[0].(map[string]any)["refs"] = []any{"1.att.1", "2.att.1", "1.pos.1"}
+	})
+	f.service.UseModel(m)
+	f.three()
+	f.idle()
+	if _, err := f.service.ComposeEssaySummary(f.owner, f.assignment); err != nil {
+		t.Fatal(err)
+	}
+	f.idle()
+	calls := m.count()
+	view := f.summary(f.owner)
+	summary, ok := view["summary"].(map[string]any)
+	if !ok || view["status"] != portraitReady || calls != 4 {
+		t.Fatalf("%d calls, %+v", calls, view)
+	}
+	output := summary["output"].(map[string]any)
+	if len(output["positive"].([]any)) != 1 || len(output["paths"].([]any)) != 1 || fmt.Sprint(output["attention"].([]any)[0].(map[string]any)["refs"]) != "[1.att.1 2.att.1]" {
+		t.Fatalf("stored answer: %+v", output)
+	}
+	if log := journalOut.String(); !strings.Contains(log, "answer cleaned") || !strings.Contains(log, "essay-cohort") {
+		t.Fatalf("journal: %s", log)
 	}
 }

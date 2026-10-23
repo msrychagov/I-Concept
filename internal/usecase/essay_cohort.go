@@ -186,6 +186,7 @@ func (a *Service) cohortTask(prompt promptbank.Prompt) portraitTask {
 			}
 			return s.ID, ids
 		},
+		Clean:   cleanCohortAnswer,
 		Check:   checkCohortAnswer,
 		Visible: owns,
 	}
@@ -300,10 +301,170 @@ func kindIs(want ...string) func(string) bool {
 	return func(kind string) bool { return slices.Contains(want, kind) }
 }
 
+// cleanRefs keeps the references that are in the input, of an allowed kind and
+// not yet seen in the list; it returns them and the number of those dropped.
+func cleanRefs(raw any, known map[string]bool, allow func(string) bool) ([]any, int) {
+	list, _ := raw.([]any)
+	kept, dropped, seen := []any{}, 0, map[string]bool{}
+	for _, item := range list {
+		ref, isText := item.(string)
+		ref = strings.TrimSpace(ref)
+		_, kind, valid := parseRef(ref)
+		if !isText || !valid || !known[ref] || !allow(kind) || seen[ref] {
+			dropped++
+			continue
+		}
+		seen[ref] = true
+		kept = append(kept, ref)
+	}
+	if _, isList := raw.([]any); !isList {
+		dropped++
+	}
+	return kept, dropped
+}
+
+func refAuthors(refs []any) map[int]bool {
+	authors := map[int]bool{}
+	for _, item := range refs {
+		ref, _ := item.(string)
+		if author, _, ok := parseRef(ref); ok {
+			authors[author] = true
+		}
+	}
+	return authors
+}
+
+// cleanCohortAnswer drops from the answer of the model what the program can
+// drop without asking again (decided 23 October 2026): references that are not
+// in the input, of the wrong kind or repeated; a source point already taken by
+// an earlier common point of the same list and an author already put in an
+// earlier path; and the common points left with fewer than two authors. The
+// four moments, the conclusion and «change» keep their records: if they are
+// left without authors, the check refuses the answer. It returns the answer
+// and the number of changes.
+func cleanCohortAnswer(a *Service, db model.Database, s Source, output map[string]any, payload *object) (map[string]any, int) {
+	known := payloadRefs(payload)
+	changes := 0
+	anything := func(string) bool { return true }
+	clean := func(point map[string]any, allow func(string) bool) []any {
+		refs, dropped := cleanRefs(point["refs"], known, allow)
+		changes += dropped
+		point["refs"] = refs
+		return refs
+	}
+
+	for _, key := range momentKeys {
+		if moment := asMap(asMap(output["moments"])[key]); moment != nil {
+			clean(moment, kindIs("moment."+key))
+		}
+	}
+
+	// Lists of points: a source point stays in the first common point that has it.
+	for _, list := range []struct{ key, kind string }{{"positive", "pos"}, {"negative", "neg"}, {"attention", "att"}} {
+		points, ok := asList(output[list.key])
+		if !ok {
+			continue
+		}
+		used := map[string]bool{}
+		kept := []any{}
+		for _, raw := range points {
+			point := asMap(raw)
+			if point == nil {
+				kept = append(kept, raw)
+				continue
+			}
+			refs := clean(point, kindIs(list.kind))
+			fresh := []any{}
+			for _, ref := range refs {
+				if text, _ := ref.(string); used[text] {
+					changes++
+				} else {
+					fresh = append(fresh, ref)
+				}
+			}
+			point["refs"] = fresh
+			if len(refAuthors(fresh)) < 2 {
+				changes++
+				continue
+			}
+			for _, ref := range fresh {
+				used[ref.(string)] = true
+			}
+			kept = append(kept, point)
+		}
+		output[list.key] = kept
+	}
+
+	// Paths: an author goes into the first path that has them.
+	if paths, ok := asList(output["paths"]); ok {
+		taken := map[int]bool{}
+		kept := []any{}
+		for _, raw := range paths {
+			path := asMap(raw)
+			if path == nil {
+				kept = append(kept, raw)
+				continue
+			}
+			refs := clean(path, kindIs("path", "conclusion"))
+			fresh := []any{}
+			for _, ref := range refs {
+				if author, _, _ := parseRef(ref.(string)); taken[author] {
+					changes++
+				} else {
+					fresh = append(fresh, ref)
+				}
+			}
+			path["refs"] = fresh
+			authors := refAuthors(fresh)
+			if len(authors) < 2 {
+				changes++
+				continue
+			}
+			for author := range authors {
+				taken[author] = true
+			}
+			kept = append(kept, path)
+		}
+		output["paths"] = kept
+	}
+
+	if environment, ok := asList(output["environment"]); ok {
+		kept := []any{}
+		for _, raw := range environment {
+			point := asMap(raw)
+			if point == nil {
+				kept = append(kept, raw)
+				continue
+			}
+			if len(refAuthors(clean(point, anything))) < 2 {
+				changes++
+				continue
+			}
+			kept = append(kept, point)
+		}
+		output["environment"] = kept
+	}
+
+	if conclusion := asMap(output["conclusion"]); conclusion != nil {
+		clean(conclusion, anything)
+	}
+
+	// «change» keeps all its records, each with the references of its own moment.
+	if records, ok := asList(output["change"]); ok {
+		for n, raw := range records {
+			if record := asMap(raw); record != nil && n < len(momentKeys) {
+				clean(record, kindIs("change."+momentKeys[n]))
+			}
+		}
+	}
+	return output, changes
+}
+
 // checkCohortAnswer returns what is wrong with an answer to the instruction
-// for the summary: the schema, the references (they exist, are of the right
-// kind, come from two authors or more, a point is in one common point only),
-// the words of quantity and the beginning of the conclusion.
+// for the summary after the program has cleaned it: the overview, the four
+// moments, the conclusion and «change» (each with its authors), the words of
+// quantity and the beginning of the conclusion. The common points the cleaning
+// left may be none. Without cleaning it also finds wrong references.
 func checkCohortAnswer(output map[string]any, payload *object) []string {
 	known := payloadRefs(payload)
 	hasChange := false
@@ -329,12 +490,8 @@ func checkCohortAnswer(output map[string]any, payload *object) []string {
 
 	for _, list := range []struct{ key, kind string }{{"positive", "pos"}, {"negative", "neg"}, {"attention", "att"}} {
 		points, ok := asList(output[list.key])
-		low := 0
-		if list.key == "positive" {
-			low = 1
-		}
-		if !ok || len(points) < low || len(points) > 7 {
-			problems = append(problems, fmt.Sprintf("%s: пунктов должно быть от %d до 7", list.key, low))
+		if !ok || len(points) > 7 {
+			problems = append(problems, fmt.Sprintf("%s: пунктов должно быть не больше 7", list.key))
 			continue
 		}
 		used := map[string]int{}
@@ -360,8 +517,8 @@ func checkCohortAnswer(output map[string]any, payload *object) []string {
 	}
 
 	paths, ok := asList(output["paths"])
-	if !ok || len(paths) < 1 || len(paths) > 4 {
-		problems = append(problems, "paths: путей должно быть от 1 до 4")
+	if !ok || len(paths) > 4 {
+		problems = append(problems, "paths: путей должно быть не больше 4")
 	}
 	pathOf := map[int]int{}
 	for n, raw := range paths {
@@ -383,8 +540,8 @@ func checkCohortAnswer(output map[string]any, payload *object) []string {
 	}
 
 	environment, ok := asList(output["environment"])
-	if !ok || len(environment) < 1 || len(environment) > 5 {
-		problems = append(problems, "environment: пунктов должно быть от 1 до 5")
+	if !ok || len(environment) > 5 {
+		problems = append(problems, "environment: пунктов должно быть не больше 5")
 	}
 	anything := func(string) bool { return true }
 	for n, raw := range environment {
