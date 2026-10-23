@@ -10,8 +10,7 @@ import (
 )
 
 // The instructor list is one per center: any teacher of the center reads and
-// edits it. Entries with the same full name are allowed (namesakes exist);
-// mention matching then leaves their mentions as written.
+// edits it. Entries with the same full name are allowed (namesakes exist).
 
 type InstructorInput struct {
 	Surname    string `json:"surname"`
@@ -126,5 +125,5 @@ func (a *Service) DeleteInstructor(teacherID, id string) (any, error) {
 	})
 }
 
-// normalWord lowercases and treats «ё» as «е»: students write either.
+// normalWord lowercases and treats «ё» as «е» for sorting.
 func normalWord(value string) string { return strings.ReplaceAll(strings.ToLower(value), "ё", "е") }
