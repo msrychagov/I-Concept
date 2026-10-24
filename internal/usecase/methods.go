@@ -123,6 +123,11 @@ type TestPortraitData struct {
 	Congruence *Congruence     `json:"congruence,omitempty"`
 	// Identity is the professional identity by block, when the method was given.
 	Identity []IdentityProfile `json:"identity,omitempty"`
+	// Criteria are the criteria of the first chapter by kind of activity and
+	// EnvironmentSigns the six signs of positive activity and environment,
+	// each with its data (environment.go).
+	Criteria         []KindCriteriaData    `json:"criteria,omitempty"`
+	EnvironmentSigns []EnvironmentSignData `json:"environmentSigns,omitempty"`
 }
 
 // methodDefinitions are those of the session's bank version; a session of an
@@ -342,7 +347,6 @@ func (a *Service) TestPortrait(s model.Session) *TestPortraitData {
 	}
 
 	// Kinds of activity.
-	frequency := []string{"Ни разу", "Один раз", "Два–три раза", "Четыре–пять раз", "Шесть раз и более"}
 	for _, k := range kinds {
 		level, signs := meanRank(engine, s, k.Items)
 		row := KindLevel{ID: k.ID, Name: k.Name, Level: level, LevelText: levelText[level], Signs: signs, Indicators: []IndicatorScore{}, Frequency: []FrequencyAnswer{}, Methods: k.Methods}
@@ -354,8 +358,8 @@ func (a *Service) TestPortrait(s model.Session) *TestPortraitData {
 		for _, id := range k.Frequency {
 			item, ok := engine.item(id)
 			v, answered := s.Answers[id]
-			if ok && answered && v >= 0 && v < len(frequency) {
-				row.Frequency = append(row.Frequency, FrequencyAnswer{ID: id, Text: item.Text, Answer: frequency[v]})
+			if ok && answered && v >= 0 && v < len(frequencyAnswers) {
+				row.Frequency = append(row.Frequency, FrequencyAnswer{ID: id, Text: item.Text, Answer: frequencyAnswers[v]})
 			}
 		}
 		data.Kinds = append(data.Kinds, row)
@@ -375,5 +379,6 @@ func (a *Service) TestPortrait(s model.Session) *TestPortraitData {
 	data.Defender = defenderGroups(a.defender, data, indicatorScore)
 	data.Congruence = congruence(data.Images)
 	data.Identity = a.identityProfiles(engine, s)
+	data.Criteria, data.EnvironmentSigns = environmentData(a.defender, engine, s, data, indicatorScore)
 	return data
 }

@@ -191,6 +191,27 @@ func (a *Service) testPayloadFor(version string, data *TestPortraitData) *object
 		payload.insertAfter("образы_я", "согласованность_образов", c)
 	}
 	payload.insertAfter("признаки", "образ_защитника", defenderList(data.Defender, numbers))
+	criteria := map[string][]CriterionData{}
+	for _, k := range data.Criteria {
+		criteria[k.Kind] = k.Criteria
+	}
+	for n, kind := range objectList(payload.values["виды_деятельности"]) {
+		if n < len(data.Kinds) && len(criteria[data.Kinds[n].ID]) > 0 {
+			kind.set("критерии", criteriaList(criteria[data.Kinds[n].ID], func(c CriterionData) any { return pointList(c.Data) }))
+		}
+	}
+	if len(data.EnvironmentSigns) > 0 {
+		signs := []any{}
+		for _, sign := range data.EnvironmentSigns {
+			o := newObject()
+			o.set("признак", sign.Name)
+			o.set("по_главе_1", sign.Description)
+			o.put("пометка", sign.Note)
+			o.set("данные", pointList(sign.Data))
+			signs = append(signs, o)
+		}
+		payload.insertAfter("условия_среды", "признаки_среды", signs)
+	}
 	if len(data.Identity) > 0 {
 		payload.insertAfter("образ_защитника", "профессиональная_идентичность", identityList(data.Identity))
 	}

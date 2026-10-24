@@ -121,3 +121,62 @@ func TestDefenderImageRefersToTheBank(t *testing.T) {
 		}
 	}
 }
+
+// The criteria of the first chapter and the six signs of the environment
+// (Вики/Тестирование/Оценка деятельности и среды.md, approved 24 October 2026)
+// refer to methods, indicators and questions of the bank.
+func TestCriteriaAndSignsReferToTheBank(t *testing.T) {
+	image, err := Defender()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bank, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	known := map[string]bool{"kinds": true, "images": true, "defender": true, "signs": true, "stories": true}
+	for _, m := range bank.Methods {
+		known[m.ID] = true
+	}
+	for _, ind := range bank.Indicators {
+		known[ind.ID] = true
+	}
+	for _, item := range bank.Items {
+		if item.Module == "K" || item.Module == "F" {
+			known[item.ID] = true
+		}
+	}
+	check := func(where string, data []string) {
+		for _, code := range data {
+			if !known[code] {
+				t.Errorf("%s: unknown code %s", where, code)
+			}
+		}
+	}
+	kinds := []string{}
+	for _, k := range image.Criteria {
+		kinds = append(kinds, k.Kind)
+		for _, c := range k.Criteria {
+			if c.Name == "" || !slices.Contains([]string{"есть", "частично", "по взводу", "нет"}, c.Coverage) || (c.Coverage == "нет") != (len(c.Data) == 0) {
+				t.Errorf("%s: %+v", k.Kind, c)
+			}
+			check(k.Kind+": "+c.Name, c.Data)
+		}
+	}
+	want := []string{}
+	for _, k := range bank.ActivityKinds {
+		want = append(want, k.ID)
+	}
+	if !slices.Equal(kinds, want) {
+		t.Fatalf("kinds of the criteria: %v", kinds)
+	}
+	if len(image.Signs) != 6 {
+		t.Fatalf("%d signs", len(image.Signs))
+	}
+	for n, sign := range image.Signs {
+		if sign.ID != fmt.Sprintf("S%d", n+1) || sign.Name == "" || sign.Description == "" || len(sign.Data) == 0 {
+			t.Errorf("sign %d: %+v", n+1, sign)
+		}
+		check(sign.ID, sign.Data)
+	}
+}

@@ -3,6 +3,7 @@ package usecase
 import (
 	"encoding/json"
 	"hash/fnv"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -66,23 +67,28 @@ func TestTestPayloadV1IsKept(t *testing.T) {
 	}
 }
 
-// From v2 on the input has the image of the defender, the congruence and the
-// catalogue; the keys of v1 keep their values and their order.
+// From v2 on the input has the image of the defender, the congruence, the
+// identity, the signs of the environment and the catalogue, and the kinds of
+// activity get the criteria of the first chapter; the other keys of v1 keep
+// their values and their order.
 func TestTestPayloadV2AddsTheImage(t *testing.T) {
 	a := testApp(t)
 	data := a.TestPortrait(fixedTestSession(a, a.bank.Version))
 	old, payload := a.testPayloadFor("v1", data), a.testPayloadFor("v2", data)
-	added := []string{"согласованность_образов", "образ_защитника", "профессиональная_идентичность", "каталог_рекомендаций"}
+	added := []string{"согласованность_образов", "образ_защитника", "профессиональная_идентичность", "признаки_среды", "каталог_рекомендаций"}
 	kept := slices.DeleteFunc(slices.Clone(payload.keys), func(k string) bool { return slices.Contains(added, k) })
 	if !slices.Equal(kept, old.keys) {
 		t.Fatalf("keys of v1 in v2: %v", payload.keys)
 	}
 	for _, key := range old.keys {
+		if key == "виды_деятельности" {
+			continue
+		}
 		if string(canonicalJSON(payload.values[key])) != string(canonicalJSON(old.values[key])) {
 			t.Fatalf("%s differs in v2", key)
 		}
 	}
-	want := []string{"методики", "образы_я", "согласованность_образов", "признаки", "образ_защитника", "профессиональная_идентичность", "условия_среды", "виды_деятельности", "рассказы_о_деятельности", "каталог_рекомендаций"}
+	want := []string{"методики", "образы_я", "согласованность_образов", "признаки", "образ_защитника", "профессиональная_идентичность", "условия_среды", "признаки_среды", "виды_деятельности", "рассказы_о_деятельности", "каталог_рекомендаций"}
 	if !slices.Equal(payload.keys, want) {
 		t.Fatalf("keys of v2: %v", payload.keys)
 	}
@@ -120,6 +126,18 @@ func TestTestPayloadV2AddsTheImage(t *testing.T) {
 			} `json:"статусы"`
 			Leading string `json:"ведущий_статус"`
 		} `json:"профессиональная_идентичность"`
+		Kinds []struct {
+			Kind     string `json:"вид"`
+			Criteria []struct {
+				Name     string          `json:"критерий"`
+				Coverage string          `json:"покрытие"`
+				Data     json.RawMessage `json:"данные"`
+			} `json:"критерии"`
+		} `json:"виды_деятельности"`
+		Signs []struct {
+			Name string            `json:"признак"`
+			Data []json.RawMessage `json:"данные"`
+		} `json:"признаки_среды"`
 		Catalogue []struct {
 			Code   string `json:"код"`
 			Name   string `json:"направление"`
@@ -140,6 +158,26 @@ func TestTestPayloadV2AddsTheImage(t *testing.T) {
 	}
 	if len(input.Identity) != 2 || input.Identity[0].Profession != "Военная специальность" || len(input.Identity[0].Statuses) != 4 || input.Identity[0].Statuses[0].Range == "" || !strings.Contains(input.Identity[0].Statuses[0].Score, "(диапазон 0–25)") || input.Identity[0].Leading == "" {
 		t.Errorf("identity: %+v", input.Identity)
+	}
+	if len(input.Kinds) != 4 || len(input.Signs) != 6 {
+		t.Fatalf("kinds %d, signs %d", len(input.Kinds), len(input.Signs))
+	}
+	for _, k := range input.Kinds {
+		if len(k.Criteria) < 3 {
+			t.Errorf("%s: %d criteria", k.Kind, len(k.Criteria))
+		}
+		for _, c := range k.Criteria {
+			// A criterion the test does not measure says so; the others list their
+			// data or say that the student left them without answers.
+			if (c.Coverage == "нет данных") != (string(c.Data) == `"нет данных"`) || c.Coverage != "нет данных" && string(c.Data) != `"нет ответов"` && c.Data[0] != '[' {
+				t.Errorf("%s / %s: %s %s", k.Kind, c.Name, c.Coverage, c.Data)
+			}
+		}
+	}
+	for _, sign := range input.Signs {
+		if len(sign.Data) == 0 {
+			t.Errorf("%s has no data", sign.Name)
+		}
 	}
 	if input.Groups[4].Note == "" || input.Groups[0].Note != "" {
 		t.Errorf("notes: %q, %q", input.Groups[0].Note, input.Groups[4].Note)
@@ -171,5 +209,46 @@ func TestTestTaskSendsTheInputOfItsVersion(t *testing.T) {
 	}
 	if !strings.Contains(user, "\"образ_защитника\"") || !strings.Contains(user, "\"каталог_рекомендаций\"") {
 		t.Fatalf("input of v2: %.300s", user)
+	}
+}
+
+// The data of a criterion are the program's own: the level of the kinds, the
+// levels of the methods, the means of the indicators, the answers of the
+// questionnaire and the open answers that tell something.
+func TestCriteriaDataComeFromTheSession(t *testing.T) {
+	a := testApp(t)
+	s := fixedTestSession(a, a.bank.Version)
+	s.Notes["ACT_18"], s.Answers["ACT_18"] = "Разбираю темы по учебнику и конспекту.", 0
+	s.Notes["ACT_20"], s.Answers["ACT_20"] = "Не участвовал.", 0
+	data := a.TestPortrait(s)
+	study := data.Criteria[0]
+	if study.Kind != "study" || len(data.EnvironmentSigns) != 6 {
+		t.Fatalf("criteria: %+v", data.Criteria)
+	}
+	kinds := map[string]string{}
+	for _, point := range study.Criteria[0].Data {
+		kinds[point.Code] = point.Kind
+		if point.Code == "ACT_18" && point.Answer != "Разбираю темы по учебнику и конспекту." {
+			t.Errorf("story: %+v", point)
+		}
+	}
+	if !maps.Equal(kinds, map[string]string{"K02": "question", "K03": "question", "ACT2": "frequency", "Q12": "indicator", "Q22": "indicator", "ACT_18": "story"}) {
+		t.Fatalf("data of the first criterion: %v", kinds)
+	}
+	for _, point := range study.Criteria[1].Data {
+		if point.Code == "ACT_20" {
+			t.Fatal("an answer that tells nothing is a datum")
+		}
+	}
+	first := data.EnvironmentSigns[0].Data
+	if len(first) < 4 || first[0].Kind != "activity" || first[0].Level != data.Kinds[0].Level || first[len(first)-1].Kind != "see" {
+		t.Fatalf("data of the first sign: %+v", first)
+	}
+	for _, sign := range data.EnvironmentSigns {
+		for _, point := range sign.Data {
+			if point.Kind == "method" || point.Text == "" {
+				t.Errorf("%s: %+v", sign.ID, point)
+			}
+		}
 	}
 }
