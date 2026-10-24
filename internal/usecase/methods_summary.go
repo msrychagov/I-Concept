@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"cmp"
 	"slices"
 	"strings"
 	"vucdiagnostic/internal/domain/model"
@@ -61,7 +62,11 @@ func latestMethodSessions(db model.Database, teacherID string) []model.Session {
 	for _, s := range latest {
 		sessions = append(sessions, s)
 	}
-	slices.SortStableFunc(sessions, func(x, y model.Session) int { return strings.Compare(x.Participant, y.Participant) })
+	// The session id breaks a tie of names: the input of a platoon must not
+	// depend on the order of a map.
+	slices.SortStableFunc(sessions, func(x, y model.Session) int {
+		return cmp.Or(strings.Compare(x.Participant, y.Participant), strings.Compare(x.ID, y.ID))
+	})
 	return sessions
 }
 
