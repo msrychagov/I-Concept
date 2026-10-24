@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 	"vucdiagnostic/internal/domain/model"
@@ -191,5 +192,42 @@ func TestTestAnswerCheckKeepsTheRules(t *testing.T) {
 		if c.problem == "" && problems != "" || c.problem != "" && !strings.Contains(problems, c.problem) {
 			t.Errorf("%s: %q", name, problems)
 		}
+	}
+}
+
+// After the instruction v2 comes, the portrait by v1 is shown until the one by
+// v2 is made; then the new one is shown (decision Д8).
+func TestEarlierPortraitIsShownWhileTheNewOneIsMade(t *testing.T) {
+	f := newTestPortraitFixture(t, true)
+	prompts, err := promptbank.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := slices.DeleteFunc(slices.Clone(prompts), func(p promptbank.Prompt) bool { return p.Task == testPortraitTask && p.Version != "v1" })
+	f.service.portraits.tasks = nil
+	f.service.RegisterPrompts(first...)
+	f.service.UseModel(&fakeModel{name: "fake", reply: func(_ int, c Completion) (string, error) {
+		data, _ := json.Marshal(goodTestAnswer(c.User))
+		return string(data), nil
+	}})
+	f.service.queuePortraits(Source{"session", f.session})
+	if view := f.wait(); view.Status != portraitReady || view.Portrait.Version != "v1" {
+		t.Fatalf("v1: %+v", view)
+	}
+
+	f.service.UseModel(nil)
+	f.service.portraits.tasks = nil
+	f.service.RegisterPrompts(prompts...)
+	view, err := f.service.PortraitFor(f.teacherID, testPortraitTask, f.session)
+	if err != nil || view.Status != portraitReady || view.Portrait.Version != "v1" {
+		t.Fatalf("v1 while v2 is not made: %+v %v", view, err)
+	}
+
+	f.service.UseModel(&fakeModel{name: "fake", reply: func(_ int, c Completion) (string, error) {
+		data, _ := json.Marshal(goodTestAnswerV2(c.User))
+		return string(data), nil
+	}})
+	if view := f.wait(); view.Status != portraitReady || view.Portrait.Version != "v2" || !strings.Contains(string(view.Portrait.Output), `"components"`) {
+		t.Fatalf("v2: %+v", view)
 	}
 }

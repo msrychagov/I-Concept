@@ -57,6 +57,10 @@ type portraitTask struct {
 	// Stamp gives the source group and the ordered members of a portrait made
 	// for a group of sources; nil for the other tasks.
 	Stamp func(a *Service, db model.Database, s Source) (source string, sources []string)
+	// Earlier builds the input the earlier versions of the instruction got: a
+	// portrait made for one of them is shown while the current one is made.
+	// nil when the input did not change between the versions.
+	Earlier func(a *Service, db model.Database, s Source) []*object
 	// Keep lists the kinds of personal data (labels of personalPatterns) that
 	// are not cut out of the input of this task: the essay keeps the patronymic,
 	// or the model could not tell «Игорь Петрович» from the list of instructors.
@@ -190,6 +194,26 @@ func storedPortrait(db model.Database, task portraitTask, fingerprint string) (m
 		}
 	}
 	return newest, found
+}
+
+// shownPortrait is the newest stored portrait of the task for this input or,
+// when there is none, for the input of an earlier version of the instruction.
+func (a *Service) shownPortrait(db model.Database, task portraitTask, s Source, payload *object) (model.Portrait, bool) {
+	if old, ok := storedPortrait(db, task, payloadFingerprint(payload)); ok {
+		return old, true
+	}
+	if task.Earlier == nil {
+		return model.Portrait{}, false
+	}
+	for _, earlier := range task.Earlier(a, db, s) {
+		if _, err := maskPersonal(earlier, task.Keep...); err != nil {
+			continue
+		}
+		if old, ok := storedPortrait(db, task, payloadFingerprint(earlier)); ok {
+			return old, true
+		}
+	}
+	return model.Portrait{}, false
 }
 
 // queuePortraits queues the portrait of a source for every task that takes it.
@@ -612,9 +636,12 @@ type PortraitView struct {
 	Reason   string        `json:"reason,omitempty"`
 }
 
+// PortraitText is a stored portrait; Version is the version of the
+// instruction it was made by, so that a screen can show an earlier format.
 type PortraitText struct {
 	Output  json.RawMessage `json:"output"`
 	Created string          `json:"created"`
+	Version string          `json:"version,omitempty"`
 }
 
 func missingPortrait() error { return problem(NotFound, "Вывод не найден.") }
@@ -668,7 +695,7 @@ func (a *Service) portraitView(teacherID, taskID, sourceID string, retry bool) (
 		return PortraitView{Status: portraitFailed, Reason: "Не удалось собрать сведения для модели."}, nil
 	}
 	ready := func(p model.Portrait) PortraitView {
-		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: p.Output, Created: p.Created}}
+		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: p.Output, Created: p.Created, Version: p.TaskVersion}}
 	}
 	if m != nil {
 		if portrait, ok := findPortrait(db, portraitKey(task, m.Name(), payload)); ok {
@@ -678,7 +705,7 @@ func (a *Service) portraitView(teacherID, taskID, sourceID string, retry bool) (
 	// A portrait that was made for the same input earlier, by another model or
 	// another version of the instruction, is shown while the current model makes
 	// its own in the background; the next opening shows the new one.
-	if old, ok := storedPortrait(db, task, payloadFingerprint(payload)); ok {
+	if old, ok := a.shownPortrait(db, task, s, payload); ok {
 		if m != nil && (!task.Manual || retry) {
 			a.enqueuePortrait(db, task, s, retry)
 		}
@@ -712,14 +739,14 @@ func (a *Service) portraitNow(db model.Database, task portraitTask, s Source) (P
 		return PortraitView{Status: portraitFailed, Reason: "Не удалось собрать сведения для модели."}, nil
 	}
 	ready := func(p model.Portrait) (PortraitView, *model.Portrait) {
-		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: p.Output, Created: p.Created}}, &p
+		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: p.Output, Created: p.Created, Version: p.TaskVersion}}, &p
 	}
 	if m != nil {
 		if portrait, ok := findPortrait(db, portraitKey(task, m.Name(), payload)); ok {
 			return ready(portrait)
 		}
 	}
-	if old, ok := storedPortrait(db, task, payloadFingerprint(payload)); ok {
+	if old, ok := a.shownPortrait(db, task, s, payload); ok {
 		return ready(old)
 	}
 	if m == nil {

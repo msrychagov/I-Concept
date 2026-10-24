@@ -191,8 +191,17 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 	// The answer of v2 has other fields and rules (test_check.go); v1 is
 	// checked as it always was.
 	check := checkTestAnswer
+	var earlier func(a *Service, db model.Database, s Source) []*object
 	if n, _ := promptbank.Number(prompt.Version); n >= 2 {
 		check = checkTestAnswerV2
+		// The portrait by v1 is shown while the one by v2 is made (decision Д8).
+		earlier = func(a *Service, db model.Database, s Source) []*object {
+			session, _ := findSession(db, s)
+			if data := a.TestPortrait(session); data != nil {
+				return []*object{a.testPayloadFor("v1", data)}
+			}
+			return nil
+		}
 	}
 	return portraitTask{
 		ID: testPortraitTask, Version: prompt.Version, Prompt: prompt,
@@ -211,7 +220,7 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 			}
 			return a.testPayloadFor(prompt.Version, data), nil
 		},
-		Check: check,
+		Check: check, Earlier: earlier,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			session, ok := findSession(db, s)
 			return ok && teacherOwnsSession(db, teacherID, session)
