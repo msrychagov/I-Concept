@@ -46,6 +46,10 @@ func New(config Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	defender, err := questionbank.Defender()
+	if err != nil {
+		return nil, err
+	}
 	var repository usecase.Repository
 	closeRepository := func() {}
 	if config.DatabaseURL != "" {
@@ -67,6 +71,7 @@ func New(config Config) (*App, error) {
 	service := usecase.New(bank, repository, previous...)
 	service.RegisterForms(forms...)
 	service.RegisterPrompts(prompts...)
+	service.RegisterDefender(defender)
 	// PostgreSQL receives legacy records through ImportData, which normalizes
 	// ownership before the import transaction. Never replace a live SQL snapshot.
 	if config.DatabaseURL == "" {

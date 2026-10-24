@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "properties": {
+    "portrait": {"type": "string", "description": "Одно предложение: общее состояние Я-концепции"},
+    "components": {
+      "type": "object",
+      "properties": {
+        "levels": {
+          "type": "object",
+          "properties": {
+            "cs": {"type": "string", "description": "Уровень ценностно-смыслового компонента словами"},
+            "ev": {"type": "string", "description": "Уровень эмоционально-волевого компонента словами"},
+            "dp": {"type": "string", "description": "Уровень деятельностно-практического компонента словами"}
+          },
+          "required": ["cs", "ev", "dp"]
+        },
+        "text": {"type": "string", "description": "Один абзац о трёх компонентах, самооценке и отношениях"}
+      },
+      "required": ["levels", "text"]
+    },
+    "identity": {"type": "string", "description": "Профессиональная Я-концепция, 1–2 предложения"},
+    "ideal": {"type": "string", "description": "Соответствие образу защитника Отечества, два предложения"},
+    "activity": {"type": "string", "description": "Деятельность и условия среды, их влияние, один абзац"},
+    "recommendations": {
+      "type": "array",
+      "description": "Направления работы из каталога, 3–4",
+      "items": {
+        "type": "object",
+        "properties": {
+          "group": {"type": "integer"},
+          "code": {"type": "string"},
+          "text": {"type": "string"}
+        },
+        "required": ["group", "code", "text"]
+      }
+    },
+    "conclusion": {"type": "string", "description": "Общий вывод по человеку, два предложения"}
+  },
+  "required": ["portrait", "components", "identity", "ideal", "activity", "recommendations", "conclusion"]
+}

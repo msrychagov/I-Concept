@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"fmt"
 	"math/rand/v2"
 	"strings"
 	"time"
@@ -40,6 +41,107 @@ func (a *Service) addDemoMethods(db *model.Database, full model.Profile, created
 		seen++
 		s := model.Session{ID: uuid(), StudentID: student.ID, AssignmentID: as.ID, Kind: "student", Participant: student.Name, Group: student.Platoon, Wave: as.Title, Profile: clone(p), BankVersion: a.bank.Version, Created: created, Updated: now.Add(-time.Duration(seen) * time.Hour).Format(time.RFC3339), Seed: uint32(profile.seed), Consent: true, ConsentAt: created, Activity: true, Motivation: true, Methods: true, Completed: true, Answers: map[string]int{}, Notes: map[string]string{}, Plan: []model.PlanItem{}, TeacherID: teacherID}
 		demoProfileAnswers(a.itemsFor(s), &s, profile.seed, profile.strength, profile.stories)
+		db.Sessions = append(db.Sessions, model.SessionRecord{TokenHash: hash(token()), Session: s})
+	}
+}
+
+// demoPlatoonStudent is an invented student of platoon 104: the real and the
+// ideal self by group of the image (G1–G5), how often the best option of a
+// method is chosen, whether the emotional stability is low, the leading status
+// of identity in each block (a scale of the key) and what he wrote.
+type demoPlatoonStudent struct {
+	name        string
+	real, ideal [5]int
+	varied      bool
+	strength    float64
+	lowEmotion  bool
+	military    string
+	civil       string
+	stories     map[string]string
+}
+
+// demoPlatoon104 covers the four situations of the groups, an ideal self of 10
+// in every quality and low emotional stability (Вики/Тестирование/План портрета
+// test-v2.md, step 8). The students and their answers are invented.
+var demoPlatoon104 = []demoPlatoonStudent{
+	{name: "Морозов Кирилл Андреевич", real: [5]int{9, 9, 9, 9, 9}, ideal: [5]int{10, 10, 10, 10, 10}, strength: 0.85, military: "SF", civil: "SF", stories: map[string]string{
+		"ACT_15": "Был на летних сборах, командовал отделением на полевом выходе.",
+		"ACT_18": "Составляю план подготовки к каждому занятию и разбираю ошибки после контрольных.",
+		"ACT_23": "Участвовал в подготовке военно-патриотической игры для школьников.",
+		"ACT_31": "Выступал за ВУЦ на соревнованиях по военно-прикладному многоборью.",
+		"ACT_38": "Помогал товарищам по взводу готовиться к зачёту по тактической подготовке.",
+	}},
+	{name: "Лебедев Глеб Сергеевич", real: [5]int{6, 5, 6, 6, 8}, ideal: [5]int{10, 10, 10, 10, 9}, strength: 0.5, military: "M", civil: "SF", stories: map[string]string{
+		"ACT_14": "Сдал нормативы по физической подготовке на «хорошо».",
+		"ACT_24": "Участвовал в церемонии возложения цветов в День защитника Отечества.",
+	}},
+	{name: "Егоров Тимур Олегович", real: [5]int{5, 5, 6, 5, 5}, ideal: [5]int{6, 6, 7, 6, 6}, strength: 0.4, military: "NP", civil: "M", stories: map[string]string{
+		"ACT_30": "Был на экскурсии в музее военной истории вместе со взводом.",
+	}},
+	{name: "Павлов Роман Игоревич", real: [5]int{8, 7, 7, 8, 7}, ideal: [5]int{7, 9, 9, 7, 9}, strength: 0.6, military: "NV", civil: "SF", stories: map[string]string{
+		"ACT_20": "Распорядок соблюдаю, опозданий на занятия не было.",
+		"ACT_34": "Выступал на концерте ВУЦ ко Дню Победы.",
+	}},
+	{name: "Козлов Даниил Витальевич", real: [5]int{7, 6, 8, 6, 5}, ideal: [5]int{10, 10, 10, 10, 10}, varied: true, strength: 0.55, lowEmotion: true, military: "M", civil: "NP", stories: map[string]string{
+		"ACT_29": "Был на встрече с ветеранами боевых действий.",
+		"ACT_37": "Получил благодарность за помощь в организации дня открытых дверей ВУЦ.",
+	}},
+}
+
+// addDemoPlatoon adds platoon 104 of invented students who have all finished
+// the test with the methods, enough for the conclusion by the platoon.
+func (a *Service) addDemoPlatoon(db *model.Database, full model.Profile, created string, now time.Time, teacherID string) {
+	platoonID := uuid()
+	db.Platoons = append(db.Platoons, model.Platoon{ID: platoonID, Name: "104", VUC: "Демонстрационный ВУЦ"})
+	p := clone(full)
+	p.Questions = a.assignmentQuestions(p, true, true, true)
+	as := model.Assignment{ID: uuid(), Title: "Методики уровней Я-концепции", Platoon: "104", Profile: p, Activity: true, Motivation: true, Methods: true, Active: true, Created: created, OwnerID: teacherID}
+	db.Assignments = append(db.Assignments, as)
+	groups := map[string]int{}
+	for n, g := range a.defender.Groups {
+		for _, q := range g.Qualities {
+			groups[q] = n
+		}
+	}
+	for n, student := range demoPlatoon104 {
+		salt := token()
+		account := model.Account{VUC: "Демонстрационный ВУЦ", PlatoonID: platoonID, ID: uuid(), Role: "student", Name: student.name, Platoon: "104", Email: fmt.Sprintf("student%d@example.test", 10+n), PasswordHash: passwordHash("StudentDemo2026!", salt), Salt: salt, Created: created, OwnerID: teacherID}
+		db.Students = append(db.Students, account)
+		seed := uint64(101 + n)
+		s := model.Session{ID: uuid(), StudentID: account.ID, AssignmentID: as.ID, Kind: "student", Participant: account.Name, Group: "104", Wave: as.Title, Profile: clone(p), BankVersion: a.bank.Version, Created: created, Updated: now.Add(-time.Duration(n+1) * time.Hour).Format(time.RFC3339), Seed: uint32(seed), Consent: true, ConsentAt: created, Activity: true, Motivation: true, Methods: true, Completed: true, Answers: map[string]int{}, Notes: map[string]string{}, Plan: []model.PlanItem{}, TeacherID: teacherID}
+		items := a.itemsFor(s)
+		demoProfileAnswers(items, &s, seed, student.strength, student.stories)
+		for k, item := range items {
+			kind := item.ID[strings.LastIndex(item.ID, "_")+1:]
+			switch {
+			case item.Module == "A":
+				g := groups[item.Indicator]
+				real := student.real[g]
+				if student.varied {
+					real = max(0, min(10, real+k%3-1))
+				}
+				s.Answers[item.ID] = map[string]int{"R": real, "I": student.ideal[g], "Z": max(0, real-1), "N": student.ideal[g]}[kind]
+			case item.Module == "U" && student.lowEmotion:
+				worst := 0
+				for k, o := range item.Options {
+					if o.Score > item.Options[worst].Score {
+						worst = k
+					}
+				}
+				s.Answers[item.ID] = worst
+			case item.Module == "AZM" || item.Module == "AZC":
+				target := map[string]string{"AZM": student.military, "AZC": student.civil}[item.Module]
+				// Seven answers of ten go to the leading status, the others to the next one.
+				if k%10 >= 7 {
+					target = map[string]string{"SF": "M", "M": "NP", "NP": "NV", "NV": "SF"}[target]
+				}
+				for v, o := range item.Options {
+					if o.Scale == target {
+						s.Answers[item.ID] = v
+					}
+				}
+			}
+		}
 		db.Sessions = append(db.Sessions, model.SessionRecord{TokenHash: hash(token()), Session: s})
 	}
 }

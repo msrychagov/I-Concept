@@ -2,7 +2,9 @@ package usecase
 
 import (
 	"fmt"
+	"slices"
 	"sort"
+	"vucdiagnostic/internal/promptbank"
 )
 
 // The input of the language model for the portrait by the test: the counted
@@ -149,4 +151,177 @@ func testPayload(data *TestPortraitData) *object {
 	}
 	payload.set("рассказы_о_деятельности", stories)
 	return payload
+}
+
+// insertAfter puts a key right after another one, or at the end when there is
+// no such key: the input of a new version keeps the order of the first chapter.
+func (o *object) insertAfter(after, key string, value any) {
+	if _, seen := o.values[key]; seen {
+		o.values[key] = value
+		return
+	}
+	o.values[key] = value
+	at := len(o.keys)
+	for n, k := range o.keys {
+		if k == after {
+			at = n + 1
+		}
+	}
+	o.keys = slices.Insert(o.keys, at, key)
+}
+
+// testPayloadFor builds the input of an instruction version. The input of v1
+// stays as it was: the stored portraits are found by its fingerprint. From v2
+// on it has the image of the defender, the congruence of the images, the
+// professional identity when the method was given, and the catalogue of
+// recommendations (Вики/Тестирование/План портрета test-v2.md, step 3).
+func (a *Service) testPayloadFor(version string, data *TestPortraitData) *object {
+	payload := testPayload(data)
+	if n, _ := promptbank.Number(version); n < 2 {
+		return payload
+	}
+	numbers := map[string]int{}
+	for n, g := range a.defender.Groups {
+		numbers[g.ID] = n + 1
+	}
+	if data.Congruence != nil {
+		c := newObject()
+		c.put("коэффициент", scoreText(data.Congruence.Value))
+		c.set("оценка", data.Congruence.Text)
+		payload.insertAfter("образы_я", "согласованность_образов", c)
+	}
+	payload.insertAfter("признаки", "образ_защитника", defenderList(data.Defender, numbers, a.fittingDirections(data)))
+	criteria := map[string][]CriterionData{}
+	for _, k := range data.Criteria {
+		criteria[k.Kind] = k.Criteria
+	}
+	for n, kind := range objectList(payload.values["виды_деятельности"]) {
+		if n < len(data.Kinds) && len(criteria[data.Kinds[n].ID]) > 0 {
+			kind.set("критерии", criteriaList(criteria[data.Kinds[n].ID], func(c CriterionData) any { return pointList(c.Data) }))
+		}
+	}
+	if len(data.EnvironmentSigns) > 0 {
+		signs := []any{}
+		for _, sign := range data.EnvironmentSigns {
+			o := newObject()
+			o.set("признак", sign.Name)
+			o.set("по_главе_1", sign.Description)
+			o.put("пометка", sign.Note)
+			o.set("данные", pointList(sign.Data))
+			signs = append(signs, o)
+		}
+		payload.insertAfter("условия_среды", "признаки_среды", signs)
+	}
+	if len(data.Identity) > 0 {
+		payload.insertAfter("образ_защитника", "профессиональная_идентичность", identityList(data.Identity))
+	}
+	payload.set("каталог_рекомендаций", a.catalogueList(numbers))
+	return payload
+}
+
+// catalogueList is the catalogue of recommendations with the numbers of the groups.
+func (a *Service) catalogueList(numbers map[string]int) []any {
+	catalogue := []any{}
+	types := map[string]string{}
+	for _, kind := range a.defender.Types {
+		types[kind.ID] = kind.Name
+	}
+	for _, d := range a.defender.Directions {
+		o := newObject()
+		o.set("код", d.ID)
+		o.set("направление", d.Name)
+		o.set("тип", types[d.Type])
+		// []any, not []int: the cleaning of personal data walks only these.
+		groups := []any{}
+		for _, id := range d.Groups {
+			groups = append(groups, numbers[id])
+		}
+		o.set("группы", groups)
+		catalogue = append(catalogue, o)
+	}
+	return catalogue
+}
+
+// fittingDirections are, by group of the image, the codes of the directions a
+// recommendation for it may take: of the group, of the type of its situation,
+// and psychological ones when a scale of the emotional-volitional component is
+// low (Д1, Д4). The model gets them ready, so as not to match the types itself
+// (decided by the user on 24 October 2026 after the run on GigaChat).
+func (a *Service) fittingDirections(data *TestPortraitData) map[string][]any {
+	lowEV := false
+	for _, m := range data.Methods {
+		lowEV = lowEV || m.Component == "EV" && m.Level == "low"
+	}
+	fitting := map[string][]any{}
+	for _, g := range data.Defender {
+		codes := []any{}
+		for _, d := range a.defender.Directions {
+			if slices.Contains(d.Groups, g.ID) && (g.Type == "" || d.Type == g.Type || d.Type == "psychological" && lowEV) {
+				codes = append(codes, d.ID)
+			}
+		}
+		fitting[g.ID] = codes
+	}
+	return fitting
+}
+
+func defenderList(groups []DefenderGroup, numbers map[string]int, fitting map[string][]any) []any {
+	list := []any{}
+	for _, g := range groups {
+		o := newObject()
+		o.set("номер", numbers[g.ID])
+		o.set("группа", g.Name)
+		o.put("я_реальное", scoreText(g.Real))
+		o.put("я_идеальное", scoreText(g.Ideal))
+		o.put("до_образа", scoreText(g.Distance))
+		o.put("разрыв", scoreText(g.Gap))
+		o.set("ситуация", g.SituationText)
+		o.put("тип_рекомендации", g.TypeText)
+		o.set("подходящие_направления", fitting[g.ID])
+		methods := []any{}
+		for _, m := range g.Methods {
+			row := newObject()
+			row.set("показатель", m.Name)
+			row.set("уровень", m.LevelText)
+			methods = append(methods, row)
+		}
+		if len(methods) > 0 {
+			o.set("методики", methods)
+		}
+		kinds := []any{}
+		for _, k := range g.Kinds {
+			row := newObject()
+			row.set("вид", k.Name)
+			row.put("формы", k.Forms)
+			row.set("уровень", k.LevelText)
+			kinds = append(kinds, row)
+		}
+		o.set("виды_деятельности", kinds)
+		o.set("условия_среды", indicatorList(g.Conditions))
+		o.put("пометка", g.Note)
+		list = append(list, o)
+	}
+	return list
+}
+
+func identityList(profiles []IdentityProfile) []any {
+	list := []any{}
+	for _, p := range profiles {
+		o := newObject()
+		o.set("профессия", p.Name)
+		statuses := []any{}
+		for _, status := range p.Statuses {
+			row := newObject()
+			row.set("статус", status.Name)
+			if status.Score != nil {
+				row.set("баллы", fmt.Sprintf("%d (диапазон 0–%d)", *status.Score, status.Max))
+			}
+			row.put("выраженность", status.Range)
+			statuses = append(statuses, row)
+		}
+		o.set("статусы", statuses)
+		o.set("ведущий_статус", p.LeadingText)
+		list = append(list, o)
+	}
+	return list
 }

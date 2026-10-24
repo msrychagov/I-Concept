@@ -62,7 +62,7 @@ docker compose exec app vuc -invite-teacher teacher@example.ru -vuc 'ВУЦ пр
 | Роль | Логин | Пароль |
 | --- | --- | --- |
 | Преподаватель | `teacher@example.test` | `TeacherDemo2026!` |
-| Студенты | `student1@example.test` … `student9@example.test` | `StudentDemo2026!` |
+| Студенты | `student1@example.test` … `student14@example.test` | `StudentDemo2026!` |
 
 Повторный запуск seed отклоняется без изменения данных. Импорт и seed — альтернативы
 для заполнения пустой БД. Существующая команда `vuc -demo-reset` намеренно заменяет

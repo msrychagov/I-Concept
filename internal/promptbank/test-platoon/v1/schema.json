@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "properties": {
+    "overview": {"type": "string", "description": "Одно предложение: общее состояние взвода"},
+    "components": {"type": "string", "description": "Компоненты и отношения во взводе, один абзац"},
+    "identity": {"type": "string", "description": "Профессиональная идентичность во взводе"},
+    "ideal": {"type": "string", "description": "Взвод и образ защитника Отечества, два предложения"},
+    "activity": {"type": "string", "description": "Деятельность и условия среды, их влияние, один абзац"},
+    "recommendations": {
+      "type": "array",
+      "description": "Направления работы со взводом из каталога, 3–5",
+      "items": {
+        "type": "object",
+        "properties": {
+          "group": {"type": "integer"},
+          "code": {"type": "string"},
+          "text": {"type": "string"}
+        },
+        "required": ["group", "code", "text"]
+      }
+    },
+    "individual": {"type": "array", "items": {"type": "string"}, "description": "Кому нужна отдельная работа, без имён, 0–3"},
+    "conclusion": {"type": "string", "description": "Общий вывод по взводу, два предложения"}
+  },
+  "required": ["overview", "components", "identity", "ideal", "activity", "recommendations", "individual", "conclusion"]
+}

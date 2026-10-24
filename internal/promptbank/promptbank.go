@@ -72,6 +72,10 @@ func Find(prompts []Prompt, task, version string) (Prompt, bool) {
 	return Prompt{}, false
 }
 
+// Number reads the number of a version named v1, v2, …: the tasks build their
+// input by it.
+func Number(version string) (int, bool) { return versionNumber(version) }
+
 // versionNumber reads the number of a version named v1, v2, …
 func versionNumber(version string) (int, bool) {
 	digits, found := strings.CutPrefix(version, "v")

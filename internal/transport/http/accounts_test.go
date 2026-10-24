@@ -302,7 +302,7 @@ func TestDemoBackup(t *testing.T) {
 		t.Fatalf("backup failed %s %v", backup, err)
 	}
 	db := a.repo.Snapshot()
-	if len(db.Students) != 10 || len(db.Assignments) != 7 || len(db.Profiles) != 2 || len(db.Submissions) != 11 {
+	if len(db.Students) != 15 || len(db.Assignments) != 8 || len(db.Profiles) != 2 || len(db.Submissions) != 11 {
 		t.Fatal("demo incomplete")
 	}
 	old, err := jsonfile.Open(backup)
@@ -335,7 +335,12 @@ func testApp(t *testing.T) *testApplication {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defender, err := questionbank.Defender()
+	if err != nil {
+		t.Fatal(err)
+	}
 	service := usecase.New(bank, repo, previous...)
+	service.RegisterDefender(defender)
 	if _, err := service.CreateVUC("Тестовый ВУЦ"); err != nil {
 		t.Fatal(err)
 	}

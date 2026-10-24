@@ -28,7 +28,8 @@ import (
 // instruction version or another model gives a new portrait and the old stays.
 
 // Source is what a portrait is about: a submitted form ("submission"), a
-// finished test session ("session") or an assignment of an essay ("assignment").
+// finished test session ("session"), an assignment of an essay ("assignment")
+// or a platoon of a teacher ("platoon", platoon_task.go).
 type Source struct{ Kind, ID string }
 
 type portraitTask struct {
@@ -56,6 +57,10 @@ type portraitTask struct {
 	// Stamp gives the source group and the ordered members of a portrait made
 	// for a group of sources; nil for the other tasks.
 	Stamp func(a *Service, db model.Database, s Source) (source string, sources []string)
+	// Earlier builds the input the earlier versions of the instruction got: a
+	// portrait made for one of them is shown while the current one is made.
+	// nil when the input did not change between the versions.
+	Earlier func(a *Service, db model.Database, s Source) []*object
 	// Keep lists the kinds of personal data (labels of personalPatterns) that
 	// are not cut out of the input of this task: the essay keeps the patronymic,
 	// or the model could not tell «Игорь Петрович» from the list of instructors.
@@ -70,6 +75,9 @@ const (
 	portraitOff     = "off"
 
 	portraitAttempts = 3
+
+	// rateLimitPause is how many usual pauses an attempt waits after «429».
+	rateLimitPause = 15
 )
 
 // portraitState is what is known about a portrait that is not stored yet.
@@ -189,6 +197,26 @@ func storedPortrait(db model.Database, task portraitTask, fingerprint string) (m
 		}
 	}
 	return newest, found
+}
+
+// shownPortrait is the newest stored portrait of the task for this input or,
+// when there is none, for the input of an earlier version of the instruction.
+func (a *Service) shownPortrait(db model.Database, task portraitTask, s Source, payload *object) (model.Portrait, bool) {
+	if old, ok := storedPortrait(db, task, payloadFingerprint(payload)); ok {
+		return old, true
+	}
+	if task.Earlier == nil {
+		return model.Portrait{}, false
+	}
+	for _, earlier := range task.Earlier(a, db, s) {
+		if _, err := maskPersonal(earlier, task.Keep...); err != nil {
+			continue
+		}
+		if old, ok := storedPortrait(db, task, payloadFingerprint(earlier)); ok {
+			return old, true
+		}
+	}
+	return model.Portrait{}, false
 }
 
 // queuePortraits queues the portrait of a source for every task that takes it.
@@ -354,24 +382,35 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 	// zero the same message gives the same mistake. The stored input stays
 	// the data alone.
 	message := user
+	// noted are the problems of every failed attempt, each once: told only the
+	// last ones, the model swings between two answers and brings back what an
+	// earlier retry had fixed.
+	noted := []string{}
 	attempts := portraitAttempts
 	if task.Attempts > 0 {
 		attempts = task.Attempts
 	}
+	wait := l.pause
 	for attempt := 1; attempt <= attempts; attempt++ {
 		if attempt > 1 {
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(l.pause):
+			case <-time.After(wait):
 			}
 		}
+		wait = l.pause
 		reply, err := m.Complete(ctx, Completion{System: task.Prompt.Instruction, User: message, Schema: task.Prompt.Schema, MaxTokens: task.MaxTokens})
 		if ctx.Err() != nil {
 			return
 		}
 		if err != nil {
 			reason, detail = "Модель не ответила.", fmt.Sprintf("attempt %d: %v", attempt, err)
+			// A free plan answers «429 Too Many Requests» when asked too often:
+			// the next attempt waits longer, or all are spent in seconds.
+			if strings.Contains(err.Error(), "429") {
+				wait = rateLimitPause * l.pause
+			}
 			continue
 		}
 		output, problems := parseModelAnswer(reply.Text)
@@ -387,7 +426,12 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 		if len(problems) > 0 {
 			reason = "Ответ модели не прошёл проверку: " + strings.Join(problems[:min(len(problems), 3)], "; ") + "."
 			detail = fmt.Sprintf("attempt %d: %s", attempt, strings.Join(problems, "; "))
-			message = user + "\n\n" + retryNote + strings.Join(problems, "; ") + "."
+			for _, p := range problems {
+				if !slices.Contains(noted, p) {
+					noted = append(noted, p)
+				}
+			}
+			message = user + "\n\n" + retryNote + strings.Join(noted, "; ") + "."
 			continue
 		}
 		data, _ := json.Marshal(output)
@@ -416,7 +460,7 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 }
 
 // retryNote opens the list of problems sent with a retry.
-const retryNote = "Предыдущий ответ не прошёл проверку программы. Исправь эти места и ответь заново по той же схеме, соблюдая все правила инструкции: "
+const retryNote = "Предыдущие ответы не прошли проверку программы. Ответь заново по той же схеме, соблюдая все правила инструкции, и не допусти ни одной из этих ошибок: "
 
 // modelText turns the canonical input into the text the model gets: the same
 // JSON with an indent of one space, as in the comparison of the models.
@@ -611,9 +655,12 @@ type PortraitView struct {
 	Reason   string        `json:"reason,omitempty"`
 }
 
+// PortraitText is a stored portrait; Version is the version of the
+// instruction it was made by, so that a screen can show an earlier format.
 type PortraitText struct {
 	Output  json.RawMessage `json:"output"`
 	Created string          `json:"created"`
+	Version string          `json:"version,omitempty"`
 }
 
 func missingPortrait() error { return problem(NotFound, "Вывод не найден.") }
@@ -625,8 +672,11 @@ func (a *Service) portraitSource(db model.Database, teacherID, taskID, sourceID 
 	if !ok {
 		return task, Source{}, missingPortrait()
 	}
-	for _, kind := range []string{"submission", "session", "assignment"} {
+	for _, kind := range []string{"submission", "session", "assignment", "platoon"} {
 		s := Source{kind, sourceID}
+		if kind == "platoon" {
+			s = platoonSource(teacherID, sourceID)
+		}
 		if task.Accepts(db, s) && task.Visible(db, s, teacherID) {
 			return task, s, nil
 		}
@@ -664,7 +714,7 @@ func (a *Service) portraitView(teacherID, taskID, sourceID string, retry bool) (
 		return PortraitView{Status: portraitFailed, Reason: "Не удалось собрать сведения для модели."}, nil
 	}
 	ready := func(p model.Portrait) PortraitView {
-		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: p.Output, Created: p.Created}}
+		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: p.Output, Created: p.Created, Version: p.TaskVersion}}
 	}
 	if m != nil {
 		if portrait, ok := findPortrait(db, portraitKey(task, m.Name(), payload)); ok {
@@ -674,7 +724,7 @@ func (a *Service) portraitView(teacherID, taskID, sourceID string, retry bool) (
 	// A portrait that was made for the same input earlier, by another model or
 	// another version of the instruction, is shown while the current model makes
 	// its own in the background; the next opening shows the new one.
-	if old, ok := storedPortrait(db, task, payloadFingerprint(payload)); ok {
+	if old, ok := a.shownPortrait(db, task, s, payload); ok {
 		if m != nil && (!task.Manual || retry) {
 			a.enqueuePortrait(db, task, s, retry)
 		}
@@ -708,14 +758,14 @@ func (a *Service) portraitNow(db model.Database, task portraitTask, s Source) (P
 		return PortraitView{Status: portraitFailed, Reason: "Не удалось собрать сведения для модели."}, nil
 	}
 	ready := func(p model.Portrait) (PortraitView, *model.Portrait) {
-		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: p.Output, Created: p.Created}}, &p
+		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: p.Output, Created: p.Created, Version: p.TaskVersion}}, &p
 	}
 	if m != nil {
 		if portrait, ok := findPortrait(db, portraitKey(task, m.Name(), payload)); ok {
 			return ready(portrait)
 		}
 	}
-	if old, ok := storedPortrait(db, task, payloadFingerprint(payload)); ok {
+	if old, ok := a.shownPortrait(db, task, s, payload); ok {
 		return ready(old)
 	}
 	if m == nil {

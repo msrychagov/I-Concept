@@ -20,6 +20,9 @@ func (a *Service) RegisterPrompts(prompts ...promptbank.Prompt) {
 	if prompt, ok := promptbank.Latest(prompts, testPortraitTask); ok {
 		a.registerPortraitTask(a.testTask(prompt))
 	}
+	if prompt, ok := promptbank.Latest(prompts, testPlatoonTask); ok {
+		a.registerPortraitTask(a.platoonTask(prompt))
+	}
 	if prompt, ok := promptbank.Latest(prompts, essayForm); ok {
 		a.registerPortraitTask(a.essayTask(prompt))
 	}
@@ -358,6 +361,23 @@ func findSession(db model.Database, s Source) (model.Session, bool) {
 }
 
 func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
+	// The answer of v2 has other fields and rules (test_check.go); v1 is
+	// checked as it always was.
+	check := checkTestAnswer
+	var earlier func(a *Service, db model.Database, s Source) []*object
+	if n, _ := promptbank.Number(prompt.Version); n >= 2 {
+		check = checkTestAnswerV2
+		// The portrait by v1 is shown while the one by a newer version is made
+		// (decision Д8); from v2 on the input is the same, so their portraits
+		// are found by the fingerprint itself.
+		earlier = func(a *Service, db model.Database, s Source) []*object {
+			session, _ := findSession(db, s)
+			if data := a.TestPortrait(session); data != nil {
+				return []*object{a.testPayloadFor("v1", data)}
+			}
+			return nil
+		}
+	}
 	return portraitTask{
 		ID: testPortraitTask, Version: prompt.Version, Prompt: prompt,
 		// The portrait has nine sections: about 2000 tokens of Russian text.
@@ -373,9 +393,9 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 			if data == nil {
 				return nil, problem(Invalid, "В тестировании нет методик.")
 			}
-			return testPayload(data), nil
+			return a.testPayloadFor(prompt.Version, data), nil
 		},
-		Check: checkTestAnswer,
+		Check: check, Earlier: earlier,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			session, ok := findSession(db, s)
 			return ok && teacherOwnsSession(db, teacherID, session)

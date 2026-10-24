@@ -197,7 +197,49 @@ func TestDemoHasFinishedSessionsWithMethods(t *testing.T) {
 			t.Fatalf("%s: %d stories, %d images", s.Participant, len(portrait.OpenAnswers), len(portrait.Images))
 		}
 	}
-	if finished != 2 {
+	if finished != 7 {
 		t.Fatalf("finished with methods: %d", finished)
+	}
+}
+
+// Platoon 104 of the demo covers the four situations of the image, an ideal
+// self the same in every quality and low emotional stability, and is enough
+// for the conclusion by the platoon.
+func TestDemoPlatoonCoversTheSituations(t *testing.T) {
+	a := testApp(t)
+	db, err := a.demoDatabase()
+	if err != nil {
+		t.Fatal(err)
+	}
+	situations, constant, lowEmotion, students := map[string]int{}, 0, 0, 0
+	for _, record := range db.Sessions {
+		s := record.Session
+		if s.Group != "104" {
+			continue
+		}
+		students++
+		portrait := a.TestPortrait(s)
+		for _, g := range portrait.Defender {
+			situations[g.Situation]++
+		}
+		if portrait.Congruence.Value == nil && strings.HasPrefix(portrait.Congruence.Text, "Я-идеальное одинаково") {
+			constant++
+		}
+		for _, m := range portrait.Methods {
+			if m.ID == "EMO" && m.Level == "low" {
+				lowEmotion++
+			}
+		}
+		if len(portrait.Identity) != 2 || portrait.Identity[0].LeadingText == "не определён" {
+			t.Errorf("%s: identity %+v", s.Participant, portrait.Identity)
+		}
+	}
+	for _, situation := range []string{situationAchieved, situationFar, situationNotAccepted, situationBelow} {
+		if situations[situation] == 0 {
+			t.Errorf("no group in the situation %s: %v", situation, situations)
+		}
+	}
+	if students < platoonMinimum || constant == 0 || lowEmotion == 0 {
+		t.Fatalf("students %d, constant ideal %d, low emotional stability %d", students, constant, lowEmotion)
 	}
 }

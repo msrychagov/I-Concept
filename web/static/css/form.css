@@ -527,6 +527,28 @@
     margin-top: 1.2rem
 }
 
+/* The numbers of the program go under the text of the portrait. */
+.test-portrait-numbers {
+    margin-top: 1.4rem
+}
+
+.test-portrait-numbers h4 {
+    margin: 1rem 0 .4rem
+}
+
+/* The numbers under the name of a group of the image are not hyphenated. */
+.test-portrait-image td small {
+    hyphens: manual
+}
+
+.test-portrait-recommendations li {
+    margin-bottom: .3rem
+}
+
+#platoon-conclusion:not(:empty) {
+    margin-bottom: 1.2rem
+}
+
 .test-portrait-text h4 {
     margin: 1rem 0 .3rem
 }
@@ -549,6 +571,11 @@
 @media (max-width: 600px) {
     .test-portrait-levels td:nth-child(2) small {
         display: none
+    }
+
+    /* «выше среднего» next to «Сформированная» does not fit a phone in one line. */
+    .test-portrait-levels .identity-range {
+        white-space: normal
     }
 
     .test-portrait-levels th, .test-portrait-levels td {

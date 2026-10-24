@@ -11,6 +11,36 @@ type Bank struct {
 	// activity of the first chapter to the questions that describe them.
 	Methods       []Method       `json:"methods,omitempty"`
 	ActivityKinds []ActivityKind `json:"activityKinds,omitempty"`
+	// Identity is the method of the statuses of professional identity; its
+	// options add points to several scales, so it is not one of Methods.
+	Identity *IdentityMethod `json:"identity,omitempty"`
+}
+
+// IdentityMethod is the method of the statuses of professional identity
+// (А. А. Азбель, А. Г. Грецов) in two blocks of the same twenty questions:
+// every option adds its score to one of four scales (Option.Scale); the sum of
+// a scale falls into one of five ranges.
+type IdentityMethod struct {
+	Method string          `json:"method"`
+	Ranges []string        `json:"ranges"`
+	Scales []IdentityScale `json:"scales"`
+	Blocks []IdentityBlock `json:"blocks"`
+}
+
+// IdentityScale is one status; Bounds are the lowest sums of the ranges, in
+// the order of IdentityMethod.Ranges.
+type IdentityScale struct {
+	ID     string `json:"id"`
+	Short  string `json:"short"`
+	Name   string `json:"name"`
+	Bounds []int  `json:"bounds"`
+}
+
+// IdentityBlock is one profession the questions are asked about.
+type IdentityBlock struct {
+	ID    string   `json:"id"`
+	Name  string   `json:"name"`
+	Items []string `json:"items"`
 }
 
 // Method is one scale of a method: "sum" adds the option scores of its items
@@ -63,6 +93,8 @@ type Option struct {
 	Score     float64 `json:"score"`
 	Level     string  `json:"level,omitempty"`
 	Rationale string  `json:"rationale,omitempty"`
+	// Scale is the scale of a method with several scales the score goes to.
+	Scale string `json:"scale,omitempty"`
 }
 
 type Item struct {
