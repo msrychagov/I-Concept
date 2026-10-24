@@ -382,6 +382,10 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 	// zero the same message gives the same mistake. The stored input stays
 	// the data alone.
 	message := user
+	// noted are the problems of every failed attempt, each once: told only the
+	// last ones, the model swings between two answers and brings back what an
+	// earlier retry had fixed.
+	noted := []string{}
 	attempts := portraitAttempts
 	if task.Attempts > 0 {
 		attempts = task.Attempts
@@ -422,7 +426,12 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 		if len(problems) > 0 {
 			reason = "Ответ модели не прошёл проверку: " + strings.Join(problems[:min(len(problems), 3)], "; ") + "."
 			detail = fmt.Sprintf("attempt %d: %s", attempt, strings.Join(problems, "; "))
-			message = user + "\n\n" + retryNote + strings.Join(problems, "; ") + "."
+			for _, p := range problems {
+				if !slices.Contains(noted, p) {
+					noted = append(noted, p)
+				}
+			}
+			message = user + "\n\n" + retryNote + strings.Join(noted, "; ") + "."
 			continue
 		}
 		data, _ := json.Marshal(output)
@@ -451,7 +460,7 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 }
 
 // retryNote opens the list of problems sent with a retry.
-const retryNote = "Предыдущий ответ не прошёл проверку программы. Исправь эти места и ответь заново по той же схеме, соблюдая все правила инструкции: "
+const retryNote = "Предыдущие ответы не прошли проверку программы. Ответь заново по той же схеме, соблюдая все правила инструкции, и не допусти ни одной из этих ошибок: "
 
 // modelText turns the canonical input into the text the model gets: the same
 // JSON with an indent of one space, as in the comparison of the models.

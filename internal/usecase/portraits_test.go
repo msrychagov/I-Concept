@@ -635,3 +635,29 @@ func TestRateLimitIsWaitedOutLonger(t *testing.T) {
 		t.Fatalf("%d calls, waited %v", len(times), times[len(times)-1].Sub(times[0]))
 	}
 }
+
+// A retry is told the problems of every earlier attempt, not only of the last
+// one: otherwise the model swings between two wrong answers.
+func TestRetryIsToldTheProblemsOfEveryAttempt(t *testing.T) {
+	f := newTestPortraitFixture(t, true)
+	var third string
+	f.service.UseModel(&fakeModel{name: "fake", reply: func(call int, c Completion) (string, error) {
+		answer := goodTestAnswerV2(c.User)
+		switch call {
+		case 1:
+			answer["portrait"] = "Первое предложение. Второе предложение."
+		case 2:
+			answer["ideal"] = "Одно предложение."
+		case 3:
+			third = c.User
+		}
+		data, _ := json.Marshal(answer)
+		return string(data), nil
+	}})
+	if view := f.wait(); view.Status != portraitReady {
+		t.Fatalf("view: %+v", view)
+	}
+	if !strings.Contains(third, "portrait: предложений 2 вместо 1") || !strings.Contains(third, "ideal: предложений 1 вместо 2") {
+		t.Fatalf("third attempt was told: %s", third[strings.Index(third, retryNote):])
+	}
+}
