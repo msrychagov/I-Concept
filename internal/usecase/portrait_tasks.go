@@ -194,7 +194,9 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 	var earlier func(a *Service, db model.Database, s Source) []*object
 	if n, _ := promptbank.Number(prompt.Version); n >= 2 {
 		check = checkTestAnswerV2
-		// The portrait by v1 is shown while the one by v2 is made (decision Д8).
+		// The portrait by v1 is shown while the one by a newer version is made
+		// (decision Д8); from v2 on the input is the same, so their portraits
+		// are found by the fingerprint itself.
 		earlier = func(a *Service, db model.Database, s Source) []*object {
 			session, _ := findSession(db, s)
 			if data := a.TestPortrait(session); data != nil {
