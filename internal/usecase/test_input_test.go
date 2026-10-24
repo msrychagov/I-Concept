@@ -112,7 +112,8 @@ func TestTestPayloadV2AddsTheImage(t *testing.T) {
 				Name  string   `json:"показатель"`
 				Score *float64 `json:"балл"`
 			} `json:"условия_среды"`
-			Note string `json:"пометка"`
+			Note    string   `json:"пометка"`
+			Fitting []string `json:"подходящие_направления"`
 		} `json:"образ_защитника"`
 		Congruence struct {
 			Text string `json:"оценка"`
@@ -152,7 +153,7 @@ func TestTestPayloadV2AddsTheImage(t *testing.T) {
 		t.Fatalf("groups %d, congruence %q, catalogue %d", len(input.Groups), input.Congruence.Text, len(input.Catalogue))
 	}
 	for n, g := range input.Groups {
-		if g.Number != n+1 || g.Name == "" || g.Situation == "" || g.Type == "" || len(g.Kinds) == 0 || len(g.Conditions) == 0 || g.Conditions[0].Score == nil {
+		if g.Number != n+1 || g.Name == "" || g.Situation == "" || g.Type == "" || len(g.Kinds) == 0 || len(g.Conditions) == 0 || g.Conditions[0].Score == nil || len(g.Fitting) == 0 {
 			t.Errorf("group %d: %+v", n+1, g)
 		}
 	}

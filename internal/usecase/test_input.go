@@ -190,7 +190,7 @@ func (a *Service) testPayloadFor(version string, data *TestPortraitData) *object
 		c.set("оценка", data.Congruence.Text)
 		payload.insertAfter("образы_я", "согласованность_образов", c)
 	}
-	payload.insertAfter("признаки", "образ_защитника", defenderList(data.Defender, numbers))
+	payload.insertAfter("признаки", "образ_защитника", defenderList(data.Defender, numbers, a.fittingDirections(data)))
 	criteria := map[string][]CriterionData{}
 	for _, k := range data.Criteria {
 		criteria[k.Kind] = k.Criteria
@@ -242,7 +242,30 @@ func (a *Service) catalogueList(numbers map[string]int) []any {
 	return catalogue
 }
 
-func defenderList(groups []DefenderGroup, numbers map[string]int) []any {
+// fittingDirections are, by group of the image, the codes of the directions a
+// recommendation for it may take: of the group, of the type of its situation,
+// and psychological ones when a scale of the emotional-volitional component is
+// low (Д1, Д4). The model gets them ready, so as not to match the types itself
+// (decided by the user on 24 October 2026 after the run on GigaChat).
+func (a *Service) fittingDirections(data *TestPortraitData) map[string][]any {
+	lowEV := false
+	for _, m := range data.Methods {
+		lowEV = lowEV || m.Component == "EV" && m.Level == "low"
+	}
+	fitting := map[string][]any{}
+	for _, g := range data.Defender {
+		codes := []any{}
+		for _, d := range a.defender.Directions {
+			if slices.Contains(d.Groups, g.ID) && (g.Type == "" || d.Type == g.Type || d.Type == "psychological" && lowEV) {
+				codes = append(codes, d.ID)
+			}
+		}
+		fitting[g.ID] = codes
+	}
+	return fitting
+}
+
+func defenderList(groups []DefenderGroup, numbers map[string]int, fitting map[string][]any) []any {
 	list := []any{}
 	for _, g := range groups {
 		o := newObject()
@@ -254,6 +277,7 @@ func defenderList(groups []DefenderGroup, numbers map[string]int) []any {
 		o.put("разрыв", scoreText(g.Gap))
 		o.set("ситуация", g.SituationText)
 		o.put("тип_рекомендации", g.TypeText)
+		o.set("подходящие_направления", fitting[g.ID])
 		methods := []any{}
 		for _, m := range g.Methods {
 			row := newObject()

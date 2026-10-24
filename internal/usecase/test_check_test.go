@@ -269,3 +269,39 @@ func TestProblemsTellTheRetryWhatFits(t *testing.T) {
 		}
 	}
 }
+
+// The directions the input lists for a group are exactly those the check
+// takes for it.
+func TestFittingDirectionsAreThoseTheCheckTakes(t *testing.T) {
+	a := testApp(t)
+	for _, low := range []bool{false, true} {
+		data := a.TestPortrait(fixedTestSession(a, a.bank.Version))
+		for n := range data.Methods {
+			level := "high"
+			if low && data.Methods[n].ID == "EMO" {
+				level = "low"
+			}
+			data.Methods[n].Level, data.Methods[n].LevelText = level, levelText[level]
+		}
+		payload := a.testPayloadFor("v2", data)
+		for _, g := range objectList(payload.values["образ_защитника"]) {
+			number := g.values["номер"].(int)
+			listed := map[string]bool{}
+			for _, code := range g.values["подходящие_направления"].([]any) {
+				listed[code.(string)] = true
+			}
+			if len(listed) == 0 {
+				t.Errorf("group %d: nothing fits", number)
+			}
+			for _, d := range objectList(payload.values["каталог_рекомендаций"]) {
+				answer := goodTestAnswerV2(string(canonicalJSON(payload)))
+				answer["recommendations"].([]any)[0].(map[string]any)["group"] = number
+				answer["recommendations"].([]any)[0].(map[string]any)["code"] = objectText(d, "код")
+				passes := !strings.Contains(strings.Join(checkTestAnswerV2(answer, payload), "; "), "recommendations.1:")
+				if passes != listed[objectText(d, "код")] {
+					t.Errorf("low %v, group %d, %s: listed %v, passes %v", low, number, objectText(d, "код"), listed[objectText(d, "код")], passes)
+				}
+			}
+		}
+	}
+}
