@@ -24,24 +24,32 @@ func TestAutobiographyV1(t *testing.T) {
 	}
 }
 
-// The latest version of each task is the text of its Инструкция.md in the
-// wiki word for word; the wiki is in the working folder, not in the repository.
+// The latest version of each task is the text of its instruction in the wiki
+// word for word; the wiki is in the working folder, not in the repository. The
+// first version of the test keeps its own file as the history of v1.
 func TestLatestVersionMatchesTheWikiWhenItIsThere(t *testing.T) {
-	for task, path := range map[string]string{
-		"autobiography": "../../../Вики/Автобиография/Сравнение моделей/Инструкция.md",
-		"test":          "../../../Вики/Тестирование/Инструкция.md",
-		"essay":         "../../../Вики/Эссе выпускника/Инструкция.md",
-		"essay-cohort":  "../../../Вики/Эссе выпускника/Инструкция по выпуску.md",
+	prompts, _ := Load()
+	for _, c := range []struct{ task, version, path string }{
+		{"autobiography", "", "../../../Вики/Автобиография/Сравнение моделей/Инструкция.md"},
+		{"test", "", "../../../Вики/Тестирование/Инструкция v2.md"},
+		{"test", "v1", "../../../Вики/Тестирование/Инструкция.md"},
+		{"test-platoon", "", "../../../Вики/Тестирование/Инструкция по взводу.md"},
+		{"essay", "", "../../../Вики/Эссе выпускника/Инструкция.md"},
+		{"essay-cohort", "", "../../../Вики/Эссе выпускника/Инструкция по выпуску.md"},
 	} {
-		wiki, err := os.ReadFile(path)
-		if err != nil {
-			t.Skip("the wiki folder is not next to the repository")
-		}
-		prompts, _ := Load()
-		prompt, ok := Latest(prompts, task)
-		if !ok || !strings.Contains(string(wiki), "```text\n"+prompt.Instruction+"\n```") || !strings.Contains(string(wiki), "```json\n"+string(prompt.Schema)+"\n```") {
-			t.Fatalf("%s: the latest version %s differs from %s: a changed wording must be a new version folder", task, prompt.Version, path)
-		}
+		t.Run(c.task+c.version, func(t *testing.T) {
+			wiki, err := os.ReadFile(c.path)
+			if err != nil {
+				t.Skip("the wiki folder is not next to the repository")
+			}
+			prompt, ok := Latest(prompts, c.task)
+			if c.version != "" {
+				prompt, ok = Find(prompts, c.task, c.version)
+			}
+			if !ok || !strings.Contains(string(wiki), "```text\n"+prompt.Instruction+"\n```") || !strings.Contains(string(wiki), "```json\n"+string(prompt.Schema)+"\n```") {
+				t.Errorf("%s: version %s differs from %s: a changed wording must be a new version folder", c.task, prompt.Version, c.path)
+			}
+		})
 	}
 }
 

@@ -108,7 +108,7 @@ func TestSessionWithMethodsGetsATestPortrait(t *testing.T) {
 		if c.MaxTokens != 4000 {
 			t.Errorf("max tokens %d", c.MaxTokens)
 		}
-		data, _ := json.Marshal(goodTestAnswer(c.User))
+		data, _ := json.Marshal(goodTestAnswerV2(c.User))
 		return string(data), nil
 	}}
 	f.service.UseModel(m)
@@ -116,7 +116,7 @@ func TestSessionWithMethodsGetsATestPortrait(t *testing.T) {
 	if view := f.wait(); view.Status != portraitReady || view.Portrait == nil {
 		t.Fatalf("view: %+v", view)
 	}
-	if m.count() != 1 || strings.Contains(user, "portrait@example.test") || !strings.Contains(user, "\"методики\"") || !strings.Contains(user, "Самообладание") {
+	if m.count() != 1 || strings.Contains(user, "portrait@example.test") || !strings.Contains(user, "\"методики\"") || !strings.Contains(user, "Самообладание") || !strings.Contains(user, "\"образ_защитника\"") {
 		t.Fatalf("%d calls, input: %.300s", m.count(), user)
 	}
 	for _, name := range mustSnapshot(t, f.service.repo).Students {

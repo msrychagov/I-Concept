@@ -185,6 +185,12 @@ func findSession(db model.Database, s Source) (model.Session, bool) {
 }
 
 func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
+	// The answer of v2 has other fields and rules (test_check.go); v1 is
+	// checked as it always was.
+	check := checkTestAnswer
+	if n, _ := promptbank.Number(prompt.Version); n >= 2 {
+		check = checkTestAnswerV2
+	}
 	return portraitTask{
 		ID: testPortraitTask, Version: prompt.Version, Prompt: prompt,
 		// The portrait has nine sections: about 2000 tokens of Russian text.
@@ -202,7 +208,7 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 			}
 			return a.testPayloadFor(prompt.Version, data), nil
 		},
-		Check: checkTestAnswer,
+		Check: check,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			session, ok := findSession(db, s)
 			return ok && teacherOwnsSession(db, teacherID, session)

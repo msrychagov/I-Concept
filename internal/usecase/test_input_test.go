@@ -187,16 +187,17 @@ func TestTestPayloadV2AddsTheImage(t *testing.T) {
 	}
 }
 
-// The task builds the input of the instruction it was registered with.
+// The task builds the input and checks the answer of the instruction it was
+// registered with: an older program that knows only v1 sends the input of v1.
 func TestTestTaskSendsTheInputOfItsVersion(t *testing.T) {
 	f := newTestPortraitFixture(t, true)
 	prompts, err := promptbank.Load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	newer := promptbank.Prompt{Task: testPortraitTask, Version: "v2", Instruction: "Инструкция.", Schema: json.RawMessage(`{"type":"object"}`)}
+	first := slices.DeleteFunc(prompts, func(p promptbank.Prompt) bool { return p.Task == testPortraitTask && p.Version != "v1" })
 	f.service.portraits.tasks = nil
-	f.service.RegisterPrompts(append(prompts, newer)...)
+	f.service.RegisterPrompts(first...)
 	var user string
 	f.service.UseModel(&fakeModel{name: "fake", reply: func(_ int, c Completion) (string, error) {
 		user = c.User
@@ -207,8 +208,8 @@ func TestTestTaskSendsTheInputOfItsVersion(t *testing.T) {
 	if view := f.wait(); view.Status != portraitReady {
 		t.Fatalf("view: %+v", view)
 	}
-	if !strings.Contains(user, "\"образ_защитника\"") || !strings.Contains(user, "\"каталог_рекомендаций\"") {
-		t.Fatalf("input of v2: %.300s", user)
+	if strings.Contains(user, "\"образ_защитника\"") || !strings.Contains(user, "\"методики\"") {
+		t.Fatalf("input of v1: %.300s", user)
 	}
 }
 
