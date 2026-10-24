@@ -29,6 +29,7 @@ func goodPortrait(user string) map[string]any {
 	return map[string]any{
 		"summary":   "Студент сообщил о себе, по сведениям, которые сообщил студент, следующее.",
 		"potential": potential,
+		"hobbies":   []any{},
 		"attention": map[string]any{"use": []any{"Опыт организатора."}, "consider": consider},
 	}
 }
@@ -99,7 +100,7 @@ func TestSubmittedAutobiographyGetsAPortraitOnceAndTheSameForEqualAnswers(t *tes
 		t.Fatalf("%+v after %d calls", view, m.count())
 	}
 	call := m.calls[0]
-	if !strings.HasPrefix(call.System, "Ты помогаешь преподавателю военного учебного центра") || !strings.Contains(string(call.Schema), `"required": ["summary", "potential", "attention"]`) {
+	if !strings.HasPrefix(call.System, "Ты помогаешь преподавателю военного учебного центра") || !strings.Contains(string(call.Schema), `"required": ["summary", "potential", "hobbies", "attention"]`) {
 		t.Fatalf("instruction or schema: %.80s", call.System)
 	}
 	// What was sent is the anonymised input and nothing of the person.
