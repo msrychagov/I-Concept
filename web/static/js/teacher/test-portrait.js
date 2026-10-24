@@ -94,7 +94,7 @@ window.testPortrait = (() => {
         const rows = m.defender.map(g => `<tr><td>${esc(g.name)}<small>Я-реальное ${number(g.real)} · Я-идеальное ${number(g.ideal)} · до образа ${number(g.distance)}</small></td><td>${esc(g.situationText)}${g.note ? `<small>${esc(g.note)}</small>` : ''}</td></tr>`).join('');
         const c = m.congruence;
         return `<h4>Образ защитника Отечества</h4><div class="table-scroll"><table class="test-portrait-levels test-portrait-image"><thead><tr><th>Группа качеств</th><th>Ситуация</th></tr></thead><tbody>${rows}</tbody></table></div>
-   ${c ? `<p>Согласованность Я-реального и Я-идеального: ${esc(c.text)}${c.value == null ? '' : ` <span class="muted">(коэффициент ${number(c.value)})</span>`}.</p>` : ''}
+   ${c ? `<p>Согласованность Я-реального и Я-идеального: ${esc(c.text.replace(/\.$/, ''))}${c.value == null ? '' : ` <span class="muted">(коэффициент ${number(c.value)})</span>`}.</p>` : ''}
    <p class="muted">Образ — верх шкалы 0–10; ситуация — по расстоянию от Я-идеального до образа и от Я-реального до Я-идеального.</p>`;
     }
 
