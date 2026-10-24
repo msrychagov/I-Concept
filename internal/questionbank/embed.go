@@ -6,7 +6,7 @@ import (
 	"vucdiagnostic/internal/domain/model"
 )
 
-//go:embed bank.json pilot-2.0.json psychological.json activity.json methods.json defender.json
+//go:embed bank.json pilot-2.0.json psychological.json activity.json methods.json identity.json defender.json
 var files embed.FS
 
 // Defender returns the image of the defender of the Fatherland: the groups of
@@ -22,9 +22,36 @@ func Defender() (model.DefenderImage, error) {
 	return image, err
 }
 
-// Load returns pilot-2.4: pilot-2.3 and the methods of the first chapter
-// (methods.json) with their keys and levels.
+// Load returns pilot-2.5: pilot-2.4 and the method of the statuses of
+// professional identity by А. А. Азбель in two blocks (identity.json).
 func Load() (model.Bank, error) {
+	bank, err := load24()
+	if err != nil {
+		return bank, err
+	}
+	data, err := files.ReadFile("identity.json")
+	if err != nil {
+		return bank, err
+	}
+	var addition model.Bank
+	if err := json.Unmarshal(data, &addition); err != nil {
+		return bank, err
+	}
+	bank.Version = addition.Version
+	for key, value := range addition.Modules {
+		bank.Modules[key] = value
+	}
+	for key, value := range addition.Instructions {
+		bank.Instructions[key] = value
+	}
+	bank.Items = append(bank.Items, addition.Items...)
+	bank.Identity = addition.Identity
+	return bank, nil
+}
+
+// load24 returns pilot-2.4: pilot-2.3 and the methods of the first chapter
+// (methods.json) with their keys and levels.
+func load24() (model.Bank, error) {
 	bank, err := load23()
 	if err != nil {
 		return bank, err
@@ -123,5 +150,9 @@ func Previous() ([]model.Bank, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []model.Bank{bank, recent, previous, activity}, nil
+	methods, err := load24()
+	if err != nil {
+		return nil, err
+	}
+	return []model.Bank{bank, recent, previous, activity, methods}, nil
 }

@@ -9,7 +9,7 @@ import (
 // with their keys: every scale refers to known questions and its levels
 // cover the whole range of the sum.
 func TestPilot24KeepsTheMethodsAndTheirKeys(t *testing.T) {
-	bank, err := Load()
+	bank, err := load24()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,15 +69,19 @@ func TestPilot24KeepsTheMethodsAndTheirKeys(t *testing.T) {
 	}
 }
 
-func TestPreviousKeepsPilot23(t *testing.T) {
+func TestPreviousKeepsPilot23And24(t *testing.T) {
 	banks, err := Previous()
 	if err != nil {
 		t.Fatal(err)
 	}
+	kept := map[string]bool{}
 	for _, bank := range banks {
-		if bank.Version == "pilot-2.3" {
-			return
+		kept[bank.Version] = true
+		if bank.Version == "pilot-2.4" && (bank.Identity != nil || len(bank.Methods) == 0) {
+			t.Fatal("pilot-2.4 is not kept as it was")
 		}
 	}
-	t.Fatal("pilot-2.3 is not kept for old sessions")
+	if !kept["pilot-2.3"] || !kept["pilot-2.4"] {
+		t.Fatalf("versions kept for old sessions: %v", kept)
+	}
 }
