@@ -415,6 +415,54 @@ func TestQualitiesComeFromActivitiesMarkedByExperience(t *testing.T) {
 	}
 }
 
+// The work before the university is only a fact (D9): a skill or a quality
+// next to the student's own position is drawn from that work.
+func TestWorkBeforeUniversityIsOnlyAFact(t *testing.T) {
+	payload := qualitiesPayload()
+	jobs := []any{}
+	for _, position := range []string{"официант", "старший слесарь-ремонтник"} {
+		job := newObject()
+		job.set("должность", position)
+		jobs = append(jobs, job)
+	}
+	payload.set("работа_до_вуза", jobs)
+	stems := jobStems(payload)
+	if strings.Join(stems, " ") != "официа слеса ремонтн" {
+		t.Fatalf("stems: %v", stems)
+	}
+	for text, bad := range map[string]bool{
+		"Стаж работы официантом — навыки коммуникации и дисциплины.":      true,
+		"Опыт работы официантом — коммуникабельность.":                    true,
+		"Навыки слесаря-ремонтника, техническое образование.":             true,
+		"Работал официантом в сфере услуг.":                               false,
+		"Работал слесарем-ремонтником.":                                   false,
+		"Звание старшего сержанта, навыки огневой подготовки.":            false,
+		"Работал официантом. Навыки огневой подготовки на сборах.":        false,
+		"По опыту в футболе — навыки работы в команде и выносливость.":    false,
+		"По опыту в технике — навыки обслуживания и ремонта автомобилей.": false,
+	} {
+		problems := workProblems("тест", text, stems)
+		if (len(problems) == 1) != bad || len(problems) > 1 {
+			t.Errorf("%q: %v", text, problems)
+		}
+		for _, problem := range problems {
+			if strings.Contains(problem, "официа") || strings.Contains(problem, "слеса") {
+				t.Errorf("the position reached the problem: %q", problem)
+			}
+		}
+	}
+	answer := qualitiesAnswer()
+	answer["attention"].(map[string]any)["use"] = []any{"Работал официантом.", "Стаж работы официантом — навыки коммуникации."}
+	if problems := checkAutobiographyAnswer(answer, payload); len(problems) != 1 || !strings.Contains(problems[0], "attention.use, пункт 2: навыки или качества из работы до вуза («навык»)") {
+		t.Errorf("use: %v", problems)
+	}
+	answer = qualitiesAnswer()
+	answer["hobbies"] = []any{"По опыту в чтении — кругозор.", "По опыту в кулинарии и работы официантом — аккуратность."}
+	if problems := checkAutobiographyAnswer(answer, payload); len(problems) != 1 || !strings.Contains(problems[0], "hobbies, пункт 2: навыки или качества из работы до вуза") {
+		t.Errorf("hobbies: %v", problems)
+	}
+}
+
 // The words of the family must not catch the words that only contain them.
 func TestFamilyWordsStandAlone(t *testing.T) {
 	for _, text := range []string{

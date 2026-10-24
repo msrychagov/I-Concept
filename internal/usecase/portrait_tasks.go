@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"unicode"
 	"vucdiagnostic/internal/domain/model"
 	"vucdiagnostic/internal/promptbank"
 )
@@ -89,6 +90,64 @@ var byExperience = regexp.MustCompile(`(?i)по опыту`)
 // a family.
 var lifeCircumstance = regexp.MustCompile(`(?i)семь[яиюеё]|семей|воспитыва|родител|судим|уголовн|гражданств|(^|[^а-яё])(отец|отц[аеуо]м?|мать|матер(и|ью)|брат(а|у|ом|ья|ьев|ьям)?|сестр(а|ы|е|у|ой)?|жена|жены|женат|супруг[а-яё]*|сын(а|у|ом)?|дочь|дочер[а-яё]*|ребён[а-яё]*|вырос|выросш[а-яё]*)([^а-яё]|$)`)
 
+// skillWord is a skill or a quality. Next to a position the student held
+// before the university it is drawn from that work, which since D9 (24 October
+// 2026) is only a fact: «Работал официантом».
+var skillWord = regexp.MustCompile(`(?i)навык|качеств|умени|умеет|дисциплин|коммуникаб|коммуникац|общительн|ответствен|организованн|стрессоуст|выносл|терпени|аккуратн|пунктуальн|исполнительн`)
+
+// jobModifiers are the words of a position that say nothing of the work itself
+// and would catch the ranks of the service: «старший сержант».
+var jobModifiers = []string{"старший", "младший", "главный", "ведущий", "помощник", "заместитель", "начальник", "специалист", "сотрудник", "работник", "стажёр", "стажер"}
+
+// jobStems returns the stems of the positions the student held before the
+// university: «официант» gives «официа», which finds «официантом».
+func jobStems(payload *object) []string {
+	stems := []string{}
+	jobs, _ := payload.values["работа_до_вуза"].([]any)
+	for _, job := range jobs {
+		record, ok := job.(*object)
+		if !ok {
+			continue
+		}
+		position, _ := record.values["должность"].(string)
+		for _, word := range strings.FieldsFunc(strings.ToLower(position), func(r rune) bool { return !unicode.IsLetter(r) }) {
+			letters := []rune(word)
+			if len(letters) < 4 || slices.Contains(jobModifiers, word) {
+				continue
+			}
+			if len(letters) > 5 {
+				letters = letters[:max(5, len(letters)-2)]
+			}
+			stems = append(stems, string(letters))
+		}
+	}
+	return stems
+}
+
+// workProblems finds a skill or a quality in the same sentence as a position
+// the student held before the university. It names the skill word, never the
+// position: that is the student's own text.
+func workProblems(where, text string, jobs []string) []string {
+	for _, part := range strings.FieldsFunc(strings.ToLower(text), func(r rune) bool { return strings.ContainsRune(".;!?", r) }) {
+		found := skillWord.FindString(part)
+		if found == "" {
+			continue
+		}
+		for _, stem := range jobs {
+			if strings.Contains(part, stem) {
+				return []string{fmt.Sprintf("%s: навыки или качества из работы до вуза («%s»)", where, found)}
+			}
+		}
+	}
+	return nil
+}
+
+// qualityProblems checks a text where the qualities may be: none drawn from
+// the family, citizenship, criminal records or the work before the university.
+func qualityProblems(where, text string, jobs []string) []string {
+	return append(circumstanceProblems(where, text), workProblems(where, text, jobs)...)
+}
+
 // sentence trims a text and the full stop at its end, to compare it with a
 // fixed phrase of the instruction.
 func sentence(text string) string {
@@ -114,6 +173,7 @@ func checkAutobiographyAnswer(output map[string]any, payload *object) []string {
 			expected[key], _ = levels.values[key].(string)
 		}
 	}
+	jobs := jobStems(payload)
 	items, listed := output["potential"].([]any)
 	records := []map[string]any{}
 	for _, item := range items {
@@ -145,10 +205,10 @@ func checkAutobiographyAnswer(output map[string]any, payload *object) []string {
 			if want, known := expected[name]; known && record["level"] != want {
 				problems = append(problems, fmt.Sprintf("%s: уровень изменён, «%v» вместо «%s»", name, record["level"], want))
 			}
-			problems = append(problems, conclusionProblems(name, record, expected[name])...)
+			problems = append(problems, conclusionProblems(name, record, expected[name], jobs)...)
 		}
 	}
-	problems = append(problems, hobbiesProblems(output["hobbies"], payload)...)
+	problems = append(problems, hobbiesProblems(output["hobbies"], payload, jobs)...)
 	attention, ok := output["attention"].(map[string]any)
 	if !ok {
 		return append(problems, "нет блока «на что обратить внимание»")
@@ -172,7 +232,7 @@ func checkAutobiographyAnswer(output map[string]any, payload *object) []string {
 		}
 		if key == "use" && isList && strs {
 			for n, point := range list {
-				problems = append(problems, circumstanceProblems(fmt.Sprintf("attention.use, пункт %d", n+1), point.(string))...)
+				problems = append(problems, qualityProblems(fmt.Sprintf("attention.use, пункт %d", n+1), point.(string), jobs)...)
 			}
 		}
 	}
@@ -182,7 +242,7 @@ func checkAutobiographyAnswer(output map[string]any, payload *object) []string {
 // conclusionProblems checks the conclusion of one area: the qualities marked
 // «по опыту в …», or exactly «Опыт не указан» when there is nothing to draw
 // them from. A level above «не выражен» always rests on some experience.
-func conclusionProblems(area string, record map[string]any, level string) []string {
+func conclusionProblems(area string, record map[string]any, level string, jobs []string) []string {
 	text, _ := record["conclusion"].(string)
 	facts, _ := record["facts"].(string)
 	if strings.TrimSpace(text) == "" {
@@ -198,12 +258,12 @@ func conclusionProblems(area string, record map[string]any, level string) []stri
 	case !none && sentence(facts) == "Сведений нет":
 		problems = append(problems, fmt.Sprintf("%s: сведений нет, а вывод не «%s»", area, noExperience))
 	}
-	return append(problems, circumstanceProblems(area+", вывод", text)...)
+	return append(problems, qualityProblems(area+", вывод", text, jobs)...)
 }
 
 // hobbiesProblems checks the qualities by the hobbies: at most one point a
 // hobby of the questionnaire, each marked «по опыту в …».
-func hobbiesProblems(value any, payload *object) []string {
+func hobbiesProblems(value any, payload *object, jobs []string) []string {
 	list, isList := value.([]any)
 	for _, item := range list {
 		if _, isString := item.(string); !isString {
@@ -222,7 +282,7 @@ func hobbiesProblems(value any, payload *object) []string {
 		if !byExperience.MatchString(item.(string)) {
 			problems = append(problems, where+": нет «по опыту в …»")
 		}
-		problems = append(problems, circumstanceProblems(where, item.(string))...)
+		problems = append(problems, qualityProblems(where, item.(string), jobs)...)
 	}
 	return problems
 }
