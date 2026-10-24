@@ -200,7 +200,7 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 			if data == nil {
 				return nil, problem(Invalid, "В тестировании нет методик.")
 			}
-			return testPayload(data), nil
+			return a.testPayloadFor(prompt.Version, data), nil
 		},
 		Check: checkTestAnswer,
 		Visible: func(db model.Database, s Source, teacherID string) bool {

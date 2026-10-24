@@ -2,7 +2,9 @@ package usecase
 
 import (
 	"fmt"
+	"slices"
 	"sort"
+	"vucdiagnostic/internal/promptbank"
 )
 
 // The input of the language model for the portrait by the test: the counted
@@ -149,4 +151,102 @@ func testPayload(data *TestPortraitData) *object {
 	}
 	payload.set("рассказы_о_деятельности", stories)
 	return payload
+}
+
+// insertAfter puts a key right after another one, or at the end when there is
+// no such key: the input of a new version keeps the order of the first chapter.
+func (o *object) insertAfter(after, key string, value any) {
+	if _, seen := o.values[key]; seen {
+		o.values[key] = value
+		return
+	}
+	o.values[key] = value
+	at := len(o.keys)
+	for n, k := range o.keys {
+		if k == after {
+			at = n + 1
+		}
+	}
+	o.keys = slices.Insert(o.keys, at, key)
+}
+
+// testPayloadFor builds the input of an instruction version. The input of v1
+// stays as it was: the stored portraits are found by its fingerprint. From v2
+// on it has the image of the defender, the congruence of the images, the
+// professional identity when the method was given, and the catalogue of
+// recommendations (Вики/Тестирование/План портрета test-v2.md, step 3).
+func (a *Service) testPayloadFor(version string, data *TestPortraitData) *object {
+	payload := testPayload(data)
+	if n, _ := promptbank.Number(version); n < 2 {
+		return payload
+	}
+	numbers := map[string]int{}
+	for n, g := range a.defender.Groups {
+		numbers[g.ID] = n + 1
+	}
+	if data.Congruence != nil {
+		c := newObject()
+		c.put("коэффициент", scoreText(data.Congruence.Value))
+		c.set("оценка", data.Congruence.Text)
+		payload.insertAfter("образы_я", "согласованность_образов", c)
+	}
+	payload.insertAfter("признаки", "образ_защитника", defenderList(data.Defender, numbers))
+	catalogue := []any{}
+	types := map[string]string{}
+	for _, kind := range a.defender.Types {
+		types[kind.ID] = kind.Name
+	}
+	for _, d := range a.defender.Directions {
+		o := newObject()
+		o.set("код", d.ID)
+		o.set("направление", d.Name)
+		o.set("тип", types[d.Type])
+		// []any, not []int: the cleaning of personal data walks only these.
+		groups := []any{}
+		for _, id := range d.Groups {
+			groups = append(groups, numbers[id])
+		}
+		o.set("группы", groups)
+		catalogue = append(catalogue, o)
+	}
+	payload.set("каталог_рекомендаций", catalogue)
+	return payload
+}
+
+func defenderList(groups []DefenderGroup, numbers map[string]int) []any {
+	list := []any{}
+	for _, g := range groups {
+		o := newObject()
+		o.set("номер", numbers[g.ID])
+		o.set("группа", g.Name)
+		o.put("я_реальное", scoreText(g.Real))
+		o.put("я_идеальное", scoreText(g.Ideal))
+		o.put("до_образа", scoreText(g.Distance))
+		o.put("разрыв", scoreText(g.Gap))
+		o.set("ситуация", g.SituationText)
+		o.put("тип_рекомендации", g.TypeText)
+		methods := []any{}
+		for _, m := range g.Methods {
+			row := newObject()
+			row.set("показатель", m.Name)
+			row.set("уровень", m.LevelText)
+			methods = append(methods, row)
+		}
+		if len(methods) > 0 {
+			o.set("методики", methods)
+		}
+		kinds := []any{}
+		for _, k := range g.Kinds {
+			row := newObject()
+			row.set("вид", k.Name)
+			row.put("формы", k.Forms)
+			row.set("уровень", k.LevelText)
+			kinds = append(kinds, row)
+		}
+		o.set("виды_деятельности", kinds)
+		o.set("условия_среды", indicatorList(g.Conditions))
+		o.put("пометка", g.Note)
+		list = append(list, o)
+	}
+	return list
 }
