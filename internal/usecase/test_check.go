@@ -126,10 +126,15 @@ func sentenceProblem(field, text string, least, most int) []string {
 	if strings.TrimSpace(text) == "" || n >= least && n <= most {
 		return nil
 	}
-	if least == most {
-		return []string{fmt.Sprintf("%s: предложений %d вместо %d", field, n, least)}
+	// The model joins its thoughts by «;»: a retry is told what a sentence is.
+	hint := ""
+	if n < least {
+		hint = " — раздели текст на отдельные предложения, каждое кончается точкой"
 	}
-	return []string{fmt.Sprintf("%s: предложений %d вместо %d–%d", field, n, least, most)}
+	if least == most {
+		return []string{fmt.Sprintf("%s: предложений %d вместо %d%s", field, n, least, hint)}
+	}
+	return []string{fmt.Sprintf("%s: предложений %d вместо %d–%d%s", field, n, least, most, hint)}
 }
 
 func outputText(output map[string]any, key string) string {
@@ -306,8 +311,22 @@ func recommendationProblems(output map[string]any, payload *object, least, most 
 		return []string{fmt.Sprintf("recommendations: нужно от %d до %d пунктов", least, most)}
 	}
 	catalogue := map[string]*object{}
+	codes := []string{}
 	for _, d := range objectList(payload.values["каталог_рекомендаций"]) {
 		catalogue[objectText(d, "код")] = d
+		codes = append(codes, objectText(d, "код"))
+	}
+	// fitting names the directions a retry may take for a group: those of the
+	// group and, when the type is checked, of an allowed type.
+	fitting := func(group int) string {
+		list := []string{}
+		for _, code := range codes {
+			d := catalogue[code]
+			if slices.Contains(d.values["группы"].([]any), any(group)) && (allowed == nil || allowed(group, objectText(d, "тип"))) {
+				list = append(list, code)
+			}
+		}
+		return fmt.Sprintf(" — для группы %d подходят: %s", group, strings.Join(list, ", "))
 	}
 	for n, item := range items {
 		record, _ := item.(map[string]any)
@@ -323,9 +342,9 @@ func recommendationProblems(output map[string]any, payload *object, least, most 
 		case !known:
 			problems = append(problems, field+": кода нет в каталоге")
 		case !slices.Contains(direction.values["группы"].([]any), any(int(number))):
-			problems = append(problems, field+": направление не подходит к группе")
+			problems = append(problems, field+": направление не подходит к группе"+fitting(int(number)))
 		case allowed != nil && !allowed(int(number), objectText(direction, "тип")):
-			problems = append(problems, field+": тип направления не подходит к ситуации группы")
+			problems = append(problems, field+": тип направления не подходит к ситуации группы"+fitting(int(number)))
 		}
 	}
 	return problems

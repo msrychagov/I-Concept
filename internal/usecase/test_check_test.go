@@ -236,3 +236,27 @@ func TestPsychologicalDirectionNeedsALowVolitionalScale(t *testing.T) {
 		t.Fatalf("psychological with a low scale: %s", problems)
 	}
 }
+
+// A retry is told what is allowed: the directions that fit the group and its
+// situation, and that a sentence ends with a stop.
+func TestProblemsTellTheRetryWhatFits(t *testing.T) {
+	a := testApp(t)
+	data := a.TestPortrait(fixedTestSession(a, a.bank.Version))
+	for n := range data.Defender {
+		data.Defender[n].Type, data.Defender[n].TypeText = "support", "опора"
+	}
+	for n := range data.Methods {
+		data.Methods[n].Level, data.Methods[n].LevelText = "high", levelText["high"]
+	}
+	payload := a.testPayloadFor("v2", data)
+	answer := goodTestAnswerV2(string(canonicalJSON(payload)))
+	answer["recommendations"].([]any)[0].(map[string]any)["group"] = 3
+	answer["recommendations"].([]any)[0].(map[string]any)["code"] = "R20"
+	answer["activity"] = "Студент включён в деятельность; условия он оценивает выше."
+	problems := strings.Join(checkTestAnswerV2(answer, payload), "; ")
+	for _, want := range []string{"recommendations.1: тип направления не подходит к ситуации группы — для группы 3 подходят: R15, R16", "activity: предложений 1 вместо 3–4 — раздели текст на отдельные предложения"} {
+		if !strings.Contains(problems, want) {
+			t.Errorf("no «%s» in %s", want, problems)
+		}
+	}
+}
