@@ -6,8 +6,21 @@ import (
 	"vucdiagnostic/internal/domain/model"
 )
 
-//go:embed bank.json pilot-2.0.json psychological.json activity.json methods.json
+//go:embed bank.json pilot-2.0.json psychological.json activity.json methods.json defender.json
 var files embed.FS
+
+// Defender returns the image of the defender of the Fatherland: the groups of
+// qualities, what forms them and the catalogue of recommendations. It is kept
+// apart from the bank, whose questions and version it does not change.
+func Defender() (model.DefenderImage, error) {
+	var image model.DefenderImage
+	data, err := files.ReadFile("defender.json")
+	if err != nil {
+		return image, err
+	}
+	err = json.Unmarshal(data, &image)
+	return image, err
+}
 
 // Load returns pilot-2.4: pilot-2.3 and the methods of the first chapter
 // (methods.json) with their keys and levels.
