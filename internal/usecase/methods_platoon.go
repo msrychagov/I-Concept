@@ -1,8 +1,10 @@
 package usecase
 
 import (
+	"cmp"
 	"math"
 	"slices"
+	"vucdiagnostic/internal/domain/model"
 )
 
 // The count of a platoon for the conclusion by the platoon (task test-platoon,
@@ -39,6 +41,7 @@ type PlatoonDefenderGroup struct {
 type PlatoonCondition struct {
 	ID    string           `json:"id"`
 	Name  string           `json:"name"`
+	Level string           `json:"level"`
 	Mean  *float64         `json:"mean"`
 	Rated int              `json:"rated"`
 	Low   []MethodsStudent `json:"low"`
@@ -64,6 +67,63 @@ type PlatoonPortraitData struct {
 	Methods    []MethodsSummaryRow    `json:"methods"`
 	Kinds      []MethodsSummaryRow    `json:"kinds"`
 	Identity   []PlatoonIdentityBlock `json:"identity"`
+	// Relations are the signs love, sobornost and patriotism: the means of
+	// their indicators over the platoon.
+	Relations []PlatoonRelation `json:"relations"`
+	// Criteria and EnvironmentSigns are the data of the criteria of the first
+	// chapter and of the signs of the environment over the platoon.
+	Criteria         []PlatoonKindCriteria `json:"criteria"`
+	EnvironmentSigns []PlatoonSign         `json:"environmentSigns"`
+	// Told is how many students wrote about their activity at all.
+	Told int `json:"told"`
+}
+
+// PlatoonRelation is a sign of the core over the platoon.
+type PlatoonRelation struct {
+	ID         string           `json:"id"`
+	Name       string           `json:"name"`
+	Indicators []IndicatorScore `json:"indicators"`
+}
+
+// PlatoonPoint is a datum of a criterion or a sign over the platoon: the
+// students on each level (by level code, "" when not determined), the students
+// by answer about the frequency, the mean of an indicator with the number of
+// those who have it and, for a condition, of those who rated it 1–2, the
+// number of those who wrote an open answer and, when the criterion asks, the
+// answers themselves.
+type PlatoonPoint struct {
+	Code    string         `json:"code"`
+	Kind    string         `json:"kind"`
+	Text    string         `json:"text"`
+	Levels  map[string]int `json:"levels,omitempty"`
+	Answers []int          `json:"answers,omitempty"`
+	Mean    *float64       `json:"mean,omitempty"`
+	Rated   int            `json:"rated,omitempty"`
+	// Condition marks a condition of the environment: Low counts its 1–2.
+	Condition bool     `json:"condition,omitempty"`
+	Low       int      `json:"low,omitempty"`
+	Told      int      `json:"told,omitempty"`
+	Texts     []string `json:"texts,omitempty"`
+}
+
+type PlatoonCriterion struct {
+	Name     string         `json:"name"`
+	Coverage string         `json:"coverage"`
+	Note     string         `json:"note,omitempty"`
+	Points   []PlatoonPoint `json:"points"`
+}
+
+type PlatoonKindCriteria struct {
+	Kind     string             `json:"kind"`
+	Criteria []PlatoonCriterion `json:"criteria"`
+}
+
+type PlatoonSign struct {
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Note        string         `json:"note,omitempty"`
+	Points      []PlatoonPoint `json:"points"`
 }
 
 // lowCondition is the highest mean of a condition rated 1–2.
@@ -76,6 +136,12 @@ func (a *Service) PlatoonPortraitFor(teacherID, group string) (PlatoonPortraitDa
 	if err != nil {
 		return PlatoonPortraitData{}, err
 	}
+	return a.platoonPortrait(group, a.platoonStudents(db, teacherID, group)), nil
+}
+
+// platoonStudents are the counted portraits of the latest sessions with the
+// methods of the students of a platoon of the teacher.
+func (a *Service) platoonStudents(db model.Database, teacherID, group string) []studentPortrait {
 	portraits := []studentPortrait{}
 	for _, s := range latestMethodSessions(db, teacherID) {
 		if group != "" && s.Group != group {
@@ -85,7 +151,60 @@ func (a *Service) PlatoonPortraitFor(teacherID, group string) (PlatoonPortraitDa
 			portraits = append(portraits, studentPortrait{methodsStudent(s), data})
 		}
 	}
-	return a.platoonPortrait(group, portraits), nil
+	return portraits
+}
+
+// aggregatePoints puts the data of one criterion or sign of every student
+// together by code, in the order they first come.
+func (a *Service) aggregatePoints(perStudent [][]DataPoint, texts bool, told int) []PlatoonPoint {
+	conditions := map[string]bool{}
+	for _, ind := range a.bank.Indicators {
+		conditions[ind.ID] = ind.Block == "periphery"
+	}
+	points, at := []PlatoonPoint{}, map[string]int{}
+	scores := map[string][]float64{}
+	for _, list := range perStudent {
+		for _, p := range list {
+			n, seen := at[p.Code]
+			if !seen {
+				n = len(points)
+				at[p.Code] = n
+				points = append(points, PlatoonPoint{Code: p.Code, Kind: p.Kind, Text: p.Text, Condition: conditions[p.Code]})
+				if p.Code == "stories" {
+					points[n].Told = told
+				}
+			}
+			row := &points[n]
+			switch p.Kind {
+			case "activity", "method", "question":
+				if row.Levels == nil {
+					row.Levels = map[string]int{}
+				}
+				row.Levels[p.Level]++
+			case "frequency":
+				if row.Answers == nil {
+					row.Answers = make([]int, len(frequencyAnswers))
+				}
+				row.Answers[*p.Value]++
+			case "indicator":
+				scores[p.Code] = append(scores[p.Code], *p.Score)
+				if conditions[p.Code] && *p.Score <= lowCondition {
+					row.Low++
+				}
+			case "story":
+				row.Told++
+				if texts {
+					row.Texts = append(row.Texts, p.Answer)
+				}
+			}
+		}
+	}
+	for n := range points {
+		if xs := scores[points[n].Code]; len(xs) > 0 {
+			points[n].Rated, points[n].Mean = len(xs), meanPointer(xs, 100)
+		}
+	}
+	return points
 }
 
 func counts(ids []string, text map[string]string) []PlatoonCount {
@@ -113,7 +232,8 @@ func meanPointer(xs []float64, digits float64) *float64 {
 }
 
 func (a *Service) platoonPortrait(group string, portraits []studentPortrait) PlatoonPortraitData {
-	data := PlatoonPortraitData{Group: group, Students: len(portraits), Defender: []PlatoonDefenderGroup{}, Conditions: []PlatoonCondition{}, Identity: []PlatoonIdentityBlock{}}
+	data := PlatoonPortraitData{Group: group, Students: len(portraits), Defender: []PlatoonDefenderGroup{}, Conditions: []PlatoonCondition{}, Identity: []PlatoonIdentityBlock{},
+		Relations: []PlatoonRelation{}, Criteria: []PlatoonKindCriteria{}, EnvironmentSigns: []PlatoonSign{}}
 	rows := a.levelRows(portraits)
 	data.Methods = slices.DeleteFunc(slices.Clone(rows), func(r MethodsSummaryRow) bool { return r.Kind != "method" })
 	data.Kinds = slices.DeleteFunc(rows, func(r MethodsSummaryRow) bool { return r.Kind != "activity" })
@@ -151,7 +271,7 @@ func (a *Service) platoonPortrait(group string, portraits []studentPortrait) Pla
 		if ind.Block != "periphery" || ind.Descriptive {
 			continue
 		}
-		c := PlatoonCondition{ID: ind.ID, Name: ind.Name, Low: []MethodsStudent{}}
+		c := PlatoonCondition{ID: ind.ID, Name: ind.Name, Level: conditionNames[ind.Component], Low: []MethodsStudent{}}
 		scores := []float64{}
 		for _, p := range portraits {
 			for _, level := range p.data.Conditions {
@@ -167,6 +287,61 @@ func (a *Service) platoonPortrait(group string, portraits []studentPortrait) Pla
 		}
 		c.Rated, c.Mean = len(scores), meanPointer(scores, 100)
 		data.Conditions = append(data.Conditions, c)
+	}
+
+	for _, p := range portraits {
+		if len(p.data.OpenAnswers) > 0 {
+			data.Told++
+		}
+	}
+	for _, k := range a.defender.Criteria {
+		row := PlatoonKindCriteria{Kind: k.Kind, Criteria: []PlatoonCriterion{}}
+		for n, c := range k.Criteria {
+			perStudent := [][]DataPoint{}
+			for _, p := range portraits {
+				for _, own := range p.data.Criteria {
+					if own.Kind == k.Kind && n < len(own.Criteria) {
+						perStudent = append(perStudent, own.Criteria[n].Data)
+					}
+				}
+			}
+			row.Criteria = append(row.Criteria, PlatoonCriterion{Name: c.Name, Coverage: c.Coverage, Note: c.Note, Points: a.aggregatePoints(perStudent, c.Texts, data.Told)})
+		}
+		data.Criteria = append(data.Criteria, row)
+	}
+	for n, sign := range a.defender.Signs {
+		perStudent := [][]DataPoint{}
+		for _, p := range portraits {
+			if n < len(p.data.EnvironmentSigns) {
+				perStudent = append(perStudent, p.data.EnvironmentSigns[n].Data)
+			}
+		}
+		data.EnvironmentSigns = append(data.EnvironmentSigns, PlatoonSign{ID: sign.ID, Name: sign.Name, Description: sign.Description, Note: sign.Note, Points: a.aggregatePoints(perStudent, false, data.Told)})
+	}
+	for _, tag := range []string{"LOVE", "SOB", "PAT"} {
+		relation := PlatoonRelation{ID: tag, Name: signNames[tag], Indicators: []IndicatorScore{}}
+		names, scores, order := map[string]string{}, map[string][]float64{}, []string{}
+		for _, p := range portraits {
+			for _, g := range p.data.Signs {
+				if g.ID != tag {
+					continue
+				}
+				for _, ind := range g.Indicators {
+					if _, seen := names[ind.ID]; !seen {
+						order = append(order, ind.ID)
+						names[ind.ID] = ind.Name
+					}
+					scores[ind.ID] = append(scores[ind.ID], *ind.Score)
+				}
+			}
+		}
+		for _, id := range order {
+			relation.Indicators = append(relation.Indicators, IndicatorScore{ID: id, Name: names[id], Score: meanPointer(scores[id], 100)})
+		}
+		slices.SortStableFunc(relation.Indicators, func(x, y IndicatorScore) int {
+			return cmp.Compare(*y.Score, *x.Score)
+		})
+		data.Relations = append(data.Relations, relation)
 	}
 
 	if method := a.bank.Identity; method != nil {

@@ -28,7 +28,8 @@ import (
 // instruction version or another model gives a new portrait and the old stays.
 
 // Source is what a portrait is about: a submitted form ("submission"), a
-// finished test session ("session") or an assignment of an essay ("assignment").
+// finished test session ("session"), an assignment of an essay ("assignment")
+// or a platoon of a teacher ("platoon", platoon_task.go).
 type Source struct{ Kind, ID string }
 
 type portraitTask struct {
@@ -625,8 +626,11 @@ func (a *Service) portraitSource(db model.Database, teacherID, taskID, sourceID 
 	if !ok {
 		return task, Source{}, missingPortrait()
 	}
-	for _, kind := range []string{"submission", "session", "assignment"} {
+	for _, kind := range []string{"submission", "session", "assignment", "platoon"} {
 		s := Source{kind, sourceID}
+		if kind == "platoon" {
+			s = platoonSource(teacherID, sourceID)
+		}
 		if task.Accepts(db, s) && task.Visible(db, s, teacherID) {
 			return task, s, nil
 		}

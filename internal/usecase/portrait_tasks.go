@@ -19,6 +19,9 @@ func (a *Service) RegisterPrompts(prompts ...promptbank.Prompt) {
 	if prompt, ok := promptbank.Latest(prompts, testPortraitTask); ok {
 		a.registerPortraitTask(a.testTask(prompt))
 	}
+	if prompt, ok := promptbank.Latest(prompts, testPlatoonTask); ok {
+		a.registerPortraitTask(a.platoonTask(prompt))
+	}
 	if prompt, ok := promptbank.Latest(prompts, essayForm); ok {
 		a.registerPortraitTask(a.essayTask(prompt))
 	}

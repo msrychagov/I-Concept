@@ -215,6 +215,12 @@ func (a *Service) testPayloadFor(version string, data *TestPortraitData) *object
 	if len(data.Identity) > 0 {
 		payload.insertAfter("образ_защитника", "профессиональная_идентичность", identityList(data.Identity))
 	}
+	payload.set("каталог_рекомендаций", a.catalogueList(numbers))
+	return payload
+}
+
+// catalogueList is the catalogue of recommendations with the numbers of the groups.
+func (a *Service) catalogueList(numbers map[string]int) []any {
 	catalogue := []any{}
 	types := map[string]string{}
 	for _, kind := range a.defender.Types {
@@ -233,8 +239,7 @@ func (a *Service) testPayloadFor(version string, data *TestPortraitData) *object
 		o.set("группы", groups)
 		catalogue = append(catalogue, o)
 	}
-	payload.set("каталог_рекомендаций", catalogue)
-	return payload
+	return catalogue
 }
 
 func defenderList(groups []DefenderGroup, numbers map[string]int) []any {
