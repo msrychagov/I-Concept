@@ -74,13 +74,37 @@ var consequence = regexp.MustCompile(`(?i)влия|учитыв|учесть п�
 // criminalDetails is the phrase that must follow the student's own criminal record.
 var criminalDetails = regexp.MustCompile(`(?i)подробности[^.;]{0,20}в ответах студента`)
 
+// Since v3 (decided 24 October 2026) the model names the qualities and skills
+// an activity shows: only from the six areas and the hobbies, always marked
+// «по опыту в …», and nothing from the family, citizenship or criminal records.
+const noExperience = "Опыт не указан"
+
+// byExperience is the mark of a quality drawn from an activity.
+var byExperience = regexp.MustCompile(`(?i)по опыту`)
+
+// lifeCircumstance finds the family, the upbringing, the marriage, citizenship
+// and criminal records. They have no place where the qualities are: a quality
+// next to them is drawn from them. The short words must stand alone, so that
+// «обратить», «материал» or «восемь» are not taken for a brother, a mother or
+// a family.
+var lifeCircumstance = regexp.MustCompile(`(?i)семь[яиюеё]|семей|воспитыва|родител|судим|уголовн|гражданств|(^|[^а-яё])(отец|отц[аеуо]м?|мать|матер(и|ью)|брат(а|у|ом|ья|ьев|ьям)?|сестр(а|ы|е|у|ой)?|жена|жены|женат|супруг[а-яё]*|сын(а|у|ом)?|дочь|дочер[а-яё]*|ребён[а-яё]*|вырос|выросш[а-яё]*)([^а-яё]|$)`)
+
+// sentence trims a text and the full stop at its end, to compare it with a
+// fixed phrase of the instruction.
+func sentence(text string) string {
+	return strings.TrimSuffix(strings.TrimSpace(text), ".")
+}
+
 // checkAutobiographyAnswer returns what is wrong with an answer to the
 // autobiography instruction that a program can find: the schema, the levels,
-// the number of points and the rules of «what to consider».
+// the number of points, the qualities by experience and the rules of «what to
+// consider».
 func checkAutobiographyAnswer(output map[string]any, payload *object) []string {
 	problems := []string{}
 	if text, ok := output["summary"].(string); !ok || strings.TrimSpace(text) == "" {
 		problems = append(problems, "нет характеристики")
+	} else if byExperience.MatchString(text) {
+		problems = append(problems, "summary: качества «по опыту» в характеристике, а не в выводах")
 	}
 	expected := map[string]string{}
 	areas := []string{}
@@ -121,8 +145,10 @@ func checkAutobiographyAnswer(output map[string]any, payload *object) []string {
 			if want, known := expected[name]; known && record["level"] != want {
 				problems = append(problems, fmt.Sprintf("%s: уровень изменён, «%v» вместо «%s»", name, record["level"], want))
 			}
+			problems = append(problems, conclusionProblems(name, record, expected[name])...)
 		}
 	}
+	problems = append(problems, hobbiesProblems(output["hobbies"], payload)...)
 	attention, ok := output["attention"].(map[string]any)
 	if !ok {
 		return append(problems, "нет блока «на что обратить внимание»")
@@ -144,8 +170,92 @@ func checkAutobiographyAnswer(output map[string]any, payload *object) []string {
 		if key == "consider" && isList && strs {
 			problems = append(problems, considerProblems(list, payload)...)
 		}
+		if key == "use" && isList && strs {
+			for n, point := range list {
+				problems = append(problems, circumstanceProblems(fmt.Sprintf("attention.use, пункт %d", n+1), point.(string))...)
+			}
+		}
 	}
 	return problems
+}
+
+// conclusionProblems checks the conclusion of one area: the qualities marked
+// «по опыту в …», or exactly «Опыт не указан» when there is nothing to draw
+// them from. A level above «не выражен» always rests on some experience.
+func conclusionProblems(area string, record map[string]any, level string) []string {
+	text, _ := record["conclusion"].(string)
+	facts, _ := record["facts"].(string)
+	if strings.TrimSpace(text) == "" {
+		return nil
+	}
+	problems := []string{}
+	none := sentence(text) == noExperience
+	switch {
+	case !none && !byExperience.MatchString(text):
+		problems = append(problems, area+": в выводе нет «по опыту в …»")
+	case none && level != "" && level != "не выражен":
+		problems = append(problems, fmt.Sprintf("%s: уровень «%s», а вывод «%s»", area, level, noExperience))
+	case !none && sentence(facts) == "Сведений нет":
+		problems = append(problems, fmt.Sprintf("%s: сведений нет, а вывод не «%s»", area, noExperience))
+	}
+	return append(problems, circumstanceProblems(area+", вывод", text)...)
+}
+
+// hobbiesProblems checks the qualities by the hobbies: at most one point a
+// hobby of the questionnaire, each marked «по опыту в …».
+func hobbiesProblems(value any, payload *object) []string {
+	list, isList := value.([]any)
+	for _, item := range list {
+		if _, isString := item.(string); !isString {
+			isList = false
+		}
+	}
+	if !isList {
+		return []string{"hobbies не список строк"}
+	}
+	problems := []string{}
+	if given := len(textList(payload.values["увлечения"])); len(list) > given {
+		problems = append(problems, fmt.Sprintf("hobbies: пунктов %d, а увлечений в анкете %d", len(list), given))
+	}
+	for n, item := range list {
+		where := fmt.Sprintf("hobbies, пункт %d", n+1)
+		if !byExperience.MatchString(item.(string)) {
+			problems = append(problems, where+": нет «по опыту в …»")
+		}
+		problems = append(problems, circumstanceProblems(where, item.(string))...)
+	}
+	return problems
+}
+
+// circumstanceProblems finds the family, citizenship or a criminal record
+// where the qualities are. It names the word found, never the text around it.
+func circumstanceProblems(where, text string) []string {
+	found := lifeCircumstance.FindStringSubmatch(text)
+	if found == nil {
+		return nil
+	}
+	word := found[0]
+	if found[2] != "" {
+		word = found[2]
+	}
+	return []string{fmt.Sprintf("%s: семья, гражданство или судимость рядом с качествами («%s»)", where, strings.ToLower(word))}
+}
+
+// textList reads a list of texts of the input, as it is built or as it is read back.
+func textList(value any) []string {
+	switch list := value.(type) {
+	case []string:
+		return list
+	case []any:
+		texts := []string{}
+		for _, item := range list {
+			if text, ok := item.(string); ok {
+				texts = append(texts, text)
+			}
+		}
+		return texts
+	}
+	return nil
 }
 
 // considerProblems checks the points of «what to consider» against the rules
@@ -158,6 +268,9 @@ func considerProblems(points []any, payload *object) []string {
 		text := point.(string)
 		if found := consequence.FindString(text); found != "" {
 			problems = append(problems, fmt.Sprintf("attention.consider, пункт %d: вывод вместо факта («%s»)", n+1, strings.ToLower(found)))
+		}
+		if byExperience.MatchString(text) {
+			problems = append(problems, fmt.Sprintf("attention.consider, пункт %d: качества «по опыту» вместо факта", n+1))
 		}
 		details = details || criminalDetails.MatchString(text)
 	}
