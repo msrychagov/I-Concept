@@ -110,7 +110,7 @@ func TestPostgresIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(db.Students) != 10 || len(db.Platoons) != 3 || len(db.Assignments) != 7 || len(db.Submissions) != 11 || len(db.Sessions) == 0 {
+	if len(db.Students) != 15 || len(db.Platoons) != 4 || len(db.Assignments) != 8 || len(db.Submissions) != 11 || len(db.Sessions) == 0 {
 		t.Fatalf("demo entities missing: %d students, %d platoons, %d assignments, %d submissions, %d sessions", len(db.Students), len(db.Platoons), len(db.Assignments), len(db.Submissions), len(db.Sessions))
 	}
 	// Cover authentication/invitation persistence alongside all demo entities.
