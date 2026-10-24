@@ -333,7 +333,7 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 	problems = append(problems, sentenceProblem("components", texts["components"], 3, 5)...)
 	problems = append(problems, sentenceProblem("identity", texts["identity"], 1, 2)...)
 	problems = append(problems, sentenceProblem("ideal", texts["ideal"], 2, 2)...)
-	problems = append(problems, sentenceProblem("activity", texts["activity"], 3, 4)...)
+	problems = append(problems, sentenceProblem("activity", texts["activity"], activityLeast, 4)...)
 	problems = append(problems, sentenceProblem("conclusion", texts["conclusion"], 2, 2)...)
 
 	identity, given := payload.values["профессиональная_идентичность"]

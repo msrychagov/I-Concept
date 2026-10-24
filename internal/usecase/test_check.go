@@ -99,6 +99,12 @@ func sentenceCount(text string) int {
 
 var digit = regexp.MustCompile(`[0-9]`)
 
+// activityLeast is the fewest sentences of the section about activity and the
+// environment the check takes, in the portrait and in the conclusion by a
+// platoon: the model joins two thoughts by «;» (decided by the user on 24
+// October 2026; the instructions keep their 3–4).
+const activityLeast = 2
+
 // appointment finds a recommendation of a post, forbidden by both instructions.
 var appointment = regexp.MustCompile(`(?i)назначить|назначени[еяю] на`)
 
@@ -116,7 +122,7 @@ func fieldProblems(field, text string) []string {
 		problems = append(problems, fmt.Sprintf("%s: недопустимое слово («%s»)", field, strings.ToLower(found)))
 	}
 	if found := appointment.FindString(text); found != "" {
-		problems = append(problems, fmt.Sprintf("%s: о назначении на должность («%s»)", field, strings.ToLower(found)))
+		problems = append(problems, fmt.Sprintf("%s: о назначении на должность («%s») — пиши «поручить» или «привлечь к», например «поручить наставничество над младшими»", field, strings.ToLower(found)))
 	}
 	return problems
 }
@@ -378,7 +384,9 @@ func checkTestAnswerV2(output map[string]any, payload *object) []string {
 	problems = append(problems, sentenceProblem("components.text", text, 4, 6)...)
 	problems = append(problems, sentenceProblem("identity", outputText(output, "identity"), 1, 2)...)
 	problems = append(problems, sentenceProblem("ideal", outputText(output, "ideal"), 2, 2)...)
-	problems = append(problems, sentenceProblem("activity", outputText(output, "activity"), 3, 4)...)
+	// Decided by the user on 24 October 2026 after the run on GigaChat: the
+	// instruction asks for 3–4 sentences, the check takes 2–4.
+	problems = append(problems, sentenceProblem("activity", outputText(output, "activity"), activityLeast, 4)...)
 	problems = append(problems, sentenceProblem("conclusion", outputText(output, "conclusion"), 2, 2)...)
 	problems = append(problems, componentProblems(components, payload)...)
 

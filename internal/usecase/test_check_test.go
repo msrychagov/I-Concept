@@ -139,7 +139,16 @@ func TestTestAnswerV2Check(t *testing.T) {
 		"figure":        {func(a map[string]any) { a["portrait"] = "Студент оценивает себя на 7 из 10." }, "portrait: цифры в тексте"},
 		"two sentences": {func(a map[string]any) { a["portrait"] = "Первое. Второе." }, "portrait: предложений 2 вместо 1"},
 		"one in ideal":  {func(a map[string]any) { a["ideal"] = "Образ принят." }, "ideal: предложений 1 вместо 2"},
-		"long activity": {func(a map[string]any) { a["activity"] = "Раз. Два. Три. Четыре. Пять." }, "activity: предложений 5 вместо 3–4"},
+		"long activity": {func(a map[string]any) { a["activity"] = "Раз. Два. Три. Четыре. Пять." }, "activity: предложений 5 вместо 2–4"},
+		"two sentences of activity": {func(a map[string]any) {
+			a["activity"] = "Студент включён в деятельность ВУЦ; условия он оценивает выше. Слабее выражено сотрудничество, это сдерживает соборность."
+		}, ""},
+		"one sentence of activity": {func(a map[string]any) {
+			a["activity"] = "Студент включён в деятельность ВУЦ."
+		}, "activity: предложений 1 вместо 2–4"},
+		"appointment hint": {func(a map[string]any) {
+			a["recommendations"].([]any)[0].(map[string]any)["text"] = "Назначить студента наставником для младших."
+		}, "пиши «поручить» или «привлечь к»"},
 		"no conclusion": {func(a map[string]any) { delete(a, "conclusion") }, "нет поля conclusion"},
 		"level by rule": {func(a map[string]any) {
 			a["components"].(map[string]any)["levels"].(map[string]any)["ev"] = "выдающийся"
@@ -254,7 +263,7 @@ func TestProblemsTellTheRetryWhatFits(t *testing.T) {
 	answer["recommendations"].([]any)[0].(map[string]any)["code"] = "R20"
 	answer["activity"] = "Студент включён в деятельность; условия он оценивает выше."
 	problems := strings.Join(checkTestAnswerV2(answer, payload), "; ")
-	for _, want := range []string{"recommendations.1: тип направления не подходит к ситуации группы — для группы 3 подходят: R15, R16", "activity: предложений 1 вместо 3–4 — раздели текст на отдельные предложения"} {
+	for _, want := range []string{"recommendations.1: тип направления не подходит к ситуации группы — для группы 3 подходят: R15, R16", "activity: предложений 1 вместо 2–4 — раздели текст на отдельные предложения"} {
 		if !strings.Contains(problems, want) {
 			t.Errorf("no «%s» in %s", want, problems)
 		}
