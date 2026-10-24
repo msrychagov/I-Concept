@@ -20,7 +20,7 @@ func goodPortrait(user string) map[string]any {
 	potential := []any{}
 	for _, area := range potentialAreas {
 		name := lowerFirst(area.Title)
-		potential = append(potential, map[string]any{"area": name, "level": input.Levels[name], "facts": "Студент указал опыт.", "conclusion": "Опыт может пригодиться."})
+		potential = append(potential, map[string]any{"area": name, "level": input.Levels[name], "facts": "Студент указал опыт.", "conclusion": "По опыту в занятиях — внимательность; может пригодиться в ВУЦ."})
 	}
 	consider := []any{"Нет спортивного опыта."}
 	if input.Criminal == "привлекался" {
@@ -29,6 +29,7 @@ func goodPortrait(user string) map[string]any {
 	return map[string]any{
 		"summary":   "Студент сообщил о себе, по сведениям, которые сообщил студент, следующее.",
 		"potential": potential,
+		"hobbies":   []any{},
 		"attention": map[string]any{"use": []any{"Опыт организатора."}, "consider": consider},
 	}
 }
@@ -99,7 +100,7 @@ func TestSubmittedAutobiographyGetsAPortraitOnceAndTheSameForEqualAnswers(t *tes
 		t.Fatalf("%+v after %d calls", view, m.count())
 	}
 	call := m.calls[0]
-	if !strings.HasPrefix(call.System, "Ты помогаешь преподавателю военного учебного центра") || !strings.Contains(string(call.Schema), `"required": ["summary", "potential", "attention"]`) {
+	if !strings.HasPrefix(call.System, "Ты помогаешь преподавателю военного учебного центра") || !strings.Contains(string(call.Schema), `"required": ["summary", "potential", "hobbies", "attention"]`) {
 		t.Fatalf("instruction or schema: %.80s", call.System)
 	}
 	// What was sent is the anonymised input and nothing of the person.
@@ -187,6 +188,10 @@ func TestAnswerThatBreaksTheRulesFailsAfterThreeTries(t *testing.T) {
 		"consequence in consider": {func(a map[string]any) {
 			a["attention"].(map[string]any)["consider"] = []any{"Женат, имеет одного ребёнка — обстоятельства жизни, влияющие на распределение времени."}
 		}, "вывод вместо факта"},
+		"no hobbies": {func(a map[string]any) { delete(a, "hobbies") }, "hobbies не список строк"},
+		"no mark of experience": {func(a map[string]any) {
+			a["potential"].([]any)[1].(map[string]any)["conclusion"] = "Пригодится в ВУЦ."
+		}, "нет «по опыту в …»"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			f := newAutobiographyFixture(t)
@@ -313,6 +318,177 @@ func TestWhatToConsiderHoldsFactsWithoutConclusions(t *testing.T) {
 	} {
 		if problems := considerProblems([]any{point}, payload); (len(problems) == 0) != ok {
 			t.Errorf("%q: %v", point, problems)
+		}
+	}
+}
+
+// qualitiesPayload is the input of a student with two hobbies, sport and nothing else.
+func qualitiesPayload() *object {
+	payload := newObject()
+	payload.set("уголовная_ответственность", "не привлекался")
+	payload.set("увлечения", []string{"Чтение", "Кулинария"})
+	levels := newObject()
+	for _, area := range potentialAreas {
+		levels.set(lowerFirst(area.Title), "не выражен")
+	}
+	levels.set("спорт", "средний")
+	payload.set("уровни", levels)
+	return payload
+}
+
+// qualitiesAnswer follows v3 for qualitiesPayload: qualities by sport and by
+// both hobbies, «Опыт не указан» where nothing was reported.
+func qualitiesAnswer() map[string]any {
+	potential := []any{}
+	for _, area := range potentialAreas {
+		name := lowerFirst(area.Title)
+		record := map[string]any{"area": name, "level": "не выражен", "facts": "Сведений нет.", "conclusion": "Опыт не указан."}
+		if name == "спорт" {
+			record = map[string]any{"area": name, "level": "средний", "facts": "Футбол 3–5 лет, соревнования города.", "conclusion": "По опыту в футболе — выносливость и умение играть в команде; пригодится на физической подготовке."}
+		}
+		potential = append(potential, record)
+	}
+	return map[string]any{
+		"summary":   "Студенту 19 лет, по сведениям, которые сообщил студент, воспитывался в детском доме.",
+		"potential": potential,
+		"hobbies":   []any{"По опыту в чтении — широкий кругозор.", "По опыту в кулинарии — аккуратность и умение следовать порядку действий."},
+		"attention": map[string]any{
+			"use":      []any{"Футбол 3–5 лет — командная игра на соревнованиях города."},
+			"consider": []any{"Воспитывался в детском доме или интернате.", "У брата есть судимость."},
+		},
+	}
+}
+
+func TestQualitiesComeFromActivitiesMarkedByExperience(t *testing.T) {
+	if problems := checkAutobiographyAnswer(qualitiesAnswer(), qualitiesPayload()); len(problems) != 0 {
+		t.Fatalf("a good answer fails: %v", problems)
+	}
+	area := func(a map[string]any, n int) map[string]any { return a["potential"].([]any)[n].(map[string]any) }
+	for name, tc := range map[string]struct {
+		mutate  func(map[string]any)
+		problem string
+	}{
+		"no mark": {func(a map[string]any) {
+			area(a, 0)["conclusion"] = "Выносливость; пригодится на физической подготовке."
+		}, "спорт: в выводе нет «по опыту в …»"},
+		"level without text": {func(a map[string]any) { area(a, 0)["conclusion"] = "Опыт не указан" }, "спорт: уровень «средний», а вывод «Опыт не указан»"},
+		"invented qualities": {func(a map[string]any) {
+			area(a, 3)["conclusion"] = "По опыту в учёбе — любознательность."
+		}, "наука: сведений нет, а вывод не «Опыт не указан»"},
+		"from the upbringing": {func(a map[string]any) {
+			area(a, 0)["conclusion"] = "По опыту в футболе и жизни в интернате, где воспитывался, — самостоятельность."
+		}, "спорт, вывод: семья, гражданство или судимость рядом с качествами («воспитыва»)"},
+		"from the father": {func(a map[string]any) {
+			a["hobbies"] = []any{"По опыту в чтении вместе с отцом — кругозор."}
+		}, "hobbies, пункт 1: семья, гражданство или судимость рядом с качествами («отцом»)"},
+		"use from a record": {func(a map[string]any) {
+			a["attention"].(map[string]any)["use"] = []any{"Судимость брата — знает, к чему ведёт нарушение закона."}
+		}, "attention.use, пункт 1: семья, гражданство или судимость рядом с качествами («судим»)"},
+		"more hobbies": {func(a map[string]any) {
+			a["hobbies"] = append(a["hobbies"].([]any), "По опыту в шахматах — расчёт.")
+		}, "hobbies: пунктов 3, а увлечений в анкете 2"},
+		"hobby unmarked": {func(a map[string]any) { a["hobbies"].([]any)[1] = "Кулинария — аккуратность." }, "hobbies, пункт 2: нет «по опыту в …»"},
+		"hobbies a text": {func(a map[string]any) { a["hobbies"] = "По опыту в чтении — кругозор." }, "hobbies не список строк"},
+		"summary quality": {func(a map[string]any) {
+			a["summary"] = "Студенту 19 лет; по опыту в футболе вынослив."
+		}, "summary: качества «по опыту»"},
+		"consider quality": {func(a map[string]any) {
+			a["attention"].(map[string]any)["consider"] = []any{"По опыту жизни в детском доме — самостоятельность."}
+		}, "attention.consider, пункт 1: качества «по опыту» вместо факта"},
+	} {
+		answer := qualitiesAnswer()
+		tc.mutate(answer)
+		problems := checkAutobiographyAnswer(answer, qualitiesPayload())
+		if len(problems) != 1 || !strings.Contains(problems[0], tc.problem) {
+			t.Errorf("%s: %v", name, problems)
+		}
+	}
+	payload := qualitiesPayload()
+	payload.set("увлечения", []string{})
+	answer := qualitiesAnswer()
+	if problems := checkAutobiographyAnswer(answer, payload); len(problems) != 1 || !strings.Contains(problems[0], "пунктов 2, а увлечений в анкете 0") {
+		t.Errorf("no hobbies in the questionnaire: %v", problems)
+	}
+	answer["hobbies"] = []any{}
+	if problems := checkAutobiographyAnswer(answer, payload); len(problems) != 0 {
+		t.Errorf("an empty list without hobbies: %v", problems)
+	}
+}
+
+// The work before the university is only a fact (D9): a skill or a quality
+// next to the student's own position is drawn from that work.
+func TestWorkBeforeUniversityIsOnlyAFact(t *testing.T) {
+	payload := qualitiesPayload()
+	jobs := []any{}
+	for _, position := range []string{"официант", "старший слесарь-ремонтник"} {
+		job := newObject()
+		job.set("должность", position)
+		jobs = append(jobs, job)
+	}
+	payload.set("работа_до_вуза", jobs)
+	stems := jobStems(payload)
+	if strings.Join(stems, " ") != "официа слеса ремонтн" {
+		t.Fatalf("stems: %v", stems)
+	}
+	for text, bad := range map[string]bool{
+		"Стаж работы официантом — навыки коммуникации и дисциплины.":      true,
+		"Опыт работы официантом — коммуникабельность.":                    true,
+		"Навыки слесаря-ремонтника, техническое образование.":             true,
+		"Работал официантом в сфере услуг.":                               false,
+		"Работал слесарем-ремонтником.":                                   false,
+		"Звание старшего сержанта, навыки огневой подготовки.":            false,
+		"Работал официантом. Навыки огневой подготовки на сборах.":        false,
+		"По опыту в футболе — навыки работы в команде и выносливость.":    false,
+		"По опыту в технике — навыки обслуживания и ремонта автомобилей.": false,
+	} {
+		problems := workProblems("тест", text, stems)
+		if (len(problems) == 1) != bad || len(problems) > 1 {
+			t.Errorf("%q: %v", text, problems)
+		}
+		for _, problem := range problems {
+			if strings.Contains(problem, "официа") || strings.Contains(problem, "слеса") {
+				t.Errorf("the position reached the problem: %q", problem)
+			}
+		}
+	}
+	answer := qualitiesAnswer()
+	answer["attention"].(map[string]any)["use"] = []any{"Работал официантом.", "Стаж работы официантом — навыки коммуникации."}
+	if problems := checkAutobiographyAnswer(answer, payload); len(problems) != 1 || !strings.Contains(problems[0], "attention.use, пункт 2: навыки или качества из работы до вуза («навык»)") {
+		t.Errorf("use: %v", problems)
+	}
+	answer = qualitiesAnswer()
+	answer["hobbies"] = []any{"По опыту в чтении — кругозор.", "По опыту в кулинарии и работы официантом — аккуратность."}
+	if problems := checkAutobiographyAnswer(answer, payload); len(problems) != 1 || !strings.Contains(problems[0], "hobbies, пункт 2: навыки или качества из работы до вуза") {
+		t.Errorf("hobbies: %v", problems)
+	}
+}
+
+// The words of the family must not catch the words that only contain them.
+func TestFamilyWordsStandAlone(t *testing.T) {
+	for _, text := range []string{
+		"По опыту в волонтёрстве — умение обратить внимание на нужды людей.",
+		"По опыту в науке — работа с материалами исследований.",
+		"Навык выражена слабо, восемь лет занятий, братство команды.",
+		"По опыту в воспитательной работе и гражданской обороне — организованность.",
+		"По опыту в «Зарнице» — навыки выросли за сезон.",
+		"По опыту в математике — сестринское внимание к деталям.",
+	} {
+		if problems := circumstanceProblems("тест", text); len(problems) != 0 {
+			t.Errorf("%q: %v", text, problems)
+		}
+	}
+	for text, word := range map[string]string{
+		"Как и мать, внимателен.":               "мать",
+		"Вместе с братом ходит в походы.":       "братом",
+		"Женат — ответственен.":                 "женат",
+		"Есть ребёнок, поэтому собран.":         "ребёнок",
+		"Вырос в семье военного.":               "вырос",
+		"Гражданство другой страны.":            "гражданств",
+		"Отец служил, и это даёт выправку.":     "отец",
+		"Без родителей, поэтому самостоятелен.": "родител",
+	} {
+		if problems := circumstanceProblems("тест", text); len(problems) != 1 || !strings.Contains(problems[0], "«"+word+"»") {
+			t.Errorf("%q: %v", text, problems)
 		}
 	}
 }

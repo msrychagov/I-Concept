@@ -32,7 +32,7 @@ func portraitAnswer(user string) string {
 	for _, area := range []string{"спорт", "музыка и творчество", "военно-патриотическая деятельность", "наука", "волонтёрство", "иностранные языки"} {
 		potential = append(potential, map[string]any{"area": area, "level": input.Levels[area], "facts": "Сведений нет", "conclusion": "Опыт не указан"})
 	}
-	data, _ := json.Marshal(map[string]any{"summary": "Краткая характеристика.", "potential": potential, "attention": map[string]any{"use": []any{}, "consider": []any{"Факт."}}})
+	data, _ := json.Marshal(map[string]any{"summary": "Краткая характеристика.", "potential": potential, "hobbies": []any{}, "attention": map[string]any{"use": []any{}, "consider": []any{"Факт."}}})
 	return string(data)
 }
 
