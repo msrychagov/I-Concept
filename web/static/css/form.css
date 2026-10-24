@@ -527,6 +527,11 @@
     margin: 1rem 0 .4rem
 }
 
+/* The numbers under the name of a group of the image are not hyphenated. */
+.test-portrait-image td small {
+    hyphens: manual
+}
+
 .test-portrait-recommendations li {
     margin-bottom: .3rem
 }
