@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"os"
@@ -606,5 +607,31 @@ func TestTasksWithoutCleanAreChecked(t *testing.T) {
 		if (task.ID == autobiographyForm || task.ID == testPortraitTask) && task.Clean != nil {
 			t.Fatalf("%s must only be checked", task.ID)
 		}
+	}
+}
+
+// After «429 Too Many Requests» the next attempt waits fifteen usual pauses.
+func TestRateLimitIsWaitedOutLonger(t *testing.T) {
+	f := newTestPortraitFixture(t, true)
+	f.service.portraits.pause = 20 * time.Millisecond
+	var mu sync.Mutex
+	times := []time.Time{}
+	f.service.UseModel(&fakeModel{name: "fake", reply: func(call int, c Completion) (string, error) {
+		mu.Lock()
+		times = append(times, time.Now())
+		mu.Unlock()
+		if call == 1 {
+			return "", errors.New("gigachat: HTTP 429 Too Many Requests")
+		}
+		data, _ := json.Marshal(goodTestAnswerV2(c.User))
+		return string(data), nil
+	}})
+	if view := f.wait(); view.Status != portraitReady {
+		t.Fatalf("view: %+v", view)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(times) != 2 || times[1].Sub(times[0]) < rateLimitPause*20*time.Millisecond {
+		t.Fatalf("%d calls, waited %v", len(times), times[len(times)-1].Sub(times[0]))
 	}
 }

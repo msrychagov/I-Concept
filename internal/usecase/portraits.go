@@ -75,6 +75,9 @@ const (
 	portraitOff     = "off"
 
 	portraitAttempts = 3
+
+	// rateLimitPause is how many usual pauses an attempt waits after «429».
+	rateLimitPause = 15
 )
 
 // portraitState is what is known about a portrait that is not stored yet.
@@ -383,20 +386,27 @@ func (a *Service) ensurePortrait(ctx context.Context, job portraitJob) {
 	if task.Attempts > 0 {
 		attempts = task.Attempts
 	}
+	wait := l.pause
 	for attempt := 1; attempt <= attempts; attempt++ {
 		if attempt > 1 {
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(l.pause):
+			case <-time.After(wait):
 			}
 		}
+		wait = l.pause
 		reply, err := m.Complete(ctx, Completion{System: task.Prompt.Instruction, User: message, Schema: task.Prompt.Schema, MaxTokens: task.MaxTokens})
 		if ctx.Err() != nil {
 			return
 		}
 		if err != nil {
 			reason, detail = "Модель не ответила.", fmt.Sprintf("attempt %d: %v", attempt, err)
+			// A free plan answers «429 Too Many Requests» when asked too often:
+			// the next attempt waits longer, or all are spent in seconds.
+			if strings.Contains(err.Error(), "429") {
+				wait = rateLimitPause * l.pause
+			}
 			continue
 		}
 		output, problems := parseModelAnswer(reply.Text)
