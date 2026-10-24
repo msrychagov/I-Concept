@@ -33,8 +33,12 @@ window.testPortrait = (() => {
             return rows.length ? `<tr class="test-portrait-group"><th colspan="3">${esc(COMPONENTS[code])} компонент</th></tr>${rows.map(x => `<tr><td>${esc(x.name)}<small>${esc(x.method)}</small></td><td>${x.score == null ? '—' : `${x.score} <small>из ${x.min}–${x.max}</small>`}</td><td><span class="potential-level level-${esc(x.level || 'none')}">${esc(x.levelText)}</span></td></tr>`).join('')}` : '';
         }).join('');
         const kinds = (m.kinds || []).map(k => `<tr><td>${esc(k.name)}</td><td></td><td><span class="potential-level level-${esc(k.level || 'none')}">${esc(k.levelText)}</span></td></tr>`).join('');
-        return `<div class="table-scroll"><table class="test-portrait-levels"><thead><tr><th>Показатель</th><th>Баллы</th><th>Уровень</th></tr></thead><tbody>${methods}<tr class="test-portrait-group"><th colspan="3">Виды деятельности (по анкете деятельностного компонента)</th></tr>${kinds}</tbody></table></div>
-   <p class="muted">Уровни посчитаны программой по ключам методик из таблицы 8 руководителя; это самоотчёт студента, а не установленное качество личности.</p>`;
+        // The statuses of professional identity have ranges, not levels: a
+        // marked status is not better or worse, so the ranges are not coloured.
+        const capital = text => text ? text[0].toUpperCase() + text.slice(1) : '';
+        const identity = (m.identity || []).map(p => `<tr class="test-portrait-group"><th colspan="3">Профессиональная идентичность — ${esc(p.name.toLowerCase())}<small>${esc(p.method)}</small></th></tr>${p.statuses.map(x => `<tr><td>${esc(capital(x.name))}</td><td>${x.score == null ? '—' : `${x.score} <small>из 0–${x.max}</small>`}</td><td><span class="potential-level identity-range level-${x.range ? 'initial' : 'none'}">${esc(x.range || 'не определён')}</span></td></tr>`).join('')}<tr><td colspan="3">Ведущий статус: <b>${esc(p.leadingText)}</b></td></tr>`).join('');
+        return `<div class="table-scroll"><table class="test-portrait-levels"><thead><tr><th>Показатель</th><th>Баллы</th><th>Уровень</th></tr></thead><tbody>${methods}<tr class="test-portrait-group"><th colspan="3">Виды деятельности (по анкете деятельностного компонента)</th></tr>${kinds}${identity}</tbody></table></div>
+   <p class="muted">Уровни посчитаны программой по ключам методик из таблицы 8 руководителя${identity ? ', выраженность статусов профессиональной идентичности — по ключу методики А. А. Азбель, составленному на школьниках' : ''}; это самоотчёт студента, а не установленное качество личности.</p>`;
     }
 
     // Mounts the block and returns the function that stops its polling.

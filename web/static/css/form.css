@@ -542,6 +542,11 @@
         display: none
     }
 
+    /* «выше среднего» next to «Сформированная» does not fit a phone in one line. */
+    .test-portrait-levels .identity-range {
+        white-space: normal
+    }
+
     .test-portrait-levels th, .test-portrait-levels td {
         padding-left: .4rem;
         padding-right: .4rem
