@@ -451,6 +451,15 @@
     margin: 0 0 1.2rem
 }
 
+.portrait-hobbies {
+    margin: 0 0 1.2rem
+}
+
+.portrait-hobbies ul {
+    margin: 0;
+    padding-left: 1.1rem
+}
+
 .portrait-lists {
     display: grid;
     grid-template-columns: 1fr 1fr;
