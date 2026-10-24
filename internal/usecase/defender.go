@@ -189,10 +189,11 @@ func defenderGroups(image model.DefenderImage, data *TestPortraitData, score fun
 
 // Congruence is the agreement of the profiles of the real and the ideal self
 // over the qualities of module A: Pearson's coefficient and its description,
-// or why it is not counted (Value is nil then). There are no norms of Rogers
-// for this scale: it is a description, not a level.
+// or why it is not counted (Value is nil and Code is "none" then). There are
+// no norms of Rogers for this scale: it is a description, not a level.
 type Congruence struct {
 	Value     *float64 `json:"value"`
+	Code      string   `json:"code"`
 	Text      string   `json:"text"`
 	Qualities int      `json:"qualities"`
 }
@@ -200,17 +201,26 @@ type Congruence struct {
 // congruenceMinimum is the fewest qualities a coefficient is counted over.
 const congruenceMinimum = 3
 
-// congruenceText describes a coefficient rounded to hundredths by the usual
+var congruenceTexts = map[string]string{
+	"high":    "профили во многом совпадают",
+	"partial": "профили совпадают частично",
+	"low":     "профили почти не совпадают",
+	"none":    "согласованность не определяется",
+}
+
+// congruenceCode describes a coefficient rounded to hundredths by the usual
 // scale of the strength of a link.
-func congruenceText(r float64) string {
+func congruenceCode(r float64) string {
 	switch {
 	case r >= 0.7:
-		return "профили во многом совпадают"
+		return "high"
 	case r >= 0.3:
-		return "профили совпадают частично"
+		return "partial"
 	}
-	return "профили почти не совпадают"
+	return "low"
 }
+
+func congruenceText(r float64) string { return congruenceTexts[congruenceCode(r)] }
 
 // congruence counts the agreement over the qualities answered in both images;
 // nil when no quality is.
@@ -224,7 +234,7 @@ func congruence(pairs []ImagePair) *Congruence {
 	if len(real) == 0 {
 		return nil
 	}
-	c := &Congruence{Qualities: len(real)}
+	c := &Congruence{Code: "none", Qualities: len(real)}
 	mr, mi := meanOf(real), meanOf(ideal)
 	cross, sr, si := 0.0, 0.0, 0.0
 	for n := range real {
@@ -240,8 +250,8 @@ func congruence(pairs []ImagePair) *Congruence {
 		c.Text = "Я-реальное одинаково по всем качествам — согласованность не определяется."
 	default:
 		r := math.Round(cross/math.Sqrt(sr*si)*100) / 100
-		c.Value = &r
-		c.Text = congruenceText(r)
+		c.Value, c.Code = &r, congruenceCode(r)
+		c.Text = congruenceTexts[c.Code]
 	}
 	return c
 }

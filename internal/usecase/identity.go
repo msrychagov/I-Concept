@@ -23,7 +23,8 @@ type IdentityStatus struct {
 	Rank  int    `json:"rank"`
 }
 
-// IdentityProfile is the profile of one block and its leading statuses.
+// IdentityProfile is the profile of one block; Leading are the codes of the
+// leading statuses, LeadingText their names.
 type IdentityProfile struct {
 	ID          string           `json:"id"`
 	Name        string           `json:"name"`
@@ -106,12 +107,14 @@ func (a *Service) identityProfiles(engine *Service, s model.Session) []IdentityP
 			}
 			p.Statuses = append(p.Statuses, status)
 		}
+		names := []string{}
 		for _, status := range p.Statuses {
 			if best > 0 && status.Rank == best {
-				p.Leading = append(p.Leading, status.Name)
+				p.Leading = append(p.Leading, status.ID)
+				names = append(names, status.Name)
 			}
 		}
-		p.LeadingText = listText(p.Leading)
+		p.LeadingText = listText(names)
 		if p.LeadingText == "" {
 			p.LeadingText = "не определён"
 		}

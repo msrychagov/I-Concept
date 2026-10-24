@@ -40,13 +40,9 @@ type MethodsSummary struct {
 	Rows     []MethodsSummaryRow `json:"rows"`
 }
 
-// MethodsSummaryFor builds the summary over the teacher's sessions, for one
-// platoon or, when group is empty, for all of them.
-func (a *Service) MethodsSummaryFor(teacherID, group string) (MethodsSummary, error) {
-	db, err := a.repo.ReadSnapshot()
-	if err != nil {
-		return MethodsSummary{}, err
-	}
+// latestMethodSessions are the latest finished sessions with the methods of
+// every student of the teacher, ordered by the name of the student.
+func latestMethodSessions(db model.Database, teacherID string) []model.Session {
 	latest := map[string]model.Session{}
 	for _, record := range db.Sessions {
 		s := record.Session
@@ -61,60 +57,93 @@ func (a *Service) MethodsSummaryFor(teacherID, group string) (MethodsSummary, er
 			latest[key] = s
 		}
 	}
-	summary := MethodsSummary{Group: group, Groups: []string{}, Rows: []MethodsSummaryRow{}}
-	rows := map[string]int{}
-	row := func(id, name, kind, component string) int {
-		if at, ok := rows[kind+":"+id]; ok {
-			return at
-		}
-		levels := []MethodsLevelGroup{}
-		for _, level := range []string{"high", "medium", "low", ""} {
-			levels = append(levels, MethodsLevelGroup{Level: level, LevelText: levelText[level], Students: []MethodsStudent{}})
-		}
-		summary.Rows = append(summary.Rows, MethodsSummaryRow{ID: id, Name: name, Kind: kind, Component: component, Levels: levels})
-		rows[kind+":"+id] = len(summary.Rows) - 1
-		return len(summary.Rows) - 1
-	}
-	add := func(at int, level string, student MethodsStudent) {
-		for i := range summary.Rows[at].Levels {
-			if summary.Rows[at].Levels[i].Level == level {
-				summary.Rows[at].Levels[i].Students = append(summary.Rows[at].Levels[i].Students, student)
-			}
-		}
-	}
 	sessions := make([]model.Session, 0, len(latest))
 	for _, s := range latest {
 		sessions = append(sessions, s)
 	}
 	slices.SortStableFunc(sessions, func(x, y model.Session) int { return strings.Compare(x.Participant, y.Participant) })
-	// The rows are made in a fixed order from the current bank, so that the
-	// table has the same shape whatever sessions there are.
+	return sessions
+}
+
+// studentPortrait is the counted portrait of one student of a summary.
+type studentPortrait struct {
+	student MethodsStudent
+	data    *TestPortraitData
+}
+
+func methodsStudent(s model.Session) MethodsStudent {
+	return MethodsStudent{SessionID: s.ID, StudentID: s.StudentID, Name: s.Participant, Group: s.Group}
+}
+
+// levelGroups are the levels of a row, highest first, the undetermined last.
+func levelGroups() []MethodsLevelGroup {
+	levels := []MethodsLevelGroup{}
+	for _, level := range []string{"high", "medium", "low", ""} {
+		levels = append(levels, MethodsLevelGroup{Level: level, LevelText: levelText[level], Students: []MethodsStudent{}})
+	}
+	return levels
+}
+
+// levelRows puts the students on the levels of every scale of a method and
+// every kind of activity. The rows are made in a fixed order from the current
+// bank, so that the table has the same shape whatever sessions there are.
+func (a *Service) levelRows(portraits []studentPortrait) []MethodsSummaryRow {
+	result := []MethodsSummaryRow{}
+	rows := map[string]int{}
+	row := func(id, name, kind, component string) int {
+		if at, ok := rows[kind+":"+id]; ok {
+			return at
+		}
+		result = append(result, MethodsSummaryRow{ID: id, Name: name, Kind: kind, Component: component, Levels: levelGroups()})
+		rows[kind+":"+id] = len(result) - 1
+		return len(result) - 1
+	}
+	add := func(at int, level string, student MethodsStudent) {
+		for i := range result[at].Levels {
+			if result[at].Levels[i].Level == level {
+				result[at].Levels[i].Students = append(result[at].Levels[i].Students, student)
+			}
+		}
+	}
 	for _, m := range a.bank.Methods {
 		row(m.ID, m.Name, "method", m.Component)
 	}
 	for _, k := range a.bank.ActivityKinds {
 		row(k.ID, k.Name, "activity", "")
 	}
-	for _, s := range sessions {
+	for _, p := range portraits {
+		for _, m := range p.data.Methods {
+			add(row(m.ID, m.Name, "method", m.Component), m.Level, p.student)
+		}
+		for _, k := range p.data.Kinds {
+			add(row(k.ID, k.Name, "activity", ""), k.Level, p.student)
+		}
+	}
+	return result
+}
+
+// MethodsSummaryFor builds the summary over the teacher's sessions, for one
+// platoon or, when group is empty, for all of them.
+func (a *Service) MethodsSummaryFor(teacherID, group string) (MethodsSummary, error) {
+	db, err := a.repo.ReadSnapshot()
+	if err != nil {
+		return MethodsSummary{}, err
+	}
+	summary := MethodsSummary{Group: group, Groups: []string{}}
+	portraits := []studentPortrait{}
+	for _, s := range latestMethodSessions(db, teacherID) {
 		if !slices.Contains(summary.Groups, s.Group) {
 			summary.Groups = append(summary.Groups, s.Group)
 		}
 		if group != "" && s.Group != group {
 			continue
 		}
-		portrait := a.TestPortrait(s)
-		if portrait == nil {
-			continue
-		}
-		summary.Sessions++
-		student := MethodsStudent{SessionID: s.ID, StudentID: s.StudentID, Name: s.Participant, Group: s.Group}
-		for _, m := range portrait.Methods {
-			add(row(m.ID, m.Name, "method", m.Component), m.Level, student)
-		}
-		for _, k := range portrait.Kinds {
-			add(row(k.ID, k.Name, "activity", ""), k.Level, student)
+		if data := a.TestPortrait(s); data != nil {
+			portraits = append(portraits, studentPortrait{methodsStudent(s), data})
 		}
 	}
+	summary.Sessions = len(portraits)
+	summary.Rows = a.levelRows(portraits)
 	slices.Sort(summary.Groups)
 	return summary, nil
 }
