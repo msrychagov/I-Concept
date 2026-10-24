@@ -191,6 +191,9 @@ func (a *Service) testPayloadFor(version string, data *TestPortraitData) *object
 		payload.insertAfter("образы_я", "согласованность_образов", c)
 	}
 	payload.insertAfter("признаки", "образ_защитника", defenderList(data.Defender, numbers))
+	if len(data.Identity) > 0 {
+		payload.insertAfter("образ_защитника", "профессиональная_идентичность", identityList(data.Identity))
+	}
 	catalogue := []any{}
 	types := map[string]string{}
 	for _, kind := range a.defender.Types {
@@ -246,6 +249,28 @@ func defenderList(groups []DefenderGroup, numbers map[string]int) []any {
 		o.set("виды_деятельности", kinds)
 		o.set("условия_среды", indicatorList(g.Conditions))
 		o.put("пометка", g.Note)
+		list = append(list, o)
+	}
+	return list
+}
+
+func identityList(profiles []IdentityProfile) []any {
+	list := []any{}
+	for _, p := range profiles {
+		o := newObject()
+		o.set("профессия", p.Name)
+		statuses := []any{}
+		for _, status := range p.Statuses {
+			row := newObject()
+			row.set("статус", status.Name)
+			if status.Score != nil {
+				row.set("баллы", fmt.Sprintf("%d (диапазон 0–%d)", *status.Score, status.Max))
+			}
+			row.put("выраженность", status.Range)
+			statuses = append(statuses, row)
+		}
+		o.set("статусы", statuses)
+		o.set("ведущий_статус", p.LeadingText)
 		list = append(list, o)
 	}
 	return list

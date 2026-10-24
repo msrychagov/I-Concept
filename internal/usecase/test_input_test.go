@@ -72,7 +72,7 @@ func TestTestPayloadV2AddsTheImage(t *testing.T) {
 	a := testApp(t)
 	data := a.TestPortrait(fixedTestSession(a, a.bank.Version))
 	old, payload := a.testPayloadFor("v1", data), a.testPayloadFor("v2", data)
-	added := []string{"согласованность_образов", "образ_защитника", "каталог_рекомендаций"}
+	added := []string{"согласованность_образов", "образ_защитника", "профессиональная_идентичность", "каталог_рекомендаций"}
 	kept := slices.DeleteFunc(slices.Clone(payload.keys), func(k string) bool { return slices.Contains(added, k) })
 	if !slices.Equal(kept, old.keys) {
 		t.Fatalf("keys of v1 in v2: %v", payload.keys)
@@ -82,9 +82,13 @@ func TestTestPayloadV2AddsTheImage(t *testing.T) {
 			t.Fatalf("%s differs in v2", key)
 		}
 	}
-	want := []string{"методики", "образы_я", "согласованность_образов", "признаки", "образ_защитника", "условия_среды", "виды_деятельности", "рассказы_о_деятельности", "каталог_рекомендаций"}
+	want := []string{"методики", "образы_я", "согласованность_образов", "признаки", "образ_защитника", "профессиональная_идентичность", "условия_среды", "виды_деятельности", "рассказы_о_деятельности", "каталог_рекомендаций"}
 	if !slices.Equal(payload.keys, want) {
 		t.Fatalf("keys of v2: %v", payload.keys)
+	}
+	// Without the method there is no professional identity in the input.
+	if old := a.testPayloadFor("v2", a.TestPortrait(fixedTestSession(a, "pilot-2.4"))); slices.Contains(old.keys, "профессиональная_идентичность") {
+		t.Fatal("identity in the input of a session without the method")
 	}
 
 	var input struct {
@@ -107,6 +111,15 @@ func TestTestPayloadV2AddsTheImage(t *testing.T) {
 		Congruence struct {
 			Text string `json:"оценка"`
 		} `json:"согласованность_образов"`
+		Identity []struct {
+			Profession string `json:"профессия"`
+			Statuses   []struct {
+				Status string `json:"статус"`
+				Score  string `json:"баллы"`
+				Range  string `json:"выраженность"`
+			} `json:"статусы"`
+			Leading string `json:"ведущий_статус"`
+		} `json:"профессиональная_идентичность"`
 		Catalogue []struct {
 			Code   string `json:"код"`
 			Name   string `json:"направление"`
@@ -124,6 +137,9 @@ func TestTestPayloadV2AddsTheImage(t *testing.T) {
 		if g.Number != n+1 || g.Name == "" || g.Situation == "" || g.Type == "" || len(g.Kinds) == 0 || len(g.Conditions) == 0 || g.Conditions[0].Score == nil {
 			t.Errorf("group %d: %+v", n+1, g)
 		}
+	}
+	if len(input.Identity) != 2 || input.Identity[0].Profession != "Военная специальность" || len(input.Identity[0].Statuses) != 4 || input.Identity[0].Statuses[0].Range == "" || !strings.Contains(input.Identity[0].Statuses[0].Score, "(диапазон 0–25)") || input.Identity[0].Leading == "" {
+		t.Errorf("identity: %+v", input.Identity)
 	}
 	if input.Groups[4].Note == "" || input.Groups[0].Note != "" {
 		t.Errorf("notes: %q, %q", input.Groups[0].Note, input.Groups[4].Note)

@@ -14,8 +14,9 @@ import (
 // approved by the user on 22 October 2026 (Вики/Тестирование/План ИИ-отчёта по тесту.md).
 
 // methodModules hold the questions of the methods; they are asked only when
-// the assignment includes the methods.
-var methodModules = map[string]bool{"W": true, "U": true, "X": true, "K": true}
+// the assignment includes the methods. AZM and AZC are the two blocks of the
+// method of professional identity (identity.go).
+var methodModules = map[string]bool{"W": true, "U": true, "X": true, "K": true, "AZM": true, "AZC": true}
 
 func methodModule(module string) bool { return methodModules[module] }
 
@@ -120,6 +121,8 @@ type TestPortraitData struct {
 	// groups; Congruence is the agreement of the real and the ideal self.
 	Defender   []DefenderGroup `json:"defender,omitempty"`
 	Congruence *Congruence     `json:"congruence,omitempty"`
+	// Identity is the professional identity by block, when the method was given.
+	Identity []IdentityProfile `json:"identity,omitempty"`
 }
 
 // methodDefinitions are those of the session's bank version; a session of an
@@ -371,5 +374,6 @@ func (a *Service) TestPortrait(s model.Session) *TestPortraitData {
 
 	data.Defender = defenderGroups(a.defender, data, indicatorScore)
 	data.Congruence = congruence(data.Images)
+	data.Identity = a.identityProfiles(engine, s)
 	return data
 }
