@@ -116,6 +116,10 @@ type TestPortraitData struct {
 	Conditions  []DescriptiveGroup `json:"conditions"`
 	Kinds       []KindLevel        `json:"kinds"`
 	OpenAnswers []OpenAnswer       `json:"openAnswers"`
+	// Defender compares the student with the image of the defender by its
+	// groups; Congruence is the agreement of the real and the ideal self.
+	Defender   []DefenderGroup `json:"defender,omitempty"`
+	Congruence *Congruence     `json:"congruence,omitempty"`
 }
 
 // methodDefinitions are those of the session's bank version; a session of an
@@ -364,5 +368,8 @@ func (a *Service) TestPortrait(s model.Session) *TestPortraitData {
 			data.OpenAnswers = append(data.OpenAnswers, OpenAnswer{ID: item.ID, Topic: item.Topic, Question: item.Text, Answer: note})
 		}
 	}
+
+	data.Defender = defenderGroups(a.defender, data, indicatorScore)
+	data.Congruence = congruence(data.Images)
 	return data
 }

@@ -11,6 +11,8 @@ type Service struct {
 	previous map[string]model.Bank
 	repo     Repository
 	forms    map[string]model.Form
+	// defender is the image of the defender of the Fatherland (defender.go).
+	defender model.DefenderImage
 	// portraits is shared by the copies of the service made for old bank versions.
 	portraits *portraitLayer
 	ai        *aiLayer

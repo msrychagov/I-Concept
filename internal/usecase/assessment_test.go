@@ -27,8 +27,13 @@ func testApp(t *testing.T) *Service {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defender, err := questionbank.Defender()
+	if err != nil {
+		t.Fatal(err)
+	}
 	service := New(bank, repo, previous...)
 	service.RegisterForms(forms...)
+	service.RegisterDefender(defender)
 	return service
 }
 
