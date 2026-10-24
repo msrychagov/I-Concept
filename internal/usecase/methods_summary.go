@@ -39,6 +39,19 @@ type MethodsSummary struct {
 	Groups   []string            `json:"groups"`
 	Sessions int                 `json:"sessions"`
 	Rows     []MethodsSummaryRow `json:"rows"`
+	// Platoon is what the screen of the conclusion by a platoon needs; only
+	// for one platoon.
+	Platoon *PlatoonView `json:"platoon,omitempty"`
+}
+
+// PlatoonView is the groups of the image over a platoon with the students in
+// every situation, how many students there are and how many the conclusion
+// needs, and the catalogue the recommendations of the conclusion refer to.
+type PlatoonView struct {
+	Students  int                    `json:"students"`
+	Minimum   int                    `json:"minimum"`
+	Defender  []PlatoonDefenderGroup `json:"defender"`
+	Catalogue []model.Direction      `json:"catalogue"`
 }
 
 // latestMethodSessions are the latest finished sessions with the methods of
@@ -149,6 +162,10 @@ func (a *Service) MethodsSummaryFor(teacherID, group string) (MethodsSummary, er
 	}
 	summary.Sessions = len(portraits)
 	summary.Rows = a.levelRows(portraits)
+	if group != "" {
+		platoon := a.platoonPortrait(group, portraits)
+		summary.Platoon = &PlatoonView{Students: platoon.Students, Minimum: platoonMinimum, Defender: platoon.Defender, Catalogue: a.defender.Directions}
+	}
 	slices.Sort(summary.Groups)
 	return summary, nil
 }

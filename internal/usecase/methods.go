@@ -128,6 +128,9 @@ type TestPortraitData struct {
 	// each with its data (environment.go).
 	Criteria         []KindCriteriaData    `json:"criteria,omitempty"`
 	EnvironmentSigns []EnvironmentSignData `json:"environmentSigns,omitempty"`
+	// Catalogue is the catalogue of recommendations, for the screen to name
+	// the directions of the portrait.
+	Catalogue []model.Direction `json:"catalogue,omitempty"`
 }
 
 // methodDefinitions are those of the session's bank version; a session of an
@@ -380,5 +383,6 @@ func (a *Service) TestPortrait(s model.Session) *TestPortraitData {
 	data.Congruence = congruence(data.Images)
 	data.Identity = a.identityProfiles(engine, s)
 	data.Criteria, data.EnvironmentSigns = environmentData(a.defender, engine, s, data, indicatorScore)
+	data.Catalogue = a.defender.Directions
 	return data
 }
