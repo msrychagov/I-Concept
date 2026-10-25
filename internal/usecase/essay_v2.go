@@ -395,7 +395,7 @@ func checkCohortAnswerV2(output map[string]any, payload *object) []string {
 			problems = append(problems, where+": звание в тексте — не называй конкретных преподавателей, о них отдельный блок")
 		}
 		if singlesOut(textOf(raw)) {
-			problems = append(problems, where+": авторы перечислены по одному («один … другой») — пиши об общем и о различиях, не перебирая авторов")
+			problems = append(problems, where+": авторы перечислены по одному («один … другой», «первый … второй») — различия пиши группами: «у одних авторов …, у других …», без перечня авторов")
 		}
 		words += countWords(textOf(raw))
 	}
