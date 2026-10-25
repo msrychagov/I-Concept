@@ -164,9 +164,13 @@ window.teacherEssays = async function ({view, api, esc}) {
     const why = (inner, label = 'Из чего вывод') => `<details class="essay-why"><summary>${esc(label)}</summary><div class="essay-why-body">${inner}</div></details>`;
     const quotesWhy = (list, esc, before = []) => why(`<div class="quote-list">${before.map(q => plainQuote(q, 'previous', esc, 'из прежнего эссе')).join('')}${(list || []).map(q => plainQuote(q, 'current', esc)).join('')}</div>`);
 
+    // v2 names a person by the position and the surname the author wrote
+    // (decided 25 October 2026); the first answers of v2 had the label of v1.
+    const capital = text => text ? text[0].toUpperCase() + text.slice(1) : text;
     function teacherLines(list, esc) {
         if (!list.length) return '';
         return `<section class="essay-findings-teachers"><h3>Преподаватели</h3><ul class="essay-points">${list.map(t => {
+            if (t.position !== undefined) return `<li><b>${t.name ? esc(t.name) : '<span class="muted">Без фамилии</span>'}</b> <span class="essay-tag">${esc(t.position)}</span> <span class="essay-tag">${esc(t.kind)}</span> ${esc(t.text)}${quotesWhy(t.quotes, esc)}</li>`;
             const w = who(t.who);
             const fit = (t.candidates || []).map(l => who(l).short).join('; ');
             return `<li><b>${esc(w.text)}</b>${t.candidates ? ` <span class="essay-tag">${fitWord(t.candidates)}: ${esc(fit)}</span>` : w.listed ? '' : ' <small class="muted">(как назвал автор)</small>'} <span class="essay-tag">${esc(t.kind)}</span> ${esc(t.text)}${quotesWhy(t.quotes, esc)}</li>`;
@@ -274,7 +278,15 @@ ${o.change.length ? `<h3>Что обычно меняется</h3>${o.change.map
 <div class="portrait-summary"><h3>Вывод по выпуску</h3><p>${esc(o.conclusion.text)}</p>${sources(c.conclusion, esc)}</div>`;
     }
 
+    // v2: by positions, inside by the surname as the students wrote it.
+    function positionsBlock(groups) {
+        if (!groups.length) return '<p class="muted">Преподавателей в эссе не называли.</p>';
+        const line = l => `<li><span class="essay-tag">${esc(l.kind)}</span> <button type="button" class="link" data-essay="${esc(l.submissionId)}">${esc(l.student)}</button> <small class="muted">взвод ${esc(l.platoon)}</small>: ${esc(l.text)}${l.quotes.length ? why(`<div class="quote-list">${l.quotes.map(q => `<span class="quote-chip static"><span>«${esc(q.quote)}»</span></span>`).join('')}</div>`) : ''}</li>`;
+        return groups.map(g => `<div class="essay-position"><h3>${esc(capital(g.position))}</h3>${g.people.map(p => `<div class="essay-teacher"><b>${p.name ? esc(p.name) : '<span class="muted">Без фамилии</span>'}</b> <small class="muted">благодарностей ${p.thanks}, проблем ${p.problems}, упоминаний ${p.mentions}</small><ul class="essay-points">${p.lines.map(line).join('')}</ul></div>`).join('')}</div>`).join('');
+    }
+
     function teachersBlock(block) {
+        if (block.positions) return positionsBlock(block.positions);
         const listed = block.listed || [], unlisted = block.unlisted || [];
         if (!listed.length && !unlisted.length) return '<p class="muted">Преподавателей в эссе не называли.</p>';
         // Without the numbers of questions (decided 25 October 2026): the quotes are behind the button.
@@ -297,7 +309,7 @@ ${unlisted.length ? `<div class="essay-teacher"><b>Не сопоставлены
         const label = summary.status === 'failed' ? 'Повторить' : sm ? 'Обновить сводку' : 'Составить сводку';
         box.innerHTML = `<h2>Сводка по выпуску</h2><p class="muted">В сводке эссе с готовым разбором: ${c.analysed}. Сдано ${c.submitted}, не сдано ${c.notSubmitted}, у ${c.withPrevious} есть прежнее эссе${c.withoutAnalysis ? `, без разбора ${c.withoutAnalysis} (в сводку не вошли)` : ''}.</p>
   <div class="toolbar"><button id="compose" ${!summary.canCompose || busy || summary.status === 'off' ? 'disabled' : ''}>${label}</button> ${note}</div><div id="summary-error" role="alert"></div>
-  ${sm ? summaryBody(sm) : ''}<h2 style="margin-top:1.5rem">Преподаватели</h2><p class="muted">Что сказали о преподавателях из списка ВУЦ. Считает программа по разборам; сводка модели для этого не нужна.</p>${teachersBlock(summary.teachers)}`;
+  ${sm ? summaryBody(sm) : ''}<h2 style="margin-top:1.5rem">Преподаватели</h2><p class="muted">${summary.teachers.positions ? 'Что сказали о преподавателях — по должностям и фамилиям, как их написали студенты. Считает программа по разборам; сводка модели для этого не нужна.' : 'Что сказали о преподавателях из списка ВУЦ. Считает программа по разборам; сводка модели для этого не нужна.'}</p>${teachersBlock(summary.teachers)}`;
         box.querySelector('#compose').onclick = async e => {
             e.target.disabled = true;
             try {
