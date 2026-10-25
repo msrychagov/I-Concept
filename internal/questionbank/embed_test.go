@@ -81,7 +81,7 @@ func TestPreviousKeepsPilot23And24(t *testing.T) {
 			t.Fatal("pilot-2.4 is not kept as it was")
 		}
 	}
-	if !kept["pilot-2.3"] || !kept["pilot-2.4"] {
+	if !kept["pilot-2.3"] || !kept["pilot-2.4"] || !kept["pilot-2.5"] {
 		t.Fatalf("versions kept for old sessions: %v", kept)
 	}
 }
