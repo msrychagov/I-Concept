@@ -141,10 +141,12 @@ window.teacherAutobiography = async function ({view, api, esc}) {
         return dialog;
     }
 
-    // The text of the model for the autobiography: the summary, the potential
-    // table with the model's words, the qualities by hobbies and the two lists.
-    // Levels stay the program's.
+    // The text of the model for the autobiography. Since instruction v4: the
+    // conclusion in paragraphs and «what to consider». Up to v3: the summary,
+    // the potential table with the model's words, the qualities by hobbies and
+    // the two lists. Levels stay the program's.
     window.portraitRenderers.autobiography = {
+        conclusion: (output, esc) => `<section class="portrait-summary portrait-conclusion"><h3>Вывод</h3>${output.paragraphs.map(p => `<p>${esc(p)}</p>`).join('')}<h3>Что учесть</h3>${output.consider.length ? `<ul>${output.consider.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '<p class="muted">Нет.</p>'}</section>`,
         summary: (output, esc) => `<section class="portrait-summary"><h3>Краткая характеристика</h3><p>${esc(output.summary)}</p></section>`,
         // Since instruction v3; a portrait of v1 or v2 has no hobbies and shows nothing here.
         hobbies: (output, esc) => {
@@ -160,14 +162,20 @@ window.teacherAutobiography = async function ({view, api, esc}) {
 
     let portrait = null;
 
-    // Everything that depends on the model: the summary on top, the potential
-    // with the conclusions, the qualities by hobbies, the points to note and
-    // the signature.
+    // Everything that depends on the model. Since v4: the conclusion and what
+    // to consider, the signature, then the program's potential with the areas
+    // of experience. A portrait of v1–v3, shown while the one of v4 is made,
+    // keeps its own layout: the summary, the potential with the model's
+    // columns, the qualities by hobbies, the points to note and the signature.
     function portraitHtml(d, view) {
         const ready = view?.status === 'ready' ? view.portrait.output : null;
         const draw = window.portraitRenderers.autobiography;
         const state = view ? window.portraitView.status(view, esc) : '';
-        return `${ready ? draw.summary(ready, esc) : state}${d.potential ? window.potentialView.card(d.potential, esc, ready) : ''}${ready ? draw.hobbies(ready, esc) + draw.attention(ready, esc) : ''}${view ? window.portraitView.signature(view, esc) : ''}`;
+        const signature = view ? window.portraitView.signature(view, esc) : '';
+        if (ready && !Array.isArray(ready.paragraphs)) {
+            return `${draw.summary(ready, esc)}${d.potential ? window.potentialView.card(d.potential, esc, ready) : ''}${draw.hobbies(ready, esc) + draw.attention(ready, esc)}${signature}`;
+        }
+        return `${ready ? draw.conclusion(ready, esc) : state}${signature}${d.potential ? window.potentialView.brief(d.potential, esc) : ''}`;
     }
 
     async function answers(id) {
