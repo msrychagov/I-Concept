@@ -91,11 +91,23 @@ window.testPortrait = (() => {
     // program found, and the congruence of the images.
     function image(m, esc) {
         if (!(m.defender || []).length) return '';
-        const rows = m.defender.map(g => `<tr><td>${esc(g.name)}<small>Я-реальное ${number(g.real)} · Я-идеальное ${number(g.ideal)} · до образа ${number(g.distance)}</small></td><td>${esc(g.situationText)}${g.note ? `<small>${esc(g.note)}</small>` : ''}</td></tr>`).join('');
+        const others = g => (g.norm == null ? '' : ` · чего ждут другие ${number(g.norm)}`) + (g.mirror == null ? '' : ` · как видят другие ${number(g.mirror)}`);
+        const rows = m.defender.map(g => `<tr><td>${esc(g.name)}<small>Я-реальное ${number(g.real)} · Я-идеальное ${number(g.ideal)} · до образа ${number(g.distance)}${esc(others(g))}</small></td><td>${esc(g.situationText)}${danilova(g, esc)}${g.note ? `<small>${esc(g.note)}</small>` : ''}</td></tr>`).join('');
         const c = m.congruence;
+        const marked = (m.components || []).filter(x => x.pressure === 'yes' || x.adequacy === 'better' || x.adequacy === 'worse');
+        const counted = (m.components || []).some(x => x.pressure || x.adequacy) || m.defender.some(g => g.pressure || g.adequacy);
+        const components = marked.length ? `<p>По компонентам: ${marked.map(x => `${esc(x.name)} — ${esc([x.pressure === 'yes' ? 'внешнее давление' : '', x.adequacy === 'better' || x.adequacy === 'worse' ? x.adequacyText : ''].filter(Boolean).join('; '))}`).join('; ')}.</p>` : '';
         return `<h4>Образ защитника Отечества</h4><div class="table-scroll"><table class="test-portrait-levels test-portrait-image"><thead><tr><th>Группа качеств</th><th>Ситуация</th></tr></thead><tbody>${rows}</tbody></table></div>
-   ${c ? `<p>Согласованность Я-реального и Я-идеального: ${esc(c.text.replace(/\.$/, ''))}${c.value == null ? '' : ` <span class="muted">(коэффициент ${number(c.value)})</span>`}.</p>` : ''}
-   <p class="muted">Образ — верх шкалы 0–10; ситуация — по расстоянию от Я-идеального до образа и от Я-реального до Я-идеального.</p>`;
+   ${c ? `<p>Согласованность Я-реального и Я-идеального: ${esc(c.text.replace(/\.$/, ''))}${c.value == null ? '' : ` <span class="muted">(коэффициент ${number(c.value)})</span>`}.</p>` : ''}${components}
+   <p class="muted">Образ — верх шкалы 0–10; ситуация — по расстоянию от Я-идеального до образа и от Я-реального до Я-идеального.${counted ? ' Внешнее давление и взгляд других — по правилам О. Ю. Даниловой: «чего ждут другие» или «как видят другие» отличается от Я-реального на 3 балла и больше; это мнение самого студента, а не оценка товарищей.' : ''}</p>`;
+    }
+
+    // The rules of Danilova in a group, only when the program marked them.
+    function danilova(g, esc) {
+        const lines = [];
+        if (g.pressure === 'yes') lines.push('Внешнее давление: ' + g.pressureText);
+        if (g.adequacy === 'better' || g.adequacy === 'worse') lines.push('Самооценка: студент ' + g.adequacyText);
+        return lines.map(line => `<small>${esc(line)}</small>`).join('');
     }
 
     function tables(m, esc) {
