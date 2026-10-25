@@ -780,6 +780,28 @@ tbody tr:last-child td {
     min-height: 70px
 }
 
+/* A pair of opposite statements (the climate of the platoon). */
+.pair-statements {
+    font-size: 1.2rem;
+    min-height: 0
+}
+
+.pair-statements span {
+    display: block;
+    border-left: 3px solid #c8d7e2;
+    padding: .35rem 0 .35rem .85rem;
+    margin: .5rem 0
+}
+
+.pair-statements b {
+    display: block;
+    color: #607c90;
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase
+}
+
 .answer-options {
     display: grid;
     gap: .65rem;
