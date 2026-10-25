@@ -358,10 +358,12 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 			}
 			named := len(top) == 0
 			for _, name := range top {
-				named = named || strings.Contains(lower, statusStem(name))
+				named = named || statusNamed(lower, name)
 			}
+			// The run of 25 October: told only the block, the model kept
+			// another name for five attempts; it is told the status itself.
 			if !named {
-				problems = append(problems, fmt.Sprintf("identity: не назван самый частый ведущий статус («%s»)", objectText(block, "профессия")))
+				problems = append(problems, fmt.Sprintf("identity: не назван самый частый ведущий статус (%s) — «%s»", lowerFirst(objectText(block, "профессия")), strings.Join(top, "» или «")))
 			}
 		}
 	}

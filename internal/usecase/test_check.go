@@ -281,6 +281,29 @@ func statusStem(name string) string {
 	return word
 }
 
+// bracketed is the part of a name in brackets: «кризис выбора» of «мораторий (кризис выбора)».
+var bracketed = regexp.MustCompile(`\(([^)]+)\)`)
+
+// statusNamed says whether a lower-case text names a status of identity: by
+// the stem of its first word, or by the words in its brackets, which are part
+// of the name the input gives («в кризисе выбора»).
+func statusNamed(lower, name string) bool {
+	if strings.Contains(lower, statusStem(name)) {
+		return true
+	}
+	m := bracketed.FindStringSubmatch(normalizedText(name))
+	if m == nil {
+		return false
+	}
+	for _, word := range strings.Fields(m[1]) {
+		letters := []rune(word)
+		if !strings.Contains(lower, string(letters[:min(len(letters), 5)])) {
+			return false
+		}
+	}
+	return true
+}
+
 const identityAbsent = "Методика профессиональной идентичности не проводилась."
 
 // identityProblems checks identity: the fixed phrase without the method; with
@@ -299,7 +322,7 @@ func identityProblems(text string, given bool, leading [][]string) []string {
 	lower := normalizedText(text)
 	for _, names := range leading {
 		for _, name := range names {
-			if !strings.Contains(lower, statusStem(name)) {
+			if !statusNamed(lower, name) {
 				return []string{"identity: не назван ведущий статус «" + name + "»"}
 			}
 		}

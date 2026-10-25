@@ -207,3 +207,23 @@ func TestRepeatedDirectionIsCleanedFromThePortrait(t *testing.T) {
 		t.Fatalf("stored: %s", view.Portrait.Output)
 	}
 }
+
+// A status is named by its first word or by the words in its brackets, as the
+// conclusion by platoon 104 wrote «кризис выбора» on 25 October.
+func TestStatusNamed(t *testing.T) {
+	for text, want := range map[string]bool{
+		"ведущая позиция — кризис выбора":       true,
+		"большинство в кризисе выбора":          true,
+		"у большинства мораторий":               true,
+		"большинство переживает кризис":         false,
+		"выбор у большинства сделан":            false,
+		"у большинства идентичность навязанная": false,
+	} {
+		if got := statusNamed(normalizedText(text), "мораторий (кризис выбора)"); got != want {
+			t.Errorf("%q: %v", text, got)
+		}
+	}
+	if !statusNamed("идентичность сформирована", "сформированная") {
+		t.Error("сформированная")
+	}
+}
