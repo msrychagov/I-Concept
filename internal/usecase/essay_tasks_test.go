@@ -41,18 +41,13 @@ func quoteOf(row essayRow) map[string]any {
 	return map[string]any{"question": row.Number, "quote": strings.Join(words[:min(4, len(words))], " ")}
 }
 
-// goodEssay answers the way the instruction asks, for the input it is given.
+// goodEssay answers the way the instruction essay/v2 asks, for the input it is given.
 func goodEssay(user string) map[string]any {
 	input := readEssayInput(&testing.T{}, user)
 	quote := []any{quoteOf(input.Essay[0])}
-	moment := func() map[string]any {
-		return map[string]any{"text": "По ответам видно, что автор об этом пишет.", "quotes": quote}
-	}
-	change := []any{}
+	before := []any{}
 	if len(input.Previous) > 0 {
-		for _, name := range essayMoments {
-			change = append(change, map[string]any{"moment": name, "text": "Раньше было иначе.", "before": quoteOf(input.Previous[0]), "after": quoteOf(input.Essay[0])})
-		}
+		before = []any{quoteOf(input.Previous[0])}
 	}
 	// An instructor of the list who is named in answer 2.4 is thanked; another
 	// name is written as the author wrote it.
@@ -75,11 +70,14 @@ func goodEssay(user string) map[string]any {
 		}
 	}
 	return map[string]any{
-		"summary":  "Автор пришёл в ВУЦ с ожиданиями и привык к порядкам.",
-		"moments":  map[string]any{"beliefs": moment(), "emotions": moment(), "values": moment(), "abilities": moment()},
-		"positive": []any{map[string]any{"text": "Автор ценит помощь товарищей.", "about": "о себе", "basis": "сказано автором", "quotes": quote}},
-		"negative": []any{}, "attention": []any{map[string]any{"text": "Автору нужна поддержка в первые недели.", "about": "о ВУЦ", "basis": "вывод по тексту", "quotes": quote}}, "teachers": teachers, "change": change,
-		"conclusion": map[string]any{"text": "По ответам видно, что становление идёт.", "quotes": quote},
+		"formation":   map[string]any{"text": "Автор пришёл в ВУЦ с ожиданиями и привык к порядкам.", "quotes": quote, "before": before},
+		"moments":     map[string]any{"text": "Автор ценит помощь товарищей.", "quotes": []any{quoteOf(input.Essay[0]), quoteOf(input.Essay[1])}},
+		"environment": map[string]any{"text": "Порядки ВУЦ автор принимает, когда понимает их смысл.", "quotes": quote},
+		"recommendations": []any{
+			map[string]any{"text": "Поддержать автора в первые недели.", "quotes": quote},
+			map[string]any{"text": "Опираться на его интерес к службе.", "quotes": quote},
+		},
+		"teachers": teachers,
 	}
 }
 
@@ -145,7 +143,7 @@ func TestSubmittedEssayGetsAnAnalysisFromTheInputOfItsOwn(t *testing.T) {
 		t.Fatalf("%+v %v after %d calls", view, err, m.count())
 	}
 	call := m.calls[0]
-	if !strings.HasPrefix(call.System, "Ты помогаешь преподавателю военного учебного центра") || !strings.Contains(string(call.Schema), `"conclusion"`) {
+	if !strings.HasPrefix(call.System, "Ты помогаешь преподавателю военного учебного центра") || !strings.Contains(string(call.Schema), `"formation"`) || call.MaxTokens != 6000 {
 		t.Fatalf("instruction or schema: %.80s", call.System)
 	}
 	// The order of the keys, the cut data, the patronymic kept and nothing of the person.
@@ -204,11 +202,13 @@ func TestEarlierEssayOfTheSameAuthorGoesWithTheNewOne(t *testing.T) {
 		t.Fatalf("earlier essay: %+v", input.Previous[:1])
 	}
 	var output struct {
-		Change []struct{ Moment string } `json:"change"`
+		Formation struct {
+			Before []struct{ Question string } `json:"before"`
+		} `json:"formation"`
 	}
 	_ = json.Unmarshal(view.Portrait.Output, &output)
-	if len(output.Change) != 4 || output.Change[3].Moment != "восприятие своих возможностей" {
-		t.Fatalf("change: %+v", output.Change)
+	if len(output.Formation.Before) != 1 || output.Formation.Before[0].Question != "1.1" || view.Portrait.Version != "v2" {
+		t.Fatalf("quotes of the earlier essay: %+v", output.Formation)
 	}
 }
 
@@ -308,6 +308,7 @@ func essayPayloadFor(answers map[string]string, previous map[string]string, labe
 	return payload
 }
 
+// The answer of v1 is checked as it always was.
 func TestCheckEssayAnswer(t *testing.T) {
 	answers := map[string]string{"1.1": "Я пошёл «в ВУЦ» ради «службы» и отсрочки.", "1.2": "Первые дни было   очень  страшно, ЁЛКИ-палки.", "2.4": "Хочу поблагодарить полковника Иванова за помощь."}
 	earlier := map[string]string{"1.1": "Раньше я хотел только отсрочку от армии.", "1.2": "Раньше было совсем страшно.", "2.4": "Раньше никого не помню."}
@@ -416,7 +417,7 @@ func TestCheckEssayAnswer(t *testing.T) {
 	}
 }
 
-// goodEssayFor is a good answer to a small input made by essayPayloadFor.
+// goodEssayFor is a good answer of v1 to a small input made by essayPayloadFor.
 func goodEssayFor(payload *object) map[string]any {
 	quote := []any{map[string]any{"question": "1.1", "quote": "Я пошёл «в ВУЦ» ради «службы»"}}
 	moment := func() map[string]any {

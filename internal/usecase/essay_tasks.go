@@ -16,12 +16,18 @@ import (
 // essayTask takes a submitted essay. The patronymic is not cut out: the model
 // must tell «Игорь Петрович» from the instructors of the list.
 func (a *Service) essayTask(prompt promptbank.Prompt) portraitTask {
+	// Four moments, three lists, teachers, a comparison and a conclusion, with
+	// a quote under each point: more than the autobiography; tries are many
+	// because a quote must be word for word. 5000 tokens cut off the JSON of a
+	// long answer on the first run on GigaChat. The paragraphs of v2 are half as
+	// long (essay_v2.go).
+	check, tokens := checkEssayAnswer, 8000
+	if essayShape(prompt.Version) >= 2 {
+		check, tokens = checkEssayAnswerV2, 6000
+	}
 	return portraitTask{
 		ID: essayForm, Version: prompt.Version, Prompt: prompt,
-		// Four moments, three lists, teachers, a comparison and a conclusion, with
-		// a quote under each point: more than the autobiography; tries are many
-		// because a quote must be word for word. 5000 tokens cut off the JSON of a long answer on the first run on GigaChat.
-		MaxTokens: 8000, Attempts: 5,
+		MaxTokens: tokens, Attempts: 5,
 		Keep: []string{"отчество"},
 		Accepts: func(db model.Database, s Source) bool {
 			submission, ok := findSubmission(db, s)
@@ -32,7 +38,7 @@ func (a *Service) essayTask(prompt promptbank.Prompt) portraitTask {
 			return a.essayPayload(db, submission)
 		},
 		Clean: cleanEssayAnswer,
-		Check: checkEssayAnswer,
+		Check: check,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			submission, ok := findSubmission(db, s)
 			return ok && teacherOwnsSubmission(db, teacherID, submission)
@@ -155,10 +161,6 @@ func oneOf(value any, list []string) bool { return slices.Contains(list, textOf(
 // instructor is in the list and the forbidden words.
 func checkEssayAnswer(output map[string]any, payload *object) []string {
 	current, previous := essayAnswers(payload, "эссе"), essayAnswers(payload, "прежнее_эссе")
-	labels := []string{}
-	for _, entry := range objectList(payload.values["преподаватели"]) {
-		labels = append(labels, objectText(entry, "метка"))
-	}
 	problems := textProblems("summary", output["summary"])
 
 	moments := asMap(output["moments"])
@@ -199,6 +201,49 @@ func checkEssayAnswer(output map[string]any, payload *object) []string {
 		}
 	}
 
+	problems = append(problems, teacherProblems(output, payload, current)...)
+
+	changes, ok := asList(output["change"])
+	switch {
+	case !ok:
+		problems = append(problems, "change: нет списка")
+	case len(previous) == 0 && len(changes) != 0:
+		problems = append(problems, "change: прежнего эссе нет, список должен быть пустым")
+	case len(previous) > 0 && len(changes) != len(essayMoments):
+		problems = append(problems, fmt.Sprintf("change: нужно %d записи по порядку, получено %d", len(essayMoments), len(changes)))
+	}
+	if len(previous) > 0 && len(changes) == len(essayMoments) {
+		for n, raw := range changes {
+			where, record := fmt.Sprintf("change, запись %d", n+1), asMap(raw)
+			if record == nil || textOf(record["moment"]) != essayMoments[n] {
+				problems = append(problems, where+": момент не тот или не по порядку, нужно «"+essayMoments[n]+"»")
+				continue
+			}
+			problems = append(problems, textProblems(where, record["text"])...)
+			problems = append(problems, quoteProblems(where+", before", record["before"], previous)...)
+			problems = append(problems, quoteProblems(where+", after", record["after"], current)...)
+		}
+	}
+
+	conclusion := asMap(output["conclusion"])
+	text := strings.ToLower(textOf(conclusion["text"]))
+	problems = append(problems, textProblems("conclusion", conclusion["text"])...)
+	if text != "" && !strings.HasPrefix(text, "по ответам видно") && !strings.HasPrefix(text, "по ответам можно предположить") {
+		problems = append(problems, "conclusion: должен начинаться со слов «по ответам видно» или «по ответам можно предположить»")
+	}
+	return append(problems, quotesProblems("conclusion", conclusion["quotes"], current, 1, 3)...)
+}
+
+// teacherProblems checks the list «teachers», the same in every version: a
+// label only from the list and once, the kind from its list, a text and one or
+// two quotes of the new essay; an entry the program took the label off has the
+// words of the author and at least two candidates of the list.
+func teacherProblems(output map[string]any, payload *object, current map[string]string) []string {
+	labels := []string{}
+	for _, entry := range objectList(payload.values["преподаватели"]) {
+		labels = append(labels, objectText(entry, "метка"))
+	}
+	problems := []string{}
 	teachers, ok := asList(output["teachers"])
 	if !ok {
 		problems = append(problems, "teachers: нет списка")
@@ -242,36 +287,7 @@ func checkEssayAnswer(output map[string]any, payload *object) []string {
 		problems = append(problems, textProblems(where, record["text"])...)
 		problems = append(problems, quotesProblems(where, record["quotes"], current, 1, 2)...)
 	}
-
-	changes, ok := asList(output["change"])
-	switch {
-	case !ok:
-		problems = append(problems, "change: нет списка")
-	case len(previous) == 0 && len(changes) != 0:
-		problems = append(problems, "change: прежнего эссе нет, список должен быть пустым")
-	case len(previous) > 0 && len(changes) != len(essayMoments):
-		problems = append(problems, fmt.Sprintf("change: нужно %d записи по порядку, получено %d", len(essayMoments), len(changes)))
-	}
-	if len(previous) > 0 && len(changes) == len(essayMoments) {
-		for n, raw := range changes {
-			where, record := fmt.Sprintf("change, запись %d", n+1), asMap(raw)
-			if record == nil || textOf(record["moment"]) != essayMoments[n] {
-				problems = append(problems, where+": момент не тот или не по порядку, нужно «"+essayMoments[n]+"»")
-				continue
-			}
-			problems = append(problems, textProblems(where, record["text"])...)
-			problems = append(problems, quoteProblems(where+", before", record["before"], previous)...)
-			problems = append(problems, quoteProblems(where+", after", record["after"], current)...)
-		}
-	}
-
-	conclusion := asMap(output["conclusion"])
-	text := strings.ToLower(textOf(conclusion["text"]))
-	problems = append(problems, textProblems("conclusion", conclusion["text"])...)
-	if text != "" && !strings.HasPrefix(text, "по ответам видно") && !strings.HasPrefix(text, "по ответам можно предположить") {
-		problems = append(problems, "conclusion: должен начинаться со слов «по ответам видно» или «по ответам можно предположить»")
-	}
-	return append(problems, quotesProblems("conclusion", conclusion["quotes"], current, 1, 3)...)
+	return problems
 }
 
 // queueEssayPortraits queues the analyses of the submitted essays of a center
