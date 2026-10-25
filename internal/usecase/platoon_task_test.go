@@ -277,3 +277,29 @@ func TestPlatoonPayloadHoldsTheNumbers(t *testing.T) {
 		t.Fatalf("answers of another criterion: %.300s", other)
 	}
 }
+
+// fixedPlatoon is three fixed sessions of a bank version, each with its own
+// self-images, so the platoon is the same on every run.
+func fixedPlatoon(a *Service, version string) []studentPortrait {
+	students := []studentPortrait{}
+	for n, name := range []string{"А", "Б", "В"} {
+		s := fixedTestSession(a, version)
+		s.ID, s.Participant, s.Group = "session-"+name, name, "101"
+		for _, item := range a.itemsFor(s) {
+			if v, ok := s.Answers[item.ID]; ok && item.Module == "A" {
+				s.Answers[item.ID] = min(item.Max, v+n*2)
+			}
+		}
+		students = append(students, studentPortrait{methodsStudent(s), a.TestPortrait(s)})
+	}
+	return students
+}
+
+// The input of test-platoon/v1 must not change: the conclusions made are
+// found by its fingerprint.
+func TestPlatoonPayloadV1IsKept(t *testing.T) {
+	a := testApp(t)
+	for _, version := range []string{"pilot-2.5", a.bank.Version} {
+		keptInput(t, "platoon-v1.json", indentedJSON(a.platoonPayload(a.platoonPortrait("101", fixedPlatoon(a, version)))))
+	}
+}
