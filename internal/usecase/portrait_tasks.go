@@ -375,6 +375,75 @@ var areaWords = map[string]*regexp.Regexp{
 // «нет опыта», «не служил». The words stand alone.
 var absence = regexp.MustCompile(`(?i)(^|[^а-яё])(нет|без медал[а-яё]*|без разряд[а-яё]*|без наград[а-яё]*|без опыта|не имеет|не имел[а-яё]*|не имею|не выезжал[а-яё]*|не был[а-яё]*|не бывал[а-яё]*|не служил[а-яё]*|не проходил[а-яё]*|не привлекал[а-яё]*|не участвовал[а-яё]*|не занимал[а-яё]*|не указ[а-яё]*|не выражен[а-яё]*|не владеет|не женат|отсутству[а-яё]*)([^а-яё]|$)`)
 
+// unknownRelative is «сведений об отце не имеет»: the student's answer about a
+// relative, a fact of «what to consider» and not an absence (decided by the
+// user 25 October 2026 after the run). The clause with it is not checked for absence.
+var unknownRelative = regexp.MustCompile(`(?i)сведени[йя]`)
+
+// kinWord is a relative in a clause of «what to consider».
+var kinWord = regexp.MustCompile(`(?i)отц|отец|мать|матер|брат|сестр|бабушк|дедушк|опекун|родственник|родител`)
+
+// withoutUnknownRelatives drops the clauses of a point that tell there is no
+// information about a relative.
+func withoutUnknownRelatives(text string) string {
+	kept := []string{}
+	for _, clause := range strings.FieldsFunc(text, func(r rune) bool { return strings.ContainsRune(".;,", r) }) {
+		if !(unknownRelative.MatchString(clause) && kinWord.MatchString(clause)) {
+			kept = append(kept, clause)
+		}
+	}
+	return strings.Join(kept, ",")
+}
+
+// The checks of the paragraphs added after the run of 25 October 2026 (decided
+// by the user): no qualities drawn from the school or the university, no
+// appointment to a post (prohibition 4), the work before the university only as
+// a fact «До вуза работал …».
+
+// schooling is the school or the university as a source of qualities: a
+// lyceum, a medal at graduation, a faculty or a profile. The cadet education,
+// the art school and the music are activities and are not taken.
+var schooling = regexp.MustCompile(`(?i)лице[йяеию]|гимнази|аттестат|диплом[а-яё]* с отличием|красн[а-яё]* диплом|факультет|профил[ьяеию]|оконч[а-яё]*[^.;]{0,60}с медалью`)
+
+// inference finds a quality drawn from something: «подтверждает», «говорит о».
+var inference = regexp.MustCompile(`(?i)подтвержда|свидетельству|указывает|говорит о|характеризу|отражает`)
+
+// schoolActivity marks a sentence about the cadet education or the art school:
+// they are activities, their qualities are allowed.
+var schoolActivity = regexp.MustCompile(`(?i)кадет|искусств|музык|суворов|нахимов`)
+
+// postAppointment is a recommendation to appoint, enrol or expel (prohibition 4).
+// «Стратегического назначения» and the like are names of troops, not appointments.
+var postAppointment = regexp.MustCompile(`(?i)назнач|зачисл|отчисл`)
+var troopsPurpose = regexp.MustCompile(`(?i)(стратегического|специального|особого|двойного) назначени[а-яё]*`)
+
+// workFact is the sentence that tells the work before the university as a fact.
+var workFact = regexp.MustCompile(`(?i)работал`)
+
+// paragraphProblems checks one paragraph of v4 for the three rules above. It
+// names the word of the rule, never the text of the answer.
+func paragraphProblems(where, text string, jobs []string) []string {
+	problems := []string{}
+	for _, part := range strings.FieldsFunc(text, func(r rune) bool { return strings.ContainsRune(".;!?", r) }) {
+		lower := strings.ToLower(part)
+		if found := schooling.FindString(lower); found != "" && !schoolActivity.MatchString(lower) && (skillWord.MatchString(lower) || inference.MatchString(lower)) {
+			problems = append(problems, fmt.Sprintf("%s: качества из учёбы («%s») — качества называй только по занятиям и увлечениям", where, strings.Fields(found)[0]))
+		}
+		if found := postAppointment.FindString(troopsPurpose.ReplaceAllString(lower, "")); found != "" {
+			problems = append(problems, fmt.Sprintf("%s: назначение на должность («%s») — запрет 4, пиши «можно поручать»", where, found))
+		}
+		if !workFact.MatchString(lower) {
+			for _, stem := range jobs {
+				if strings.Contains(lower, stem) {
+					problems = append(problems, where+": работа до вуза не фактом — о ней только отдельное предложение «До вуза работал …»")
+					break
+				}
+			}
+		}
+	}
+	return problems
+}
+
 // emptyAreas returns the areas of the input at the level «не выражен».
 func emptyAreas(payload *object) []string {
 	empty := []string{}
@@ -446,6 +515,7 @@ func checkAutobiographyAnswerV4(output map[string]any, payload *object) []string
 			marked = marked || byExperience.MatchString(text)
 			problems = append(problems, qualityProblems(where, text, jobs)...)
 			problems = append(problems, absenceProblems(where, text, empty)...)
+			problems = append(problems, paragraphProblems(where, text, jobs)...)
 		}
 		if !marked {
 			problems = append(problems, "paragraphs: нет «по опыту в …» — каждую фразу о качествах начни словами «По опыту в …», а не «По увлечению …» или «Студент увлекается …»")
@@ -461,7 +531,7 @@ func checkAutobiographyAnswerV4(output map[string]any, payload *object) []string
 	if ok {
 		problems = append(problems, considerProblems("consider", consider, payload)...)
 		for n, point := range consider {
-			problems = append(problems, absenceProblems(fmt.Sprintf("consider, пункт %d", n+1), point.(string), empty)...)
+			problems = append(problems, absenceProblems(fmt.Sprintf("consider, пункт %d", n+1), withoutUnknownRelatives(point.(string)), empty)...)
 		}
 	}
 	return problems

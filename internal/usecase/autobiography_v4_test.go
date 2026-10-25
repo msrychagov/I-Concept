@@ -172,3 +172,55 @@ func TestV4QualitiesStillComeOnlyFromActivities(t *testing.T) {
 		}
 	}
 }
+
+// The checks added after the run of 25 October 2026: the examples are the
+// answers of that run.
+func TestV4ParagraphsHoldNoSchoolQualitiesAppointmentsOrWorkSkills(t *testing.T) {
+	work := newObject()
+	work.set("должность", "слесарь-ремонтник")
+	payload := levelsPayload(nil)
+	payload.set("работа_до_вуза", []any{work})
+	jobs := jobStems(payload)
+	for text, want := range map[string]string{
+		"Окончание физико-математического лицея с медалью подтверждает устойчивую академическую подготовку и дисциплину.":                      "качества из учёбы",
+		"Студент окончил школу без профильного уклона и поступил на экономический факультет, что указывает на системность и интерес к работе.": "качества из учёбы",
+		"Опыт командования отделением позволит назначать его командиром отделения на учениях.":                                                 "назначение на должность («назнач»)",
+		"Опыт механика-водителя и слесаря-ремонтника пригодится на занятиях по устройству техники.":                                            "работа до вуза не фактом",
+	} {
+		problems := paragraphProblems("абзац", text, jobs)
+		if len(problems) != 1 || !strings.Contains(problems[0], want) || strings.Contains(problems[0], "слесар") {
+			t.Errorf("%q: %v", text, problems)
+		}
+	}
+	for _, text := range []string{
+		"По опыту учёбы в кадетском корпусе — строевая выучка и дисциплина.",
+		"В творчестве студент окончил школу искусств по вокалу, что говорит о сценической выдержке.",
+		"По опыту в науке у него системное мышление; он призёр олимпиады школьников.",
+		"По опыту службы в Ракетных войсках стратегического назначения — дисциплина.",
+		"Ему можно поручать обязанности командира отделения.",
+		"До вуза работал слесарем-ремонтником.",
+	} {
+		if problems := paragraphProblems("абзац", text, jobs); len(problems) != 0 {
+			t.Errorf("%q: %v", text, problems)
+		}
+	}
+}
+
+// «Сведений об отце не имеет» is the student's answer about a relative, a fact
+// of «what to consider» (decided by the user 25 October 2026).
+func TestV4UnknownRelativeIsAFactToConsider(t *testing.T) {
+	payload := levelsPayload(map[string]string{"наука": "высокий"})
+	answer := func(points ...any) map[string]any {
+		return map[string]any{"paragraphs": []any{"По опыту в науке — системное мышление.", "Пригодится на занятиях ВУЦ."}, "consider": points}
+	}
+	for _, point := range []string{"Сведений об отце студент не имеет.", "Воспитывался матерью, отец — сведений не имеет.", "Воспитывался матерью; сведений об отце нет."} {
+		if problems := checkAutobiographyAnswerV4(answer(point), payload); len(problems) != 0 {
+			t.Errorf("%q: %v", point, problems)
+		}
+	}
+	for _, point := range []string{"Сведений о наградах нет.", "Детей нет, сведений об отце не имеет."} {
+		if problems := checkAutobiographyAnswerV4(answer(point), payload); len(problems) != 1 || !strings.Contains(problems[0], "об отсутствии") {
+			t.Errorf("%q: %v", point, problems)
+		}
+	}
+}
