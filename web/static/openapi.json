@@ -5492,6 +5492,142 @@
         ]
       }
     },
+    "/submissions/{id}/autobiography": {
+      "get": {
+        "operationId": "getAutobiographyText",
+        "tags": [
+          "Анкеты"
+        ],
+        "summary": "Автобиография для печати",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutobiographyText"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Только сданная автобиография по своему назначению; несданная, чужая или другая анкета — 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/students/me/submissions/{id}/autobiography": {
+      "get": {
+        "operationId": "getOwnAutobiographyText",
+        "tags": [
+          "Анкеты"
+        ],
+        "summary": "Своя автобиография для печати",
+        "security": [
+          {
+            "studentCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutobiographyText"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Только своя сданная автобиография; иначе 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
     "/forms/{formId}/potential": {
       "get": {
         "operationId": "getFormPotential",
@@ -5868,6 +6004,14 @@
               "$ref": "#/components/schemas/ActivityKind"
             },
             "nullable": true
+          },
+          "identity": {
+            "$ref": "#/components/schemas/IdentityMethod",
+            "nullable": true
+          },
+          "climate": {
+            "$ref": "#/components/schemas/ClimateMethod",
+            "nullable": true
           }
         },
         "additionalProperties": false,
@@ -5875,6 +6019,130 @@
           "version",
           "modules",
           "indicators",
+          "items"
+        ]
+      },
+      "ClimateMethod": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string"
+          },
+          "pairs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClimatePair"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "method",
+          "pairs"
+        ]
+      },
+      "ClimatePair": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string"
+          },
+          "side": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "item",
+          "side"
+        ]
+      },
+      "IdentityMethod": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string"
+          },
+          "ranges": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "scales": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdentityScale"
+            },
+            "nullable": true
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdentityBlock"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "method",
+          "ranges",
+          "scales",
+          "blocks"
+        ]
+      },
+      "IdentityScale": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "short": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "bounds": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "short",
+          "name",
+          "bounds"
+        ]
+      },
+      "IdentityBlock": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
           "items"
         ]
       },
@@ -6058,6 +6326,9 @@
           },
           "rationale": {
             "type": "string"
+          },
+          "scale": {
+            "type": "string"
           }
         },
         "additionalProperties": false,
@@ -6070,6 +6341,9 @@
       "Item": {
         "type": "object",
         "properties": {
+          "opposite": {
+            "type": "string"
+          },
           "hint": {
             "type": "string"
           },
@@ -6181,6 +6455,273 @@
           "id",
           "name",
           "vuc"
+        ]
+      },
+      "DefenderImage": {
+        "type": "object",
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DefenderGroupDef"
+            },
+            "nullable": true
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecommendationType"
+            },
+            "nullable": true
+          },
+          "directions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Direction"
+            },
+            "nullable": true
+          },
+          "criteria": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KindCriteria"
+            },
+            "nullable": true
+          },
+          "signs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnvironmentSign"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "groups",
+          "types",
+          "directions"
+        ]
+      },
+      "KindCriteria": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "criteria": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Criterion"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "criteria"
+        ]
+      },
+      "Criterion": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "coverage": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "texts": {
+            "type": "boolean"
+          },
+          "climate": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "coverage",
+          "data"
+        ]
+      },
+      "EnvironmentSign": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "climate": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "description",
+          "data"
+        ]
+      },
+      "DefenderGroupDef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "qualities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "indicators": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "signs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "kinds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KindLink"
+            },
+            "nullable": true
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "description",
+          "qualities",
+          "kinds",
+          "conditions"
+        ]
+      },
+      "KindLink": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "forms": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id"
+        ]
+      },
+      "RecommendationType": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "Direction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "source": {
+            "type": "string"
+          },
+          "edition": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "type",
+          "groups",
+          "source"
         ]
       },
       "Profile": {
@@ -7674,6 +8215,10 @@
           "studentView": {
             "type": "boolean",
             "description": "Только у анкет, которые автор может перечитать после сдачи (эссе): ответы — GET /students/me/submissions/{id}/answers."
+          },
+          "printable": {
+            "type": "boolean",
+            "description": "Только у сданной автобиографии: текст для печати — GET /students/me/submissions/{id}/autobiography."
           }
         },
         "additionalProperties": false,
@@ -9129,7 +9674,7 @@
           "output": {
             "type": "object",
             "additionalProperties": true,
-            "description": "Ответ модели по схеме задачи. У автобиографии: summary, potential (шесть записей area, level, facts, conclusion), attention (use, consider). Уровни в нём проверены программой; на экране уровни берутся из potential ответа анкеты."
+            "description": "Ответ модели по схеме задачи. У автобиографии с инструкции v4: paragraphs (два-три абзаца вывода) и consider (что учесть); до v4 — summary, potential (шесть записей area, level, facts, conclusion), hobbies (с v3), attention (use, consider). Уровни показываются из potential ответа анкеты."
           },
           "created": {
             "type": "string",
@@ -9169,6 +9714,37 @@
           "status"
         ],
         "description": "Вывод языковой модели по обезличенным сведениям. Одинаковые сведения дают один и тот же вывод."
+      },
+      "AutobiographyText": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "type": "string",
+            "description": "ФИО из учётной записи."
+          },
+          "paragraphs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "date": {
+            "type": "string",
+            "description": "День сдачи по Москве, «15 сентября 2024 г.»."
+          },
+          "surname": {
+            "type": "string",
+            "description": "Фамилия для подписи."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "student",
+          "paragraphs",
+          "date",
+          "surname"
+        ],
+        "description": "Автобиография для личного дела: текст бумажного бланка от первого лица, который программа собирает по шаблону из ответов сданной автобиографии. Заново при каждом запросе, в базе не хранится; языковая модель не участвует."
       }
     },
     "securitySchemes": {
