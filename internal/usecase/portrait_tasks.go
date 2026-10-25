@@ -403,10 +403,10 @@ func withoutUnknownRelatives(text string) string {
 // schooling is the school or the university as a source of qualities: a
 // lyceum, a medal at graduation, a faculty or a profile. The cadet education,
 // the art school and the music are activities and are not taken.
-var schooling = regexp.MustCompile(`(?i)лице[йяеию]|гимнази|аттестат|диплом[а-яё]* с отличием|красн[а-яё]* диплом|факультет|профил[ьяеию]|оконч[а-яё]*[^.;]{0,60}с медалью`)
+var schooling = regexp.MustCompile(`(?i)лице[йяеию]|гимнази|образовани|аттестат|диплом[а-яё]* с отличием|красн[а-яё]* диплом|факультет|профил[ьяеию]|оконч[а-яё]*[^.;]{0,60}с медалью`)
 
 // inference finds a quality drawn from something: «подтверждает», «говорит о».
-var inference = regexp.MustCompile(`(?i)подтвержда|свидетельству|указывает|говорит о|характеризу|отражает`)
+var inference = regexp.MustCompile(`(?i)подтвержда|свидетельству|указывает|говорит о|характеризу|отражает|(^|[^а-яё])(да[её]т|дают)([^а-яё]|$)`)
 
 // schoolActivity marks a sentence about the cadet education or the art school:
 // they are activities, their qualities are allowed.
