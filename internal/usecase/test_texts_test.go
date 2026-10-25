@@ -237,3 +237,27 @@ func TestGroupNumberHint(t *testing.T) {
 		t.Errorf("figure: %s", got)
 	}
 }
+
+// The point about the self-determination is told the codes that fit group 2.
+func TestSelfDeterminationHintNamesTheCodes(t *testing.T) {
+	a := testApp(t)
+	data := a.TestPortrait(fixedTestSession(a, a.bank.Version))
+	for n := range data.Identity {
+		if data.Identity[n].ID == "military" {
+			data.Identity[n].LeadingText = "навязанная"
+		}
+	}
+	payload := a.testPayloadFor("v3", data)
+	fitting := ""
+	for _, g := range objectList(payload.values["образ_защитника"]) {
+		if g.values["номер"] == 2 {
+			fitting = strings.Join(textList(g.values["подходящие_направления"]), ", ")
+		}
+	}
+	answer := goodTestAnswerV2(string(canonicalJSON(payload)))
+	answer["recommendations"] = answer["recommendations"].([]any)[:1]
+	problems := strings.Join(selfDeterminationProblems(answer, payload), "; ")
+	if fitting == "" || !strings.HasSuffix(problems, "; код — из подходящих группе 2: "+fitting) {
+		t.Errorf("%q, fitting %q", problems, fitting)
+	}
+}

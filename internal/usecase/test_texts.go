@@ -164,10 +164,21 @@ func selfDeterminationProblems(output map[string]any, payload *object) []string 
 			return nil
 		}
 	}
-	if undecided {
-		return []string{fmt.Sprintf("recommendations: по военной специальности ведущий статус «%s» — нужен пункт к группе 2 о самоопределении как военного специалиста, со словом «самоопределение»", leading)}
+	// The run of 25 October: the model put the point to group 2 with a code
+	// that does not fit it for five attempts; it is told the codes that do.
+	codes := ""
+	for _, g := range objectList(payload.values["образ_защитника"]) {
+		if number, _ := numberOf(g.values["номер"]); number == 2 {
+			codes = strings.Join(textList(g.values["подходящие_направления"]), ", ")
+		}
 	}
-	return []string{fmt.Sprintf("recommendations: по военной специальности ведущий статус «%s» — нужен пункт к группе 2 о личном смысле выбора, со словами «смысл» и «выбор»", leading)}
+	if codes != "" {
+		codes = "; код — из подходящих группе 2: " + codes
+	}
+	if undecided {
+		return []string{fmt.Sprintf("recommendations: по военной специальности ведущий статус «%s» — нужен пункт к группе 2 о самоопределении как военного специалиста, со словом «самоопределение»%s", leading, codes)}
+	}
+	return []string{fmt.Sprintf("recommendations: по военной специальности ведущий статус «%s» — нужен пункт к группе 2 о личном смысле выбора, со словами «смысл» и «выбор»%s", leading, codes)}
 }
 
 // recommendationLeast is the fewest recommendations both instructions ask for.
