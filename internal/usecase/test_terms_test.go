@@ -364,6 +364,23 @@ func TestPortraitV4IsShownWhileV5IsMade(t *testing.T) {
 	}
 }
 
+// The table of the methods gets the level of every component by its scales.
+func TestComponentLevelsOfThePortrait(t *testing.T) {
+	a := testApp(t)
+	data := a.TestPortrait(fixedTestSession(a, a.bank.Version))
+	for _, code := range []string{"CS", "EV", "DP"} {
+		levels := []string{}
+		for _, m := range data.Methods {
+			if m.Component == code {
+				levels = append(levels, m.Level)
+			}
+		}
+		if want := componentLevelText(levels); data.ComponentLevels[code] != want || want == levelText[""] {
+			t.Errorf("%s: %q, want %q", code, data.ComponentLevels[code], want)
+		}
+	}
+}
+
 // The inputs of test/v4 and test-platoon/v2 must not change either: the
 // portraits made by them are shown while those by v5 and v3 are made.
 func TestPayloadsV4AndPlatoonV2AreKept(t *testing.T) {
