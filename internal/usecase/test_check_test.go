@@ -278,7 +278,11 @@ func TestProblemsTellTheRetryWhatFits(t *testing.T) {
 // takes for it.
 func TestFittingDirectionsAreThoseTheCheckTakes(t *testing.T) {
 	a := testApp(t)
-	for _, low := range []bool{false, true} {
+	for _, c := range []struct {
+		version string
+		low     bool
+	}{{"v2", false}, {"v2", true}, {"v4", false}, {"v4", true}} {
+		version, low := c.version, c.low
 		data := a.TestPortrait(fixedTestSession(a, a.bank.Version))
 		for n := range data.Methods {
 			level := "high"
@@ -287,7 +291,7 @@ func TestFittingDirectionsAreThoseTheCheckTakes(t *testing.T) {
 			}
 			data.Methods[n].Level, data.Methods[n].LevelText = level, levelText[level]
 		}
-		payload := a.testPayloadFor("v2", data)
+		payload := a.testPayloadFor(version, data)
 		for _, g := range objectList(payload.values["образ_защитника"]) {
 			number := g.values["номер"].(int)
 			listed := map[string]bool{}
@@ -303,9 +307,65 @@ func TestFittingDirectionsAreThoseTheCheckTakes(t *testing.T) {
 				answer["recommendations"].([]any)[0].(map[string]any)["code"] = objectText(d, "код")
 				passes := !strings.Contains(strings.Join(checkTestAnswerV2(answer, payload), "; "), "recommendations.1:")
 				if passes != listed[objectText(d, "код")] {
-					t.Errorf("low %v, group %d, %s: listed %v, passes %v", low, number, objectText(d, "код"), listed[objectText(d, "код")], passes)
+					t.Errorf("%s, low %v, group %d, %s: listed %v, passes %v", version, low, number, objectText(d, "код"), listed[objectText(d, "код")], passes)
 				}
 			}
 		}
+	}
+}
+
+// The directions of the second edition (decision Д3) reach the input from
+// test/v4 on and fit the groups by the type of their situation: R22 is
+// value, R24 activity, R23 psychological — only when a scale of the
+// emotional-volitional component is low.
+func TestSecondCatalogueFitsBySituation(t *testing.T) {
+	a := testApp(t)
+	data := a.TestPortrait(fixedTestSession(a, a.bank.Version))
+	situations := map[string]string{"G1": situationNotAccepted, "G2": situationAchieved, "G3": situationFar, "G4": situationFar, "G5": situationBelow}
+	for n := range data.Defender {
+		g := &data.Defender[n]
+		g.Situation, g.Type = situations[g.ID], situationType[situations[g.ID]]
+	}
+	fitting := func(version string, low bool) map[string][]string {
+		for n := range data.Methods {
+			level := "high"
+			if low && data.Methods[n].ID == "EMO" {
+				level = "low"
+			}
+			data.Methods[n].Level, data.Methods[n].LevelText = level, levelText[level]
+		}
+		codes := map[string][]string{}
+		for _, g := range objectList(a.testPayloadFor(version, data).values["образ_защитника"]) {
+			for _, code := range g.values["подходящие_направления"].([]any) {
+				codes[objectText(g, "группа")] = append(codes[objectText(g, "группа")], code.(string))
+			}
+		}
+		return codes
+	}
+	names := map[string]string{}
+	for _, g := range a.defender.Groups {
+		names[g.ID] = g.Name
+	}
+	has := func(codes map[string][]string, group, code string) bool { return slices.Contains(codes[names[group]], code) }
+	old, high, low := fitting("v3", true), fitting("v4", false), fitting("v4", true)
+	for _, code := range []string{"R22", "R23", "R24"} {
+		for group := range names {
+			if has(old, group, code) {
+				t.Errorf("v3 lists %s for %s", code, group)
+			}
+		}
+	}
+	if !has(high, "G1", "R22") || has(high, "G2", "R22") {
+		t.Errorf("R22: %v", high)
+	}
+	if !has(high, "G3", "R24") {
+		t.Errorf("R24: %v", high)
+	}
+	if has(high, "G4", "R23") || has(high, "G5", "R23") || !has(low, "G4", "R23") || !has(low, "G5", "R23") || has(low, "G3", "R23") {
+		t.Errorf("R23: high %v, low %v", high, low)
+	}
+	catalogue := objectList(a.testPayloadFor("v4", data).values["каталог_рекомендаций"])
+	if len(catalogue) != 24 || len(objectList(a.testPayloadFor("v3", data).values["каталог_рекомендаций"])) != 21 {
+		t.Fatalf("catalogue of v4: %d", len(catalogue))
 	}
 }

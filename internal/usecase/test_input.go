@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"vucdiagnostic/internal/domain/model"
 	"vucdiagnostic/internal/promptbank"
 )
 
@@ -190,7 +191,8 @@ func (a *Service) testPayloadFor(version string, data *TestPortraitData) *object
 		c.set("оценка", data.Congruence.Text)
 		payload.insertAfter("образы_я", "согласованность_образов", c)
 	}
-	payload.insertAfter("признаки", "образ_защитника", defenderList(data.Defender, numbers, a.fittingDirections(data)))
+	edition := catalogueEdition(testPortraitTask, version)
+	payload.insertAfter("признаки", "образ_защитника", defenderList(data.Defender, numbers, a.fittingDirections(data, edition)))
 	criteria := map[string][]CriterionData{}
 	for _, k := range data.Criteria {
 		criteria[k.Kind] = k.Criteria
@@ -215,18 +217,44 @@ func (a *Service) testPayloadFor(version string, data *TestPortraitData) *object
 	if len(data.Identity) > 0 {
 		payload.insertAfter("образ_защитника", "профессиональная_идентичность", identityList(data.Identity))
 	}
-	payload.set("каталог_рекомендаций", a.catalogueList(numbers))
+	payload.set("каталог_рекомендаций", a.catalogueList(numbers, edition))
 	return payload
 }
 
-// catalogueList is the catalogue of recommendations with the numbers of the groups.
-func (a *Service) catalogueList(numbers map[string]int) []any {
+// The editions of the catalogue of recommendations: the first, R01–R21, goes
+// to test/v2–v3 and test-platoon/v1; the second adds R22–R24 from the article
+// of the supervisor of 2023 (decision Д3 of Вики/Тестирование/План П2, П5 и
+// климат по Лутошкину.md) and goes to test/v4 and test-platoon/v2 on.
+var secondCatalogue = map[string]int{testPortraitTask: 4, testPlatoonTask: 2}
+
+// catalogueEdition is the edition of the catalogue a version of a task gets.
+func catalogueEdition(task, version string) int {
+	if n, _ := promptbank.Number(version); n >= secondCatalogue[task] {
+		return 2
+	}
+	return 1
+}
+
+// directions are the directions of the catalogue up to an edition.
+func (a *Service) directions(edition int) []model.Direction {
+	list := []model.Direction{}
+	for _, d := range a.defender.Directions {
+		if max(d.Edition, 1) <= edition {
+			list = append(list, d)
+		}
+	}
+	return list
+}
+
+// catalogueList is the catalogue of recommendations of an edition with the
+// numbers of the groups.
+func (a *Service) catalogueList(numbers map[string]int, edition int) []any {
 	catalogue := []any{}
 	types := map[string]string{}
 	for _, kind := range a.defender.Types {
 		types[kind.ID] = kind.Name
 	}
-	for _, d := range a.defender.Directions {
+	for _, d := range a.directions(edition) {
 		o := newObject()
 		o.set("код", d.ID)
 		o.set("направление", d.Name)
@@ -247,7 +275,7 @@ func (a *Service) catalogueList(numbers map[string]int) []any {
 // and psychological ones when a scale of the emotional-volitional component is
 // low (Д1, Д4). The model gets them ready, so as not to match the types itself
 // (decided by the user on 24 October 2026 after the run on GigaChat).
-func (a *Service) fittingDirections(data *TestPortraitData) map[string][]any {
+func (a *Service) fittingDirections(data *TestPortraitData, edition int) map[string][]any {
 	lowEV := false
 	for _, m := range data.Methods {
 		lowEV = lowEV || m.Component == "EV" && m.Level == "low"
@@ -255,7 +283,7 @@ func (a *Service) fittingDirections(data *TestPortraitData) map[string][]any {
 	fitting := map[string][]any{}
 	for _, g := range data.Defender {
 		codes := []any{}
-		for _, d := range a.defender.Directions {
+		for _, d := range a.directions(edition) {
 			if slices.Contains(d.Groups, g.ID) && (g.Type == "" || d.Type == g.Type || d.Type == "psychological" && lowEV) {
 				codes = append(codes, d.ID)
 			}

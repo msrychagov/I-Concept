@@ -302,7 +302,7 @@ func (a *Service) platoonPayload(data PlatoonPortraitData) *object {
 		signs = append(signs, o)
 	}
 	payload.set("признаки_среды", signs)
-	payload.set("каталог_рекомендаций", a.catalogueList(numbers))
+	payload.set("каталог_рекомендаций", a.catalogueList(numbers, 1))
 	return payload
 }
 

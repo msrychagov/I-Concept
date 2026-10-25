@@ -74,11 +74,14 @@ type RecommendationType struct {
 	Name string `json:"name"`
 }
 
-// Direction is one direction of the catalogue of recommendations.
+// Direction is one direction of the catalogue of recommendations. Edition is
+// the edition of the catalogue it came in, zero for the first: an instruction
+// gets the catalogue of its own edition, so the input of the older ones stays.
 type Direction struct {
-	ID     string   `json:"id"`
-	Name   string   `json:"name"`
-	Type   string   `json:"type"`
-	Groups []string `json:"groups"`
-	Source string   `json:"source"`
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Type    string   `json:"type"`
+	Groups  []string `json:"groups"`
+	Source  string   `json:"source"`
+	Edition int      `json:"edition,omitempty"`
 }

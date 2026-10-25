@@ -90,13 +90,19 @@ func TestDefenderImageRefersToTheBank(t *testing.T) {
 		}
 	}
 
-	if len(image.Directions) != 21 {
-		t.Fatalf("%d directions, want 21", len(image.Directions))
+	// The first edition is R01–R21; the second adds R22–R24 from the article
+	// of the supervisor of 2023 (Вики/Тестирование/План П2, П5 и климат по
+	// Лутошкину.md, decision Д3).
+	if len(image.Directions) != 24 {
+		t.Fatalf("%d directions, want 24", len(image.Directions))
 	}
 	have := map[string]map[string]bool{}
 	for n, d := range image.Directions {
 		if d.ID != fmt.Sprintf("R%02d", n+1) || d.Name == "" || d.Source == "" || len(d.Groups) == 0 {
 			t.Fatalf("direction %d: %+v", n+1, d)
+		}
+		if edition := map[bool]int{false: 0, true: 2}[n >= 21]; d.Edition != edition || n >= 21 && d.Source != "статья Митюкова 2023" {
+			t.Errorf("%s: edition %d, source %q", d.ID, d.Edition, d.Source)
 		}
 		if !types[d.Type] {
 			t.Errorf("%s: unknown type %s", d.ID, d.Type)
