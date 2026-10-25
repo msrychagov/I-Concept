@@ -718,6 +718,77 @@
     border-radius: 8px
 }
 
+/* Essay v2: paragraphs of conclusions; the quotes and sources are behind «Из чего вывод» */
+.essay-findings .essay-note {
+    margin: -.2rem 0 .8rem;
+    font-size: .88rem
+}
+
+.essay-paragraph {
+    margin: 0 0 1rem
+}
+
+.essay-paragraph p {
+    margin: 0 0 .3rem
+}
+
+.essay-why summary {
+    display: inline-block;
+    cursor: pointer;
+    padding: 0 .6em;
+    border-radius: 999px;
+    border: 1px solid var(--line, #0002);
+    font-size: .85rem;
+    color: var(--muted)
+}
+
+.essay-why-body {
+    margin: .4rem 0 0
+}
+
+.essay-advice {
+    margin: .4rem 0 1rem;
+    padding-left: 1.3rem;
+    display: grid;
+    gap: .7rem
+}
+
+.essay-source-list {
+    margin: .5rem 0 0;
+    padding-left: 0;
+    list-style: none;
+    display: grid;
+    gap: .5rem;
+    overflow-wrap: anywhere
+}
+
+.quote-chip span small {
+    font-style: normal;
+    color: var(--muted)
+}
+
+/* The name of an author opens the essay: a link, not a heavy button */
+#essay-summary button.link {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    color: var(--green-2, #176347);
+    padding: 0;
+    min-height: 0;
+    font-weight: 600;
+    text-align: left;
+    text-decoration: underline
+}
+
+details.essay-left summary {
+    cursor: pointer;
+    font-weight: 600
+}
+
+details.essay-left p {
+    margin: .4rem 0 0
+}
+
 .assignment-row.is-current {
     background: #0000000a
 }

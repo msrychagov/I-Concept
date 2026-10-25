@@ -94,7 +94,7 @@ window.teacherEssays = async function ({view, api, esc}) {
     }
 
     const stateText = s => s.status === 'submitted' ? `Сдано ${fmtDate(s.completedAt)}` : s.status === 'writing' ? `Пишет: ${s.answered} из ${s.total}` : 'Не начато';
-    const analysisText = s => s.status !== 'submitted' ? '—' : {ready: 'Готов', queued: 'Составляется…', working: 'Составляется…', failed: 'Не удалось', none: 'Не составлен', off: 'Модель не подключена'}[s.analysis] || '—';
+    const analysisText = s => s.status !== 'submitted' ? '—' : {ready: 'Готов', queued: 'Составляется…', working: 'Составляется…', failed: 'Не удалось', none: 'Не составлен', off: 'Модель не подключена', earlier: 'В прежнем виде'}[s.analysis] || '—';
 
     function table() {
         const as = data.assignments.find(a => a.id === current);
@@ -131,6 +131,14 @@ window.teacherEssays = async function ({view, api, esc}) {
         }));
         return result;
     };
+    // The full answer under a quote is headed by its question, not by its number.
+    const questionMap = form => {
+        const result = {};
+        form.sections.forEach(s => s.fields.forEach(f => {
+            if (f.number) result[f.number] = f.label;
+        }));
+        return result;
+    };
     // A quote shows the number of the question; a click opens the whole answer.
     const quote = (q, source, esc) => `<button type="button" class="quote-chip" data-quote="${esc(q.question)}" data-source="${source}"><span>«${esc(q.quote)}»</span><small>вопрос ${esc(q.question)}</small></button>`;
     const quotes = (list, esc, source = 'current') => `<div class="quote-list">${(list || []).map(q => quote(q, source, esc)).join('')}</div>`;
@@ -150,8 +158,31 @@ window.teacherEssays = async function ({view, api, esc}) {
         };
     }
 
+    // v2 (decided 25 October 2026): paragraphs without lists and question numbers;
+    // the quotes of each paragraph and recommendation are behind «Из чего вывод».
+    const plainQuote = (q, source, esc, label = '') => `<button type="button" class="quote-chip" data-quote="${esc(q.question)}" data-source="${source}"><span>${label ? `<small>${esc(label)}</small> ` : ''}«${esc(q.quote)}»</span></button>`;
+    const why = (inner, label = 'Из чего вывод') => `<details class="essay-why"><summary>${esc(label)}</summary><div class="essay-why-body">${inner}</div></details>`;
+    const quotesWhy = (list, esc, before = []) => why(`<div class="quote-list">${before.map(q => plainQuote(q, 'previous', esc, 'из прежнего эссе')).join('')}${(list || []).map(q => plainQuote(q, 'current', esc)).join('')}</div>`);
+
+    function teacherLines(list, esc) {
+        if (!list.length) return '';
+        return `<section class="essay-findings-teachers"><h3>Преподаватели</h3><ul class="essay-points">${list.map(t => {
+            const w = who(t.who);
+            const fit = (t.candidates || []).map(l => who(l).short).join('; ');
+            return `<li><b>${esc(w.text)}</b>${t.candidates ? ` <span class="essay-tag">${fitWord(t.candidates)}: ${esc(fit)}</span>` : w.listed ? '' : ' <small class="muted">(как назвал автор)</small>'} <span class="essay-tag">${esc(t.kind)}</span> ${esc(t.text)}${quotesWhy(t.quotes, esc)}</li>`;
+        }).join('')}</ul></section>`;
+    }
+
+    function analysisV2(o, esc) {
+        const paragraph = (p, before) => `<div class="essay-paragraph"><p>${esc(p.text)}</p>${quotesWhy(p.quotes, esc, before)}</div>`;
+        return `<section class="essay-findings"><h3>Выводы по эссе</h3><p class="muted essay-note">Выводы по тексту эссе. Из чего сделан вывод — по кнопке под абзацем.</p>
+${paragraph(o.formation, o.formation.before || [])}${paragraph(o.moments)}${paragraph(o.environment)}
+<h3>Рекомендации</h3><ol class="essay-advice">${o.recommendations.map(r => `<li>${esc(r.text)}${quotesWhy(r.quotes, esc)}</li>`).join('')}</ol></section>${teacherLines(o.teachers, esc)}`;
+    }
+
     window.portraitRenderers.essay = {
         analysis: (o, esc) => {
+            if (o.formation) return analysisV2(o, esc);
             const points = (title, list) => `<div><h3>${title}</h3>${list.length ? `<ul class="essay-points">${list.map(p => `<li>${tags(p, esc)} ${esc(p.text)}${quotes(p.quotes, esc)}</li>`).join('')}</ul>` : '<p class="muted">Нет.</p>'}</div>`;
             const teachers = o.teachers.length ? `<section><h3>Преподаватели</h3><ul class="essay-points">${o.teachers.map(t => {
                 const w = who(t.who);
@@ -174,6 +205,7 @@ window.teacherEssays = async function ({view, api, esc}) {
             if (list) instructors = list.instructors;
             const s = d.submission, student = d.student, context = d.essay || {};
             const maps = {current: answerMap(d.form, s), previous: context.previous ? answerMap(d.form, context.previous) : {}};
+            const questions = questionMap(d.form);
             const dialog = openDialog(`<div class="section-title"><div><h2>${esc(student?.name || 'Студент')}</h2><p>Взвод ${esc(student?.platoon || '')} · ${esc(context.assignmentTitle || d.form.title)}${s.completed ? ' · сдано ' + fmtDate(s.completedAt) : ''}</p></div><button class="secondary" data-close>Закрыть</button></div>
    ${s.completed ? '' : `<p class="draft-note">Не сдано: заполнено разделов ${d.progress.complete.length} из ${d.progress.total}. Показан черновик, разбора пока нет.</p>`}
    <div id="essay-analysis"></div><div id="quote-view" aria-live="polite"></div>
@@ -184,7 +216,7 @@ window.teacherEssays = async function ({view, api, esc}) {
                 if (!chip) return;
                 const text = maps[chip.dataset.source]?.[chip.dataset.quote];
                 const box = dialog.querySelector('#quote-view');
-                box.innerHTML = text === undefined ? '' : `<blockquote class="quote-full"><small class="muted">${chip.dataset.source === 'previous' ? 'Прежнее эссе' : 'Эссе'}, вопрос ${esc(chip.dataset.quote)}</small><p>${nl(text)}</p><button type="button" class="secondary" data-quote-close>Свернуть</button></blockquote>`;
+                box.innerHTML = text === undefined ? '' : `<blockquote class="quote-full"><small class="muted">${chip.dataset.source === 'previous' ? 'Прежнее эссе' : 'Эссе'}: ${esc(questions[chip.dataset.quote] || '')}</small><p>${nl(text)}</p><button type="button" class="secondary" data-quote-close>Свернуть</button></blockquote>`;
                 box.querySelector('[data-quote-close]')?.addEventListener('click', () => box.innerHTML = '');
                 box.scrollIntoView({block: 'nearest', behavior: 'smooth'});
             };
@@ -214,9 +246,22 @@ window.teacherEssays = async function ({view, api, esc}) {
         return `<details class="essay-sources"><summary>${label}</summary><ul>${group.sources.map(s => `<li><button type="button" class="link" data-essay="${esc(s.submissionId)}">${esc(s.student)}</button> <small class="muted">взвод ${esc(s.platoon)}</small> ${tags(s, esc)} ${esc(s.text)}${s.quotes.length ? `<div class="quote-list">${s.quotes.map(q => `<span class="quote-chip static"><span>${q.label ? esc(q.label) + ': ' : ''}«${esc(q.quote)}»</span><small>вопрос ${esc(q.question)}</small></span>`).join('')}</div>` : ''}</li>`).join('')}</ul></details>`;
     }
 
+    // A source of v2 is a paragraph or a recommendation of an analysis: its text, no quotes.
+    const sourcesWhy = group => why(`<ul class="essay-source-list">${group.sources.map(s => `<li><button type="button" class="link" data-essay="${esc(s.submissionId)}">${esc(s.student)}</button> <small class="muted">взвод ${esc(s.platoon)}</small> ${esc(s.text)}</li>`).join('')}</ul>`, `Из чего вывод · ${group.authors} ${authorsWord(group.authors)}`);
+
+    function summaryBodyV2(sm) {
+        const o = sm.output, c = sm.common;
+        const paragraph = key => `<div class="essay-paragraph"><p>${esc(o[key].text)}</p>${sourcesWhy(c[key])}</div>`;
+        const left = c.notIncluded.length ? `<details class="essay-left"><summary>Не вошло в общие рекомендации: ${c.notIncluded.length}</summary><p class="muted">Рекомендации из разборов, на которые не опирается ни одна рекомендация сводки.</p><ul class="essay-source-list">${c.notIncluded.map(s => `<li><button type="button" class="link" data-essay="${esc(s.submissionId)}">${esc(s.student)}</button> <small class="muted">взвод ${esc(s.platoon)}</small> ${esc(s.text)}</li>`).join('')}</ul></details>` : '';
+        return `<section class="essay-findings"><h3>Выводы по выпуску</h3><p class="muted essay-note">Выводы по разборам эссе. Из чего сделан вывод — по кнопке под абзацем.</p>
+${['formation', 'moments', 'environment'].map(paragraph).join('')}
+<h3>Рекомендации</h3>${o.recommendations.length ? `<ol class="essay-advice">${o.recommendations.map((r, i) => `<li>${esc(r.text)}${sourcesWhy(c.recommendations[i])}</li>`).join('')}</ol>` : '<p class="muted">Общих рекомендаций не нашлось.</p>'}${left}</section>`;
+    }
+
     const byAuthors = (items, groups) => items.map((item, i) => ({item, group: groups[i]})).sort((a, b) => (b.group?.authors || 0) - (a.group?.authors || 0));
 
     function summaryBody(sm) {
+        if (sm.output.formation) return summaryBodyV2(sm);
         const o = sm.output, c = sm.common;
         const list = (title, items, groups) => `<div><h3>${title}</h3>${items.length ? `<ul class="essay-points">${byAuthors(items, groups).map(({item, group}) => `<li><span class="essay-tag">${esc(item.about)}</span> ${esc(item.text)} ${sources(group, esc)}</li>`).join('')}</ul>` : '<p class="muted">Общего не нашлось.</p>'}</div>`;
         const left = c.notIncluded.length ? `<div class="essay-left"><h3>Не вошло в общие</h3><p class="muted">Пункты «на что обратить внимание», которые встретились только у одного автора: они не потерялись.</p><ul class="essay-points">${c.notIncluded.map(s => `<li><button type="button" class="link" data-essay="${esc(s.submissionId)}">${esc(s.student)}</button> <small class="muted">взвод ${esc(s.platoon)}</small> ${tags(s, esc)} ${esc(s.text)}${s.quotes.length ? `<div class="quote-list">${s.quotes.map(q => `<span class="quote-chip static"><span>«${esc(q.quote)}»</span><small>вопрос ${esc(q.question)}</small></span>`).join('')}</div>` : ''}</li>`).join('')}</ul></div>` : '';
@@ -232,7 +277,8 @@ ${o.change.length ? `<h3>Что обычно меняется</h3>${o.change.map
     function teachersBlock(block) {
         const listed = block.listed || [], unlisted = block.unlisted || [];
         if (!listed.length && !unlisted.length) return '<p class="muted">Преподавателей в эссе не называли.</p>';
-        const line = (l, name = '') => `<li>${name}<span class="essay-tag">${esc(l.kind)}</span> <button type="button" class="link" data-essay="${esc(l.submissionId)}">${esc(l.student)}</button> <small class="muted">взвод ${esc(l.platoon)}</small>: ${esc(l.text)}${l.quotes.length ? `<div class="quote-list">${l.quotes.map(q => `<span class="quote-chip static"><span>«${esc(q.quote)}»</span><small>вопрос ${esc(q.question)}</small></span>`).join('')}</div>` : ''}</li>`;
+        // Without the numbers of questions (decided 25 October 2026): the quotes are behind the button.
+        const line = (l, name = '') => `<li>${name}<span class="essay-tag">${esc(l.kind)}</span> <button type="button" class="link" data-essay="${esc(l.submissionId)}">${esc(l.student)}</button> <small class="muted">взвод ${esc(l.platoon)}</small>: ${esc(l.text)}${l.quotes.length ? why(`<div class="quote-list">${l.quotes.map(q => `<span class="quote-chip static"><span>«${esc(q.quote)}»</span></span>`).join('')}</div>`) : ''}</li>`;
         return `${listed.map(e => `<div class="essay-teacher"><b>${esc(e.who)}</b> <small class="muted">благодарностей ${e.thanks}, проблем ${e.problems}, упоминаний ${e.mentions}</small><ul class="essay-points">${e.lines.map(line).join('')}</ul></div>`).join('')}
 ${unlisted.length ? `<div class="essay-teacher"><b>Не сопоставлены со списком</b> <small class="muted">как написал автор</small><ul class="essay-points">${unlisted.map(l => `${line(l, `<b>${esc(l.who)}</b>${l.candidates ? ` <span class="essay-tag">${fitWord(l.candidates)}: ${esc(l.candidates.join('; '))}</span>` : ''} `)}`).join('')}</ul></div>` : ''}`;
     }
@@ -247,7 +293,7 @@ ${unlisted.length ? `<div class="essay-teacher"><b>Не сопоставлены
         else if (summary.status === 'off' && !sm) note = '<span class="muted">Языковая модель не подключена.</span>';
         else if (busy) note = '<span role="status">Сводка готовится…</span>';
         else if (summary.status === 'failed') note = `<span role="alert"><b>Не удалось составить сводку.</b> <span class="muted">${esc(summary.reason || '')}</span></span>`;
-        else if (sm) note = `<span class="muted">Составлена ${fmtDate(sm.created)} по ${sm.essays} эссе.</span>${sm.stale ? ' <b>Есть новые эссе — обновить.</b>' : ''}`;
+        else if (sm) note = `<span class="muted">Составлена ${fmtDate(sm.created)} по ${sm.essays} эссе.</span>${sm.stale ? ' <b>Есть новые эссе — обновить.</b>' : sm.older ? ' <b>Сводка в прежнем виде — обновить.</b>' : ''}`;
         const label = summary.status === 'failed' ? 'Повторить' : sm ? 'Обновить сводку' : 'Составить сводку';
         box.innerHTML = `<h2>Сводка по выпуску</h2><p class="muted">В сводке эссе с готовым разбором: ${c.analysed}. Сдано ${c.submitted}, не сдано ${c.notSubmitted}, у ${c.withPrevious} есть прежнее эссе${c.withoutAnalysis ? `, без разбора ${c.withoutAnalysis} (в сводку не вошли)` : ''}.</p>
   <div class="toolbar"><button id="compose" ${!summary.canCompose || busy || summary.status === 'off' ? 'disabled' : ''}>${label}</button> ${note}</div><div id="summary-error" role="alert"></div>
