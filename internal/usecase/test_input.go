@@ -218,21 +218,126 @@ func (a *Service) testPayloadFor(version string, data *TestPortraitData) *object
 		payload.insertAfter("образ_защитника", "профессиональная_идентичность", identityList(data.Identity))
 	}
 	payload.set("каталог_рекомендаций", a.catalogueList(numbers, edition))
+	if climateInput(testPortraitTask, version) {
+		a.addDanilovaAndClimate(payload, data)
+	}
 	return payload
 }
 
-// The editions of the catalogue of recommendations: the first, R01–R21, goes
-// to test/v2–v3 and test-platoon/v1; the second adds R22–R24 from the article
-// of the supervisor of 2023 (decision Д3 of Вики/Тестирование/План П2, П5 и
-// климат по Лутошкину.md) and goes to test/v4 and test-platoon/v2 on.
-var secondCatalogue = map[string]int{testPortraitTask: 4, testPlatoonTask: 2}
+// climateVersion is, by task, the first version of the instruction whose input
+// has the second edition of the catalogue (R22–R24 from the article of the
+// supervisor of 2023), the rules of Danilova and the climate of the platoon
+// (Вики/Тестирование/План П2, П5 и климат по Лутошкину.md, decisions Д1–Д6):
+// test/v4 and test-platoon/v2. The input of the older ones stays as it was.
+var climateVersion = map[string]int{testPortraitTask: 4, testPlatoonTask: 2}
+
+func climateInput(task, version string) bool {
+	n, _ := promptbank.Number(version)
+	return n >= climateVersion[task]
+}
 
 // catalogueEdition is the edition of the catalogue a version of a task gets.
 func catalogueEdition(task, version string) int {
-	if n, _ := promptbank.Number(version); n >= secondCatalogue[task] {
+	if climateInput(task, version) {
 		return 2
 	}
 	return 1
+}
+
+// The texts of the climate in the input of test/v4 (Инструкция v4.md).
+const (
+	climateNote        = "климат взвода — по оценке самого студента"
+	climateEqual       = "все стороны климата студент оценил одинаково"
+	climateCriterion   = "оценка студентом климата взвода — в «признаки_среды», «сотрудничество и сплочённость»"
+	climateOwnCoverage = "частично"
+	climateOwnNote     = "по оценке самого студента"
+)
+
+func anyList(texts []string) []any {
+	list := []any{}
+	for _, text := range texts {
+		list = append(list, text)
+	}
+	return list
+}
+
+// putAfter inserts a text after a key unless it is blank.
+func (o *object) putAfter(after, key, text string) {
+	if text != "" {
+		o.insertAfter(after, key, text)
+	}
+}
+
+// addDanilovaAndClimate adds to the input of test/v4 the rules of Danilova by
+// component and by group of the image (Д1, Д2) and, when the student rated
+// all the pairs, his rating of the climate of the platoon in the sign of
+// the environment «сотрудничество и сплочённость» and a reference to it in the
+// criterion of the climate (Д6).
+func (a *Service) addDanilovaAndClimate(payload *object, data *TestPortraitData) {
+	if images, ok := payload.values["образы_я"].(*object); ok {
+		for n, o := range objectList(images.values["по_компонентам"]) {
+			if n < len(data.Components) {
+				o.put("внешнее_давление", data.Components[n].PressureText)
+				o.put("адекватность_самооценки", data.Components[n].AdequacyText)
+			}
+		}
+	}
+	for n, o := range objectList(payload.values["образ_защитника"]) {
+		if n < len(data.Defender) {
+			g := data.Defender[n]
+			o.putAfter("разрыв", "адекватность_самооценки", g.AdequacyText)
+			o.putAfter("разрыв", "внешнее_давление", g.PressureText)
+		}
+	}
+	climate := data.Climate
+	if !climate.Complete() {
+		return
+	}
+	rating := newObject()
+	if climate.Equal {
+		rating.set("климат_взвода", climateEqual)
+	} else {
+		sides := newObject()
+		sides.set("сильнее_всего", anyList(climate.Strongest))
+		sides.set("слабее_всего", anyList(climate.Weakest))
+		rating.set("климат_взвода", sides)
+	}
+	for n, o := range objectList(payload.values["признаки_среды"]) {
+		if n >= len(a.defender.Signs) || !a.defender.Signs[n].Climate {
+			continue
+		}
+		o.set("пометка", climateNote)
+		list, _ := o.values["данные"].([]any)
+		o.set("данные", append(list, rating))
+	}
+	a.climateCriterion(payload, climateOwnCoverage, climateOwnNote, climateCriterion)
+}
+
+// climateCriterion gives the criterion of the climate of the first chapter a
+// reference to where the climate is in the input.
+func (a *Service) climateCriterion(payload *object, coverage, note, see string) {
+	names := map[string]string{}
+	for _, k := range a.bank.ActivityKinds {
+		names[k.ID] = k.Name
+	}
+	for _, def := range a.defender.Criteria {
+		var criteria []*object
+		for _, kind := range objectList(payload.values["виды_деятельности"]) {
+			if objectText(kind, "вид") == names[def.Kind] {
+				criteria = objectList(kind.values["критерии"])
+			}
+		}
+		for n, c := range def.Criteria {
+			if !c.Climate || n >= len(criteria) {
+				continue
+			}
+			reference := newObject()
+			reference.set("см", see)
+			criteria[n].set("покрытие", coverage)
+			criteria[n].putAfter("покрытие", "пометка", note)
+			criteria[n].set("данные", []any{reference})
+		}
+	}
 }
 
 // directions are the directions of the catalogue up to an edition.
