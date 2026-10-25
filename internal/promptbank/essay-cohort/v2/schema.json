@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "formation": {"$ref": "#/$defs/paragraph", "description": "Как у выпуска меняются представления о себе, 2–4 предложения"},
+    "moments": {"$ref": "#/$defs/paragraph", "description": "Убеждения, эмоции, ценности, восприятие своих возможностей, 3–4 предложения"},
+    "environment": {"$ref": "#/$defs/paragraph", "description": "Что в ВУЦ авторы связывают со своими изменениями, 2–3 предложения"},
+    "recommendations": {"type": "array", "description": "Рекомендации для работы с выпуском, 2–4", "items": {"$ref": "#/$defs/paragraph"}}
+  },
+  "required": ["formation", "moments", "environment", "recommendations"],
+  "$defs": {
+    "paragraph": {
+      "type": "object",
+      "properties": {
+        "text": {"type": "string"},
+        "refs": {"type": "array", "items": {"type": "string"}}
+      },
+      "required": ["text", "refs"]
+    }
+  }
+}
