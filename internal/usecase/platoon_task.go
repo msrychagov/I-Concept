@@ -55,7 +55,7 @@ func (a *Service) platoonTask(prompt promptbank.Prompt) portraitTask {
 			}
 			return group, ids
 		},
-		Check: checkPlatoonAnswer,
+		Clean: cleanRepeatedDirections, Check: checkPlatoonAnswer,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			owner, _, ok := splitPlatoon(s)
 			return ok && owner == teacherID
@@ -335,6 +335,9 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 	problems = append(problems, sentenceProblem("ideal", texts["ideal"], 2, 2)...)
 	problems = append(problems, sentenceProblem("activity", texts["activity"], activityLeast, 4)...)
 	problems = append(problems, sentenceProblem("conclusion", texts["conclusion"], 2, 2)...)
+	for _, key := range []string{"overview", "ideal", "activity", "conclusion"} {
+		problems = append(problems, ratedLevelProblems(key, texts[key])...)
+	}
 
 	identity, given := payload.values["профессиональная_идентичность"]
 	problems = append(problems, identityProblems(texts["identity"], given, nil)...)
@@ -355,22 +358,19 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 			}
 			named := len(top) == 0
 			for _, name := range top {
-				named = named || strings.Contains(lower, statusStem(name))
+				named = named || statusNamed(lower, name)
 			}
+			// The run of 25 October: told only the block, the model kept
+			// another name for five attempts; it is told the status itself.
 			if !named {
-				problems = append(problems, fmt.Sprintf("identity: не назван самый частый ведущий статус («%s»)", objectText(block, "профессия")))
+				problems = append(problems, fmt.Sprintf("identity: не назван самый частый ведущий статус (%s) — «%s»", lowerFirst(objectText(block, "профессия")), strings.Join(top, "» или «")))
 			}
 		}
 	}
 
-	problems = append(problems, recommendationProblems(output, payload, 3, 5, nil)...)
-	recommendations, _ := output["recommendations"].([]any)
-	for n, item := range recommendations {
-		if record, ok := item.(map[string]any); ok {
-			text, _ := record["text"].(string)
-			texts[fmt.Sprintf("recommendations.%d.text", n+1)] = text
-		}
-	}
+	problems = append(problems, recommendationProblems(output, payload, recommendationLeast, 5, nil)...)
+	problems = append(problems, repeatedDirectionProblems(output)...)
+	recommendationTexts(output, texts)
 	individual, ok := output["individual"].([]any)
 	if !ok || len(individual) > 3 {
 		problems = append(problems, "individual: нужен список не больше чем из трёх пунктов")
@@ -384,6 +384,9 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 	for _, key := range sortedTextKeys(texts) {
 		problems = append(problems, climateProblems(key, texts[key])...)
 	}
+	problems = append(problems, unfoundStateProblems(texts, payload)...)
+	total, _ := payload.values["студентов"].(int)
+	problems = append(problems, platoonCountProblems(texts, total)...)
 	return problems
 }
 

@@ -364,9 +364,10 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 	// The answer of v2 has other fields and rules (test_check.go); v1 is
 	// checked as it always was.
 	check := checkTestAnswer
+	var clean func(a *Service, db model.Database, s Source, output map[string]any, payload *object) (map[string]any, int)
 	var earlier func(a *Service, db model.Database, s Source) []*object
 	if n, _ := promptbank.Number(prompt.Version); n >= 2 {
-		check = checkTestAnswerV2
+		check, clean = checkTestAnswerV2, cleanRepeatedDirections
 		// The portrait by v1 is shown while the one by a newer version is made
 		// (decision Д8); from v2 on the input is the same, so their portraits
 		// are found by the fingerprint itself.
@@ -395,7 +396,7 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 			}
 			return a.testPayloadFor(prompt.Version, data), nil
 		},
-		Check: check, Earlier: earlier,
+		Clean: clean, Check: check, Earlier: earlier,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			session, ok := findSession(db, s)
 			return ok && teacherOwnsSession(db, teacherID, session)

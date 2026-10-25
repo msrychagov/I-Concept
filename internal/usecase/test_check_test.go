@@ -52,7 +52,11 @@ func goodTestAnswerV2(user string) map[string]any {
 	for _, g := range input.Groups {
 		for _, d := range input.Catalogue {
 			if len(recommendations) < 3 && slices.Contains(d.Groups, g.Number) && (g.Type == "" || d.Type == g.Type) {
-				recommendations = append(recommendations, map[string]any{"group": g.Number, "code": d.Code, "text": "Включать студента в эту работу, чтобы образ стал ближе."})
+				text := "Включать студента в эту работу, чтобы образ стал ближе."
+				if g.Number == 2 {
+					text = "Включать студента в эту работу ради самоопределения как военного специалиста и личного смысла выбора."
+				}
+				recommendations = append(recommendations, map[string]any{"group": g.Number, "code": d.Code, "text": text})
 				break
 			}
 		}

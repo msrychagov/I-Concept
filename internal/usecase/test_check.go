@@ -99,6 +99,9 @@ func sentenceCount(text string) int {
 
 var digit = regexp.MustCompile(`[0-9]`)
 
+// groupNumber is a group of the image named by its number: «в группе 3».
+var groupNumber = regexp.MustCompile(`(?i)групп[а-яё]*\s*№?\s*[0-9]`)
+
 // activityLeast is the fewest sentences of the section about activity and the
 // environment the check takes, in the portrait and in the conclusion by a
 // platoon: the model joins two thoughts by «;» (decided by the user on 24
@@ -116,13 +119,20 @@ func fieldProblems(field, text string) []string {
 		return []string{"нет поля " + field}
 	}
 	if digit.MatchString(text) {
-		problems = append(problems, field+": цифры в тексте")
+		// The run of 25 October: the model wrote «в группе 3» for three attempts.
+		hint := ""
+		if groupNumber.MatchString(text) {
+			hint = " — группу образа называй словами, например «в коммуникативных и коллективистских качествах», а не номером"
+		}
+		problems = append(problems, field+": цифры в тексте"+hint)
 	}
 	if found := diagnosis.FindString(text); found != "" {
 		problems = append(problems, fmt.Sprintf("%s: недопустимое слово («%s»)", field, strings.ToLower(found)))
 	}
 	if found := appointment.FindString(text); found != "" {
-		problems = append(problems, fmt.Sprintf("%s: о назначении на должность («%s») — пиши «поручить» или «привлечь к», например «поручить наставничество над младшими»", field, strings.ToLower(found)))
+		// The run of 25 October: «назначить наставника» to direction R13 three
+		// times; «поручить» does not fit a mentor given to the student.
+		problems = append(problems, fmt.Sprintf("%s: о назначении на должность («%s») — пиши «поручить» или «привлечь к», например «поручить наставничество над младшими»; наставник для студента — «закрепить за студентом наставника»", field, strings.ToLower(found)))
 	}
 	return problems
 }
@@ -281,6 +291,29 @@ func statusStem(name string) string {
 	return word
 }
 
+// bracketed is the part of a name in brackets: «кризис выбора» of «мораторий (кризис выбора)».
+var bracketed = regexp.MustCompile(`\(([^)]+)\)`)
+
+// statusNamed says whether a lower-case text names a status of identity: by
+// the stem of its first word, or by the words in its brackets, which are part
+// of the name the input gives («в кризисе выбора»).
+func statusNamed(lower, name string) bool {
+	if strings.Contains(lower, statusStem(name)) {
+		return true
+	}
+	m := bracketed.FindStringSubmatch(normalizedText(name))
+	if m == nil {
+		return false
+	}
+	for _, word := range strings.Fields(m[1]) {
+		letters := []rune(word)
+		if !strings.Contains(lower, string(letters[:min(len(letters), 5)])) {
+			return false
+		}
+	}
+	return true
+}
+
 const identityAbsent = "Методика профессиональной идентичности не проводилась."
 
 // identityProblems checks identity: the fixed phrase without the method; with
@@ -299,7 +332,7 @@ func identityProblems(text string, given bool, leading [][]string) []string {
 	lower := normalizedText(text)
 	for _, names := range leading {
 		for _, name := range names {
-			if !strings.Contains(lower, statusStem(name)) {
+			if !statusNamed(lower, name) {
 				return []string{"identity: не назван ведущий статус «" + name + "»"}
 			}
 		}
@@ -389,6 +422,15 @@ func checkTestAnswerV2(output map[string]any, payload *object) []string {
 	problems = append(problems, sentenceProblem("activity", outputText(output, "activity"), activityLeast, 4)...)
 	problems = append(problems, sentenceProblem("conclusion", outputText(output, "conclusion"), 2, 2)...)
 	problems = append(problems, componentProblems(components, payload)...)
+	for _, key := range []string{"portrait", "ideal", "activity", "conclusion"} {
+		problems = append(problems, ratedLevelProblems(key, outputText(output, key))...)
+	}
+	texts := map[string]string{"components.text": text}
+	for _, key := range []string{"portrait", "identity", "ideal", "activity", "conclusion"} {
+		texts[key] = outputText(output, key)
+	}
+	recommendationTexts(output, texts)
+	problems = append(problems, unfoundStateProblems(texts, payload)...)
 
 	names := map[string]string{}
 	for _, k := range objectList(payload.values["виды_деятельности"]) {
@@ -424,8 +466,10 @@ func checkTestAnswerV2(output map[string]any, payload *object) []string {
 		number, _ := g.values["номер"].(int)
 		types[number] = objectText(g, "тип_рекомендации")
 	}
-	problems = append(problems, recommendationProblems(output, payload, 3, 4, func(group int, kind string) bool {
+	problems = append(problems, recommendationProblems(output, payload, recommendationLeast, 4, func(group int, kind string) bool {
 		return types[group] == "" || kind == types[group] || kind == "психологическая" && lowEV
 	})...)
+	problems = append(problems, selfDeterminationProblems(output, payload)...)
+	problems = append(problems, repeatedDirectionProblems(output)...)
 	return problems
 }
