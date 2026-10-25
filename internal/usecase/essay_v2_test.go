@@ -351,3 +351,68 @@ func TestAnalysesOfV1AreShownWhileV2IsMadeAndStayOutOfTheSummary(t *testing.T) {
 		t.Fatalf("%d calls, summary: %+v", m.count(), fresh)
 	}
 }
+
+// A label stands only on quotes that name the instructor: by surname (a typo
+// counts), name, patronymic or rank, in any case.
+func TestLabelOfAnInstructorNeedsHisWordInTheQuotes(t *testing.T) {
+	answers := map[string]string{
+		"1.1": "Я пошёл в ВУЦ ради службы и отсрочки.",
+		"1.2": "Старшина Громов показал ещё раз и не ругался.",
+		"2.4": "Благодарю полковнику Ивнову и Игоря Петровича за помощь.",
+	}
+	entry := func(label string, quotes ...string) map[string]any {
+		list := []any{}
+		for _, quote := range quotes {
+			question := "2.4"
+			if strings.Contains(answers["1.2"], quote) {
+				question = "1.2"
+			}
+			list = append(list, map[string]any{"question": question, "quote": quote})
+		}
+		return map[string]any{"who": label, "kind": "благодарность", "text": "За помощь.", "quotes": list}
+	}
+	for name, c := range map[string]struct {
+		record map[string]any
+		want   bool
+	}{
+		"by a rank and a surname with a typo": {entry("[преподаватель 1]", "Благодарю полковнику Ивнову"), false},
+		"by a surname with a typo only":       {entry("[преподаватель 1]", "полковнику Ивнову и"), false},
+		"by a name and a patronymic":          {entry("[преподаватель 1]", "и Игоря Петровича за помощь"), false},
+		"someone else":                        {entry("[преподаватель 1]", "Старшина Громов показал ещё раз"), true},
+		"one quote of two is enough":          {entry("[преподаватель 1]", "Старшина Громов показал ещё раз", "Благодарю полковнику Ивнову"), false},
+		"as the author wrote it":              {entry("старшина Громов", "Старшина Громов показал ещё раз"), false},
+	} {
+		payload := essayPayloadFor(answers, nil, "[преподаватель 1]")
+		output := map[string]any{"teachers": []any{c.record}}
+		problems := strings.Join(labelWordProblems(roundTrip(t, output), payload), " | ")
+		if got := strings.Contains(problems, "teachers, запись 1: в цитатах нет ни фамилии"); got != c.want {
+			t.Errorf("%s: %q", name, problems)
+		}
+	}
+	if surnameWithTypo("Громов", []string{"Гром пришёл"}) || !surnameWithTypo("Белоцерковский", []string{"капитан Белоцерковкий"}) {
+		t.Fatal("typo of a surname")
+	}
+	if got := instructorOf("Кузнецов Илья Павлович, старший лейтенант"); got.Surname != "Кузнецов" || got.Patronymic != "Павлович" || got.Rank != "старший лейтенант" {
+		t.Fatalf("instructor: %+v", got)
+	}
+}
+
+// An author without an earlier essay: the text says nothing about one.
+func TestNoWordsOfAnEarlierEssayWhenThereIsNone(t *testing.T) {
+	answers := map[string]string{"1.1": "Я пошёл «в ВУЦ» ради «службы» и отсрочки.", "1.2": "Первые дни было очень страшно.", "2.4": "Хочу поблагодарить полковника Иванова."}
+	earlier := map[string]string{"1.1": "Раньше я хотел только отсрочку от армии.", "1.2": "Раньше было страшно.", "2.4": "Никого."}
+	for _, text := range []string{"Прежнего эссе нет, поэтому динамика видна по контрасту.", "Между прежним и новым эссе он изменился.", "В отличие от предыдущего эссе автор спокоен."} {
+		payload := essayPayloadFor(answers, nil)
+		output := goodEssayV2For(payload)
+		output["formation"].(map[string]any)["text"] = text
+		if problems := strings.Join(checkEssayAnswerV2(roundTrip(t, output), payload), " | "); !strings.Contains(problems, "formation: прежнего эссе у автора нет") {
+			t.Errorf("%q: %s", text, problems)
+		}
+		payload = essayPayloadFor(answers, earlier)
+		output = goodEssayV2For(payload)
+		output["formation"].(map[string]any)["text"] = text
+		if problems := checkEssayAnswerV2(roundTrip(t, output), payload); len(problems) != 0 {
+			t.Errorf("with an earlier essay %q: %v", text, problems)
+		}
+	}
+}

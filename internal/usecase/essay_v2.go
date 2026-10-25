@@ -166,7 +166,126 @@ func checkEssayAnswerV2(output map[string]any, payload *object) []string {
 	}
 	problems = append(problems, sameAdvice(advice)...)
 	problems = append(problems, tooLong(words)...)
-	return append(problems, teacherProblems(output, payload, current)...)
+	if len(previous) == 0 {
+		problems = append(problems, noEarlierProblems(output)...)
+	}
+	problems = append(problems, teacherProblems(output, payload, current)...)
+	return append(problems, labelWordProblems(output, payload)...)
+}
+
+// earlierEssay finds words about an earlier essay: written of an author who has
+// none, they invent a comparison or say that there is nothing to compare.
+var earlierEssay = regexp.MustCompile(`(?i)(прежн|предыдущ)\p{L}*(\s+и\s+(нов|последн|нынешн)\p{L}*)?\s+эссе`)
+
+// noEarlierProblems finds a paragraph or a recommendation that speaks of an
+// earlier essay the author did not write (decided 25 October 2026 after the run).
+func noEarlierProblems(output map[string]any) []string {
+	problems := []string{}
+	check := func(where string, raw any) {
+		if earlierEssay.MatchString(textOf(raw)) {
+			problems = append(problems, where+": прежнего эссе у автора нет — не пиши о нём")
+		}
+	}
+	for _, key := range essayParagraphs {
+		check(key, asMap(output[key])["text"])
+	}
+	advice, _ := asList(output["recommendations"])
+	for n, raw := range advice {
+		check(fmt.Sprintf("recommendations, пункт %d", n+1), asMap(raw)["text"])
+	}
+	return problems
+}
+
+// instructorOf reads an entry of the list in the input, «Иванов Игорь Петрович,
+// полковник», back into the four things a student may call him by.
+func instructorOf(who string) model.Instructor {
+	names, rank, _ := strings.Cut(who, ",")
+	parts := strings.Fields(names)
+	instructor := model.Instructor{Rank: strings.TrimSpace(rank)}
+	if len(parts) > 0 {
+		instructor.Surname = parts[0]
+	}
+	if len(parts) > 1 {
+		instructor.Name = parts[1]
+	}
+	if len(parts) > 2 {
+		instructor.Patronymic = strings.Join(parts[2:], " ")
+	}
+	return instructor
+}
+
+// labelWordProblems finds an entry with a label whose quotes hold no word of
+// that instructor: no surname, name, patronymic or rank, in any case. A
+// surname with a typo counts. Such a label is a guess of the model: «старшина
+// Громов» given to a captain of the list (decided 25 October 2026 after the run).
+func labelWordProblems(output map[string]any, payload *object) []string {
+	list := map[string]model.Instructor{}
+	for _, entry := range objectList(payload.values["преподаватели"]) {
+		list[objectText(entry, "метка")] = instructorOf(objectText(entry, "кто"))
+	}
+	problems := []string{}
+	teachers, _ := asList(output["teachers"])
+	for n, raw := range teachers {
+		record := asMap(raw)
+		self, labelled := list[textOf(record["who"])]
+		if record == nil || !labelled {
+			continue
+		}
+		texts := []string{}
+		for _, quote := range quoteList(record["quotes"]) {
+			texts = append(texts, textOf(quote["quote"]))
+		}
+		if found, _ := foundIn(self, texts); len(found) > 0 || surnameWithTypo(self.Surname, texts) {
+			continue
+		}
+		problems = append(problems, fmt.Sprintf("teachers, запись %d: в цитатах нет ни фамилии, ни имени, ни отчества, ни звания преподавателя с этой меткой — если не уверен, что автор пишет о нём, пиши, как его называет автор", n+1))
+	}
+	return problems
+}
+
+// surnameWithTypo finds the surname written with a typo, «Белоцерковкий» for
+// «Белоцерковский»: a word whose stem is one letter off a short surname or two
+// off a long one, in any case.
+func surnameWithTypo(surname string, texts []string) bool {
+	stem := wordStem(surname)
+	if len(stem) < 5 {
+		return false
+	}
+	most := 1
+	if len(stem) >= 8 {
+		most = 2
+	}
+	for _, text := range texts {
+		_, normal := tokens(text)
+		for _, token := range normal {
+			for _, ending := range caseEndings {
+				if base, ok := strings.CutSuffix(token, ending); ok && editDistance([]rune(base), stem) <= most {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// editDistance is the number of letters to add, drop or change to turn one word into the other.
+func editDistance(a, b []rune) int {
+	row := make([]int, len(b)+1)
+	for j := range row {
+		row[j] = j
+	}
+	for i := 1; i <= len(a); i++ {
+		previous := row[0]
+		row[0] = i
+		for j := 1; j <= len(b); j++ {
+			cost := 1
+			if a[i-1] == b[j-1] {
+				cost = 0
+			}
+			previous, row[j] = row[j], min(row[j]+1, row[j-1]+1, previous+cost)
+		}
+	}
+	return row[len(b)]
 }
 
 // ---- the summary of a cohort, v2 ------------------------------------------
