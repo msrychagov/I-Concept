@@ -64,8 +64,8 @@ var (
 	essayTerms = regexp.MustCompile(`(?i)(^|[^\p{L}])(я[-‐‑–—]?(концепц|реальн|идеальн)\p{L}*)|рефлекси\p{L}*`)
 )
 
-// termProblems finds a term of the theory in a text of v2.
-func termProblems(where, text string) []string {
+// essayTermProblems finds a term of the theory in a text of v2.
+func essayTermProblems(where, text string) []string {
 	found := essayTerms.FindStringSubmatch(text)
 	if found == nil {
 		return nil
@@ -90,7 +90,7 @@ func v2TextProblems(where string, raw any) []string {
 	if strings.Contains(text, "[преподаватель") {
 		problems = append(problems, where+": метка преподавателя в тексте, называй его, как автор")
 	}
-	return append(problems, termProblems(where, text)...)
+	return append(problems, essayTermProblems(where, text)...)
 }
 
 // sameAdvice finds a recommendation that repeats an earlier one word for word.
@@ -412,7 +412,7 @@ func checkCohortAnswerV2(output map[string]any, payload *object) []string {
 	problems, words := []string{}, 0
 	text := func(where string, raw any) {
 		problems = append(problems, cohortTextProblems(where, raw)...)
-		problems = append(problems, termProblems(where, textOf(raw))...)
+		problems = append(problems, essayTermProblems(where, textOf(raw))...)
 		if militaryRank.MatchString(textOf(raw)) {
 			problems = append(problems, where+": звание в тексте — не называй конкретных преподавателей, о них отдельный блок")
 		}
