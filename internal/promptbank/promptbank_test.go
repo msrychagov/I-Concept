@@ -40,8 +40,10 @@ func TestLatestVersionMatchesTheWikiWhenItIsThere(t *testing.T) {
 		{"test-platoon", "", "../../../Вики/Тестирование/Инструкция по взводу v3.md"},
 		{"test-platoon", "v2", "../../../Вики/Тестирование/Инструкция по взводу v2.md"},
 		{"test-platoon", "v1", "../../../Вики/Тестирование/Инструкция по взводу.md"},
-		{"essay", "", "../../../Вики/Эссе выпускника/Инструкция.md"},
-		{"essay-cohort", "", "../../../Вики/Эссе выпускника/Инструкция по выпуску.md"},
+		{"essay", "", "../../../Вики/Эссе выпускника/Инструкция v2.md"},
+		{"essay", "v1", "../../../Вики/Эссе выпускника/Инструкция.md"},
+		{"essay-cohort", "", "../../../Вики/Эссе выпускника/Инструкция по выпуску v2.md"},
+		{"essay-cohort", "v1", "../../../Вики/Эссе выпускника/Инструкция по выпуску.md"},
 	} {
 		t.Run(c.task+c.version, func(t *testing.T) {
 			wiki, err := os.ReadFile(c.path)
@@ -65,8 +67,15 @@ func TestEssayPromptsAreEmbedded(t *testing.T) {
 		t.Fatal(err)
 	}
 	for task, want := range map[string]string{"essay": `"required": ["summary", "moments", "positive", "negative", "attention", "teachers", "change", "conclusion"]`, "essay-cohort": `"required": ["overview", "moments", "positive", "negative", "attention", "paths", "environment", "conclusion", "change"]`} {
+		prompt, ok := Find(prompts, task, "v1")
+		if !ok || !strings.HasSuffix(prompt.Instruction, "Пиши по-русски, деловым языком.") || !strings.Contains(string(prompt.Schema), want) {
+			t.Errorf("%s: %+v", task, prompt.Version)
+		}
+	}
+	// v2: paragraphs and recommendations (Вики/Эссе выпускника/Инструкция v2.md).
+	for task, want := range map[string]string{"essay": `"required": ["formation", "moments", "environment", "recommendations", "teachers"]`, "essay-cohort": `"required": ["formation", "moments", "environment", "recommendations"]`} {
 		prompt, ok := Latest(prompts, task)
-		if !ok || prompt.Version != "v1" || !strings.HasSuffix(prompt.Instruction, "Пиши по-русски, деловым языком.") || !strings.Contains(string(prompt.Schema), want) {
+		if !ok || prompt.Version != "v2" || !strings.Contains(prompt.Instruction, "не больше 250 слов") || !strings.Contains(string(prompt.Schema), want) {
 			t.Errorf("%s: %+v", task, prompt.Version)
 		}
 	}

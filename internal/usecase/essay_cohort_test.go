@@ -77,12 +77,29 @@ func goodCohort(user string) map[string]any {
 	}
 }
 
+// goodCohortV2 answers the way the instruction essay-cohort/v2 asks: every
+// paragraph stands on the first two authors; the first recommendation on their
+// first ones, the second on a paragraph of one and a recommendation of the other.
+func goodCohortV2(string) map[string]any {
+	both := func(kind string) []any { return []any{"1." + kind, "2." + kind} }
+	paragraph := func(key string) map[string]any {
+		return map[string]any{"text": "Авторы отмечают это в эссе.", "refs": both(key)}
+	}
+	return map[string]any{
+		"formation": paragraph("formation"), "moments": paragraph("moments"), "environment": paragraph("environment"),
+		"recommendations": []any{
+			map[string]any{"text": "Поддерживать новичков в первые недели.", "refs": both("rec.1")},
+			map[string]any{"text": "Объяснять смысл порядков.", "refs": []any{"1.moments", "2.rec.2"}},
+		},
+	}
+}
+
 // bothTasksModel answers the analysis of an essay and the summary by what it is asked.
 func bothTasksModel(mutate func(map[string]any)) *fakeModel {
 	return &fakeModel{name: "fake", reply: func(_ int, c Completion) (string, error) {
 		var answer map[string]any
-		if strings.Contains(c.System, "Тебе передаются только эти разборы") {
-			answer = goodCohort(c.User)
+		if strings.Contains(c.System, "Тебе передаются только эти") {
+			answer = goodCohortV2(c.User)
 			if mutate != nil {
 				mutate(answer)
 			}
@@ -140,27 +157,28 @@ func TestSummaryIsComposedOnTheButtonAndCountedByTheProgram(t *testing.T) {
 		t.Fatalf("%d calls after the button", m.count())
 	}
 	call := m.calls[3]
-	if !strings.Contains(call.System, "Тебе передаются только эти разборы") || strings.Contains(call.User, `"quotes"`) || strings.Contains(call.User, "преподаватели") && strings.Contains(call.User, `"метка"`) {
+	if !strings.Contains(call.System, "Тебе передаются только эти выводы") || strings.Contains(call.User, `"quote`) || strings.Contains(call.User, "преподаватели") && strings.Contains(call.User, `"метка"`) {
 		t.Fatalf("input of the summary: %.200s", call.User)
 	}
 	done := f.summary(f.owner)
 	summary := done["summary"].(map[string]any)
 	common := summary["common"].(map[string]any)
-	positive := common["positive"].([]any)[0].(map[string]any)
-	if done["status"] != portraitReady || summary["stale"] != false || summary["essays"] != 3.0 || positive["authors"] != 2.0 || positive["of"] != 3.0 || len(positive["sources"].([]any)) != 2 {
+	formation := common["formation"].(map[string]any)
+	if done["status"] != portraitReady || summary["stale"] != false || summary["essays"] != 3.0 || summary["version"] != "v2" || formation["authors"] != 2.0 || formation["of"] != 3.0 || len(formation["sources"].([]any)) != 2 {
 		t.Fatalf("summary: %+v", done)
 	}
-	source := positive["sources"].([]any)[0].(map[string]any)
-	if source["student"] != "Тестов Тест" || source["platoon"] != "2401" || source["text"] != "Автор ценит помощь товарищей." || len(source["quotes"].([]any)) != 1 || source["submissionId"] == "" {
+	// A source is the paragraph of the analysis, without quotes (decision Д12).
+	source := formation["sources"].([]any)[0].(map[string]any)
+	if source["student"] != "Тестов Тест" || source["platoon"] != "2401" || source["text"] != "Автор пришёл в ВУЦ с ожиданиями и привык к порядкам." || len(source["quotes"].([]any)) != 0 || source["submissionId"] == "" {
 		t.Fatalf("source: %+v", source)
 	}
-	paths := common["paths"].([]any)[0].(map[string]any)
-	if paths["authors"] != 2.0 || len(paths["sources"].([]any)) != 4 {
-		t.Fatalf("path: %+v", paths)
+	advice := common["recommendations"].([]any)
+	if len(advice) != 2 || advice[1].(map[string]any)["authors"] != 2.0 || len(advice[1].(map[string]any)["sources"].([]any)) != 2 {
+		t.Fatalf("recommendations: %+v", advice)
 	}
-	// The point of attention of the author the common ones do not stand on stays on the screen.
+	// The recommendations of the analyses no recommendation of the summary stands on stay on the screen.
 	left := common["notIncluded"].([]any)
-	if len(left) != 1 || left[0].(map[string]any)["text"] != "Автору нужна поддержка в первые недели." {
+	if len(left) != 3 || left[0].(map[string]any)["ref"] != "1.rec.2" || left[0].(map[string]any)["text"] != "Опираться на его интерес к службе." {
 		t.Fatalf("not included: %+v", left)
 	}
 	// Equal analyses give the same summary and no call of the model.
@@ -172,15 +190,15 @@ func TestSummaryIsComposedOnTheButtonAndCountedByTheProgram(t *testing.T) {
 		t.Fatalf("%d calls after a second button", m.count())
 	}
 
-	// The block of instructors needs no summary: the program counts the labels.
-	block := done["teachers"].(map[string]any)
-	listed := block["listed"].([]any)
-	unlisted := block["unlisted"].([]any)
-	if len(listed) != 1 || listed[0].(map[string]any)["who"] != "Иванов Игорь Петрович, полковник" || listed[0].(map[string]any)["thanks"] != 2.0 || len(listed[0].(map[string]any)["lines"].([]any)) != 2 {
-		t.Fatalf("listed: %+v", listed)
+	// The block of instructors needs no summary: the program groups the positions and the surnames.
+	positions := done["teachers"].(map[string]any)["positions"].([]any)
+	if len(positions) != 1 || positions[0].(map[string]any)["position"] != "преподаватель" {
+		t.Fatalf("positions: %+v", positions)
 	}
-	if len(unlisted) != 1 || unlisted[0].(map[string]any)["who"] != "полковник Сидоров" {
-		t.Fatalf("unlisted: %+v", unlisted)
+	people := positions[0].(map[string]any)["people"].([]any)
+	first, second := people[0].(map[string]any), people[1].(map[string]any)
+	if len(people) != 2 || first["name"] != "Иванов" || first["thanks"] != 2.0 || len(first["lines"].([]any)) != 2 || second["name"] != "Сидоров" || second["thanks"] != 1.0 {
+		t.Fatalf("people: %+v", people)
 	}
 
 	// A new essay makes the summary stale until the button is pressed again.
@@ -249,11 +267,11 @@ func TestCohortPayloadIsStableAndHoldsNoQuotesAndNoTeachers(t *testing.T) {
 	f.three()
 	f.idle()
 	db := mustSnapshot(t, f.service.repo)
-	first, err := f.service.cohortPayload(db, f.assignment)
+	first, err := f.service.cohortPayloadV2(db, f.assignment)
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, _ := f.service.cohortPayload(db, f.assignment)
+	second, _ := f.service.cohortPayloadV2(db, f.assignment)
 	if string(canonicalJSON(first)) != string(canonicalJSON(second)) {
 		t.Fatal("the same set gives another input")
 	}
@@ -263,14 +281,28 @@ func TestCohortPayloadIsStableAndHoldsNoQuotesAndNoTeachers(t *testing.T) {
 			t.Fatalf("%q is in the summary input", banned)
 		}
 	}
-	input := readCohortInput(modelText(canonicalJSON(first)))
-	if input.Essays != 3 || input.Previous != 0 || len(input.Reviews) != 3 {
-		t.Fatalf("input: %+v", input)
+	var input struct {
+		Essays   int `json:"эссе_в_сводке"`
+		Previous int `json:"с_прежним_эссе"`
+		Reviews  []struct {
+			Author     string `json:"автор"`
+			Earlier    bool   `json:"прежнее_эссе"`
+			Paragraphs []struct {
+				Number string `json:"номер"`
+				Text   string `json:"текст"`
+			} `json:"абзацы"`
+			Advice []struct {
+				Number string `json:"номер"`
+			} `json:"рекомендации"`
+		} `json:"разборы"`
+	}
+	if err = json.Unmarshal([]byte(modelText(canonicalJSON(first))), &input); err != nil || input.Essays != 3 || input.Previous != 0 || len(input.Reviews) != 3 {
+		t.Fatalf("input: %+v %v", input, err)
 	}
 	for n, review := range input.Reviews {
 		id := fmt.Sprint(n + 1)
-		if review.Author != id || review.Path.Number != id+".path" || review.Conclusion.Number != id+".conclusion" || len(review.Moments) != 4 || review.Moments[3].Number != id+".abilities" ||
-			len(review.Positive) != 1 || review.Positive[0].Number != id+".pos.1" || len(review.Attention) != 1 || review.Attention[0].Number != id+".att.1" || len(review.Negative) != 0 || review.Change != nil {
+		if review.Author != id || review.Earlier || len(review.Paragraphs) != 3 || review.Paragraphs[0].Number != id+".formation" || review.Paragraphs[2].Number != id+".environment" ||
+			review.Paragraphs[1].Text != "Автор ценит помощь товарищей." || len(review.Advice) != 2 || review.Advice[1].Number != id+".rec.2" {
 			t.Fatalf("review %s: %+v", id, review)
 		}
 	}
@@ -288,12 +320,13 @@ func TestParseRef(t *testing.T) {
 	for ref, want := range map[string]string{
 		"3.pos.2": "pos", "10.neg.1": "neg", "1.att.12": "att", "2.beliefs": "moment.beliefs", "2.abilities": "moment.abilities",
 		"4.path": "path", "4.conclusion": "conclusion", "5.change.values": "change.values",
+		"3.formation": "formation", "2.moments": "moments", "1.environment": "environment", "4.rec.2": "rec",
 	} {
 		if _, kind, ok := parseRef(ref); !ok || kind != want {
 			t.Errorf("%s: %q %v", ref, kind, ok)
 		}
 	}
-	for _, ref := range []string{"", "pos.1", "0.path", "03.path", "1.pos", "1.pos.0", "1.pos.x", "1.change", "1.change.other", "1.other", "1.path.1", "1.2.3.4", "-1.path"} {
+	for _, ref := range []string{"", "pos.1", "0.path", "03.path", "1.pos", "1.pos.0", "1.pos.x", "1.change", "1.change.other", "1.other", "1.path.1", "1.2.3.4", "-1.path", "1.rec", "1.rec.0", "1.formation.1", "1.change.formation"} {
 		if _, _, ok := parseRef(ref); ok {
 			t.Errorf("%q accepted", ref)
 		}
@@ -505,7 +538,7 @@ func TestTeacherSeesTheEarlierEssayEvenFromAnotherTeacher(t *testing.T) {
 	}
 }
 
-// cleaned runs the answer through the cleaning and the check, as the layer does.
+// cleaned runs an answer of v1 through the cleaning and the check, as the layer does.
 func cleaned(t *testing.T, payload *object, output map[string]any) (map[string]any, int, []string) {
 	t.Helper()
 	back := roundTrip(t, output)
@@ -614,13 +647,11 @@ func TestSummaryIsStoredCleanedWhenTheModelRepeatsReferences(t *testing.T) {
 	f := newEssayPortraitFixture(t)
 	journalOut := captureJournal(t)
 	m := bothTasksModel(func(answer map[string]any) {
-		point := answer["positive"].([]any)[0]
-		answer["positive"] = []any{point, point}
-		answer["paths"] = []any{
-			map[string]any{"text": "Путь.", "refs": []any{"1.path", "2.path"}},
-			map[string]any{"text": "Путь.", "refs": []any{"3.path"}},
+		answer["recommendations"] = []any{
+			map[string]any{"text": "Первая.", "refs": []any{"1.rec.1", "1.rec.1", "2.rec.1"}},
+			map[string]any{"text": "Одного автора.", "refs": []any{"3.rec.1", "3.moments"}},
 		}
-		answer["attention"].([]any)[0].(map[string]any)["refs"] = []any{"1.att.1", "2.att.1", "1.pos.1"}
+		answer["environment"].(map[string]any)["refs"] = []any{"1.environment", "2.environment", "1.rec.1"}
 	})
 	f.service.UseModel(m)
 	f.three()
@@ -636,7 +667,8 @@ func TestSummaryIsStoredCleanedWhenTheModelRepeatsReferences(t *testing.T) {
 		t.Fatalf("%d calls, %+v", calls, view)
 	}
 	output := summary["output"].(map[string]any)
-	if len(output["positive"].([]any)) != 1 || len(output["paths"].([]any)) != 1 || fmt.Sprint(output["attention"].([]any)[0].(map[string]any)["refs"]) != "[1.att.1 2.att.1]" {
+	advice := output["recommendations"].([]any)
+	if len(advice) != 1 || fmt.Sprint(advice[0].(map[string]any)["refs"]) != "[1.rec.1 2.rec.1]" || fmt.Sprint(output["environment"].(map[string]any)["refs"]) != "[1.environment 2.environment]" {
 		t.Fatalf("stored answer: %+v", output)
 	}
 	if log := journalOut.String(); !strings.Contains(log, "answer cleaned") || !strings.Contains(log, "essay-cohort") {

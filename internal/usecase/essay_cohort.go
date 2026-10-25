@@ -27,10 +27,12 @@ const cohortMinimum = 2
 // momentNames are the keys of the four moments and their names, in order.
 var momentNames = map[string]string{"beliefs": "убеждения", "emotions": "эмоции", "values": "ценности", "abilities": "восприятие своих возможностей"}
 
-// essayAuthor is a submitted essay of the assignment with the analysis of it.
+// essayAuthor is a submitted essay of the assignment with the analysis of it
+// and the version of the instruction the analysis was made by.
 type essayAuthor struct {
 	Submission model.FormSubmission
 	Analysis   map[string]any
+	Version    string
 }
 
 func findAssignment(db model.Database, id string) (model.Assignment, bool) {
@@ -85,16 +87,64 @@ func authorOrder(assignmentID string, submissions []model.FormSubmission) []mode
 	return ordered
 }
 
-// cohortAuthors are the essays of the assignment that have an analysis, in the
-// order of the numbers the model gets.
+// cohortAuthors are the essays of the assignment that have an analysis the
+// summary can be made of, in the order of the numbers the model gets: the
+// summary of v2 takes only the analyses of v2 (decision Д9), an analysis of v1
+// shown while the new one is made counts as none.
 func (a *Service) cohortAuthors(db model.Database, assignmentID string) []essayAuthor {
+	return a.cohortAuthorsOf(db, assignmentID, a.cohortShape())
+}
+
+// cohortShape is the shape of analysis the registered summary is made of.
+func (a *Service) cohortShape() int {
+	if task, ok := a.portraits.task(essayCohortTask); ok {
+		return essayShape(task.Version)
+	}
+	return 1
+}
+
+// cohortAuthorsOf are the essays of the assignment with an analysis of the
+// shape (1 for v1, 2 for v2 and later, 0 for any), in the order of the numbers.
+func (a *Service) cohortAuthorsOf(db model.Database, assignmentID string, shape int) []essayAuthor {
 	authors := []essayAuthor{}
 	for _, submission := range authorOrder(assignmentID, assignmentSubmissions(db, assignmentID)) {
-		if analysis, _ := a.essayAnalysis(db, submission); analysis != nil {
-			authors = append(authors, essayAuthor{submission, analysis})
+		analysis, view := a.essayAnalysis(db, submission)
+		if analysis == nil || shape != 0 && essayShape(view.Portrait.Version) != shape {
+			continue
 		}
+		authors = append(authors, essayAuthor{submission, analysis, view.Portrait.Version})
 	}
 	return authors
+}
+
+// essayAnalysisOf finds the stored analysis of a submitted essay made by a
+// version of the instruction for its input now: a summary of v1 shows the
+// quotes of the analyses of v1 it was made of.
+func (a *Service) essayAnalysisOf(db model.Database, submission model.FormSubmission, version string) map[string]any {
+	task, ok := a.portraits.task(essayForm)
+	if !ok {
+		return nil
+	}
+	payload, err := a.essayPayload(db, submission, essayShape(version) == 1)
+	if err != nil {
+		return nil
+	}
+	if _, err = maskPersonal(payload, task.Keep...); err != nil {
+		return nil
+	}
+	fingerprint := payloadFingerprint(payload)
+	var newest model.Portrait
+	found := false
+	for _, portrait := range db.Portraits {
+		if portrait.Task == essayForm && portrait.TaskVersion == version && portrait.Fingerprint == fingerprint && (!found || portrait.Created >= newest.Created) {
+			newest, found = portrait, true
+		}
+	}
+	var output map[string]any
+	if !found || json.Unmarshal(newest.Output, &output) != nil {
+		return nil
+	}
+	return output
 }
 
 func listOf(analysis map[string]any, key string) []any {
@@ -105,7 +155,7 @@ func listOf(analysis map[string]any, key string) []any {
 // cohortPayload is the input of the summary: the analyses without quotes and
 // without teachers, every point under its number.
 func (a *Service) cohortPayload(db model.Database, assignmentID string) (*object, error) {
-	authors := a.cohortAuthors(db, assignmentID)
+	authors := a.cohortAuthorsOf(db, assignmentID, 1)
 	if len(authors) < cohortMinimum {
 		return nil, problem(Invalid, "Для сводки нужно хотя бы два эссе с разбором.")
 	}
@@ -174,27 +224,35 @@ func (a *Service) cohortTask(prompt promptbank.Prompt) portraitTask {
 		assignment, ok := findAssignment(db, s.ID)
 		return s.Kind == "assignment" && ok && assignment.FormID == essayForm && inTeacherScope(assignment.OwnerID, teacherID)
 	}
+	// The summary of v2 is made of the analyses of v2 (essay_v2.go).
+	shape := essayShape(prompt.Version)
+	payload, clean, check := (*Service).cohortPayload, cleanCohortAnswer, checkCohortAnswer
+	if shape == 2 {
+		payload, clean, check = (*Service).cohortPayloadV2, cleanCohortAnswerV2, checkCohortAnswerV2
+	}
 	return portraitTask{
 		ID: essayCohortTask, Version: prompt.Version, Prompt: prompt,
 		MaxTokens: 6000, Attempts: 5, Manual: true,
 		Accepts: func(db model.Database, s Source) bool { return owns(db, s, "") },
-		Payload: func(a *Service, db model.Database, s Source) (*object, error) { return a.cohortPayload(db, s.ID) },
+		Payload: func(a *Service, db model.Database, s Source) (*object, error) { return payload(a, db, s.ID) },
 		Stamp: func(a *Service, db model.Database, s Source) (string, []string) {
 			ids := []string{}
-			for _, author := range a.cohortAuthors(db, s.ID) {
+			for _, author := range a.cohortAuthorsOf(db, s.ID, shape) {
 				ids = append(ids, author.Submission.ID)
 			}
 			return s.ID, ids
 		},
-		Clean:   cleanCohortAnswer,
-		Check:   checkCohortAnswer,
+		Clean:   clean,
+		Check:   check,
 		Visible: owns,
 	}
 }
 
 // parseRef reads «3.pos.2», «3.beliefs», «3.change.beliefs», «3.path» or
 // «3.conclusion» into the number of the author and the kind of the point:
-// pos, neg, att, path, conclusion, moment.beliefs, change.beliefs.
+// pos, neg, att, path, conclusion, moment.beliefs, change.beliefs; and the
+// numbers of v2: «3.formation», «3.moments», «3.environment», «3.rec.2» into
+// formation, moments, environment, rec.
 func parseRef(ref string) (author int, kind string, ok bool) {
 	parts := strings.Split(ref, ".")
 	number, err := strconv.Atoi(parts[0])
@@ -205,9 +263,9 @@ func parseRef(ref string) (author int, kind string, ok bool) {
 	switch {
 	case len(parts) == 2 && moment:
 		return number, "moment." + parts[1], true
-	case len(parts) == 2 && (parts[1] == "path" || parts[1] == "conclusion"):
+	case len(parts) == 2 && (parts[1] == "path" || parts[1] == "conclusion" || slices.Contains(essayParagraphs, parts[1])):
 		return number, parts[1], true
-	case len(parts) == 3 && (parts[1] == "pos" || parts[1] == "neg" || parts[1] == "att"):
+	case len(parts) == 3 && (parts[1] == "pos" || parts[1] == "neg" || parts[1] == "att" || parts[1] == "rec"):
 		index, err := strconv.Atoi(parts[2])
 		return number, parts[1], err == nil && index >= 1 && strconv.Itoa(index) == parts[2]
 	case len(parts) == 3 && parts[1] == "change":

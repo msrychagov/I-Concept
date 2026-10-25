@@ -741,6 +741,29 @@ func (a *Service) portraitView(teacherID, taskID, sourceID string, retry bool) (
 	return PortraitView{Status: state.Status, Reason: state.Reason}, nil
 }
 
+// portraitJob is the state of the job that makes the portrait of the source
+// by the current model and instruction, when one is known.
+func (a *Service) portraitJob(db model.Database, task portraitTask, s Source) (portraitState, bool) {
+	l := a.portraits
+	l.mu.Lock()
+	m := l.model
+	l.mu.Unlock()
+	if m == nil {
+		return portraitState{}, false
+	}
+	payload, _, err := a.prepare(db, task, s)
+	if err != nil {
+		return portraitState{}, false
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	state, ok := l.states[portraitKey(task, m.Name(), payload)]
+	if !ok {
+		return portraitState{}, false
+	}
+	return *state, true
+}
+
 // portraitNone is the status of a portrait nobody has asked for yet.
 const portraitNone = "none"
 

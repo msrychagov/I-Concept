@@ -71,8 +71,10 @@ func studentOf(db model.Database, submission model.FormSubmission) (model.Accoun
 	return model.Account{}, false
 }
 
-// essayPayload is the model input of a submitted essay.
-func (a *Service) essayPayload(db model.Database, submission model.FormSubmission) (*object, error) {
+// essayPayload is the model input of a submitted essay. The input of v1 has
+// the list of the instructors of the center with labels; the input of v2 has
+// none: instructors are told by their positions (decided 25 October 2026).
+func (a *Service) essayPayload(db model.Database, submission model.FormSubmission, list bool) (*object, error) {
 	form, known := a.forms[essayForm]
 	if submission.FormID != essayForm || !submission.Completed || !known {
 		return nil, problem(Invalid, "Сведения для модели собираются только по сданному эссе.")
@@ -82,7 +84,7 @@ func (a *Service) essayPayload(db model.Database, submission model.FormSubmissio
 	if previous, ok := previousEssay(db, submission); ok {
 		payload.set("прежнее_эссе", essayRows(form, previous))
 	}
-	if student, ok := studentOf(db, submission); ok {
+	if student, ok := studentOf(db, submission); ok && list {
 		if labels := instructorLabels(db, student.VUC); len(labels) > 0 {
 			list := []any{}
 			for _, label := range labels {

@@ -25,7 +25,8 @@ type essayStudent struct {
 	Answered     int    `json:"answered"`
 	Total        int    `json:"total"`
 	// Analysis is the state of the analysis of a submitted essay: ready, queued,
-	// working, failed, none (nobody asked yet) or off (no model).
+	// working, failed, none (nobody asked yet), off (no model) or earlier (the
+	// analysis of an earlier version is shown and the new one is not on its way).
 	Analysis    string `json:"analysis,omitempty"`
 	Reason      string `json:"reason,omitempty"`
 	HasPrevious bool   `json:"hasPrevious,omitempty"`
@@ -84,8 +85,18 @@ func (a *Service) essayStudents(db model.Database, assignment model.Assignment, 
 				counts.Submitted++
 				analysis, view := a.essayAnalysis(db, *submission)
 				row.Analysis, row.Reason = view.Status, view.Reason
-				if analysis != nil {
+				switch {
+				case analysis != nil && essayShape(view.Portrait.Version) == a.cohortShape():
 					counts.Analysed++
+				case analysis != nil:
+					// An analysis of v1 is shown while the one of v2 is made and
+					// does not go into the summary: the table tells how it goes.
+					row.Analysis = "earlier"
+					if task, ok := a.portraits.task(essayForm); ok {
+						if state, known := a.portraitJob(db, task, Source{"submission", submission.ID}); known {
+							row.Analysis, row.Reason = state.Status, state.Reason
+						}
+					}
 				}
 				if _, ok := previousEssay(db, *submission); ok {
 					row.HasPrevious = true
@@ -190,10 +201,16 @@ type summaryResolver struct {
 	authors  []string // submission ids, by author number - 1
 	info     map[string]refInfo
 	analysis map[string]map[string]any
+	// shape is the shape of the summary: 1 shows the quotes of the analyses of
+	// v1 under the sources; 2 shows the texts of the paragraphs only (Д12).
+	shape int
+	// advice are the numbers of the recommendations of the analyses in the
+	// input of a summary of v2, in order.
+	advice []string
 }
 
 func newSummaryResolver(a *Service, db model.Database, portrait model.Portrait) *summaryResolver {
-	r := &summaryResolver{a: a, db: db, authors: portrait.Sources, info: map[string]refInfo{}, analysis: map[string]map[string]any{}}
+	r := &summaryResolver{a: a, db: db, authors: portrait.Sources, info: map[string]refInfo{}, analysis: map[string]map[string]any{}, shape: essayShape(portrait.TaskVersion)}
 	var input struct {
 		Reviews []map[string]any `json:"разборы"`
 	}
@@ -206,10 +223,13 @@ func newSummaryResolver(a *Service, db model.Database, portrait model.Portrait) 
 	for _, review := range input.Reviews {
 		add(review["путь"])
 		add(review["итог"])
-		for _, key := range []string{"моменты", "положительное", "отрицательное", "на_что_обратить_внимание", "что_изменилось"} {
+		for _, key := range []string{"моменты", "положительное", "отрицательное", "на_что_обратить_внимание", "что_изменилось", "абзацы", "рекомендации"} {
 			list, _ := review[key].([]any)
 			for _, item := range list {
 				add(item)
+				if key == "рекомендации" {
+					r.advice = append(r.advice, textOf(asMap(item)["номер"]))
+				}
 			}
 		}
 	}
@@ -228,11 +248,16 @@ func (r *summaryResolver) submission(author int) (model.FormSubmission, bool) {
 	return model.FormSubmission{}, false
 }
 
+// current is the analysis of v1 of an essay the summary of v1 was made of:
+// the quotes of its points are shown under the sources.
 func (r *summaryResolver) current(submission model.FormSubmission) map[string]any {
 	if analysis, ok := r.analysis[submission.ID]; ok {
 		return analysis
 	}
-	analysis, _ := r.a.essayAnalysis(r.db, submission)
+	analysis, view := r.a.essayAnalysis(r.db, submission)
+	if analysis != nil && essayShape(view.Portrait.Version) != 1 {
+		analysis = r.a.essayAnalysisOf(r.db, submission, "v1")
+	}
 	r.analysis[submission.ID] = analysis
 	return analysis
 }
@@ -258,6 +283,9 @@ func (r *summaryResolver) source(ref string) (sourceView, bool) {
 	}
 	student, _ := studentOf(r.db, submission)
 	view := sourceView{Ref: ref, SubmissionID: submission.ID, Student: student.Name, Platoon: student.Platoon, Text: info.Text, About: info.About, Basis: info.Basis, Quotes: []quoteView{}}
+	if r.shape != 1 {
+		return view, true
+	}
 	analysis := r.current(submission)
 	var point map[string]any
 	switch {
@@ -302,8 +330,39 @@ func (r *summaryResolver) group(refs any) sourceGroup {
 	return group
 }
 
+// annotationsV2 is what the program adds to a summary of v2: the authors and
+// the sources of each paragraph and recommendation, and the recommendations of
+// the analyses no recommendation of the summary stands on (decision Д11).
+func (r *summaryResolver) annotationsV2(output map[string]any) map[string]any {
+	common := map[string]any{}
+	for _, key := range essayParagraphs {
+		common[key] = r.group(asMap(output[key])["refs"])
+	}
+	groups, used := []sourceGroup{}, map[string]bool{}
+	for _, item := range listOf(output, "recommendations") {
+		refs, _ := asMap(item)["refs"].([]any)
+		groups = append(groups, r.group(refs))
+		for _, ref := range refs {
+			text, _ := ref.(string)
+			used[text] = true
+		}
+	}
+	common["recommendations"] = groups
+	rest := []sourceView{}
+	for _, ref := range r.advice {
+		if view, ok := r.source(ref); ok && !used[ref] {
+			rest = append(rest, view)
+		}
+	}
+	common["notIncluded"] = rest
+	return common
+}
+
 // summaryAnnotations is what the program adds to the text of the model.
 func (r *summaryResolver) annotations(output map[string]any) map[string]any {
+	if r.shape != 1 {
+		return r.annotationsV2(output)
+	}
 	common := map[string]any{}
 	moments := map[string]any{}
 	for _, key := range momentKeys {
@@ -436,6 +495,91 @@ func (a *Service) teacherBlock(db model.Database, vuc string, authors []essayAut
 	return map[string]any{"listed": entries, "unlisted": unlisted}
 }
 
+// essayTeacherLine is what one author wrote about a person.
+type essayTeacherLine struct {
+	Kind         string      `json:"kind"`
+	Student      string      `json:"student"`
+	Platoon      string      `json:"platoon"`
+	SubmissionID string      `json:"submissionId"`
+	Text         string      `json:"text"`
+	Quotes       []quoteView `json:"quotes"`
+}
+
+// essayPerson is a person of a position as the authors named him: by the
+// surname, without case and «ё»; a typo gives another person (the risk the
+// user accepted on 25 October 2026). Name is "" for those nobody named.
+type essayPerson struct {
+	Name     string             `json:"name"`
+	Thanks   int                `json:"thanks"`
+	Problems int                `json:"problems"`
+	Mentions int                `json:"mentions"`
+	Lines    []essayTeacherLine `json:"lines"`
+}
+
+type essayPositionGroup struct {
+	Position string        `json:"position"`
+	People   []essayPerson `json:"people"`
+}
+
+// teacherBlockV2 groups what the analyses of v2 say about the instructors by
+// position, in the order of essayPositions, and inside a position by the name
+// the authors wrote. No list of the center is used: an instructor who left
+// changes nothing (decided 25 October 2026).
+func (a *Service) teacherBlockV2(db model.Database, authors []essayAuthor) map[string]any {
+	people := map[string]map[string]*essayPerson{}
+	order := map[string][]string{}
+	for _, author := range authors {
+		student, _ := studentOf(db, author.Submission)
+		for _, raw := range listOf(author.Analysis, "teachers") {
+			record := asMap(raw)
+			position := textOf(record["position"])
+			if !slices.Contains(essayPositions, position) {
+				position = "не указано"
+			}
+			name := textOf(record["name"])
+			key := normalWord(strings.Join(strings.Fields(name), " "))
+			if people[position] == nil {
+				people[position] = map[string]*essayPerson{}
+			}
+			person := people[position][key]
+			if person == nil {
+				person = &essayPerson{Name: name, Lines: []essayTeacherLine{}}
+				people[position][key] = person
+				order[position] = append(order[position], key)
+			}
+			line := essayTeacherLine{Kind: textOf(record["kind"]), Student: student.Name, Platoon: student.Platoon, SubmissionID: author.Submission.ID, Text: textOf(record["text"]), Quotes: quotesOf("", record["quotes"])}
+			switch line.Kind {
+			case "благодарность":
+				person.Thanks++
+			case "проблема":
+				person.Problems++
+			default:
+				person.Mentions++
+			}
+			person.Lines = append(person.Lines, line)
+		}
+	}
+	groups := []essayPositionGroup{}
+	for _, position := range essayPositions {
+		list := []essayPerson{}
+		for _, key := range order[position] {
+			list = append(list, *people[position][key])
+		}
+		if len(list) == 0 {
+			continue
+		}
+		// The most named first; those nobody named last.
+		sort.SliceStable(list, func(i, j int) bool {
+			if (list[i].Name == "") != (list[j].Name == "") {
+				return list[j].Name == ""
+			}
+			return len(list[i].Lines) > len(list[j].Lines)
+		})
+		groups = append(groups, essayPositionGroup{Position: position, People: list})
+	}
+	return map[string]any{"positions": groups}
+}
+
 // ownEssayAssignment finds an essay assignment of the teacher and its cohort.
 func ownEssayAssignment(db model.Database, teacherID, id string) (model.Assignment, model.Cohort, model.Account, error) {
 	t, err := managementTeacher(db, teacherID)
@@ -478,7 +622,13 @@ func (a *Service) essaySummary(db model.Database, teacherID, assignmentID string
 		"canCompose": len(authors) >= cohortMinimum,
 		"status":     portraitOff,
 		"summary":    nil,
-		"teachers":   a.teacherBlock(db, t.VUC, authors),
+	}
+	// The block of v2 stands on the positions in the analyses of v2; the block
+	// of v1 on the list of the center and every analysis shown.
+	if a.cohortShape() == 2 {
+		result["teachers"] = a.teacherBlockV2(db, a.cohortAuthorsOf(db, as.ID, 2))
+	} else {
+		result["teachers"] = a.teacherBlock(db, t.VUC, a.cohortAuthorsOf(db, as.ID, 0))
 	}
 	task, known := a.portraits.task(essayCohortTask)
 	if !known {
@@ -504,6 +654,8 @@ func (a *Service) essaySummary(db model.Database, teacherID, assignmentID string
 			resolver := newSummaryResolver(a, db, *stored)
 			result["summary"] = map[string]any{
 				"created": stored.Created, "essays": len(stored.Sources), "stale": !sameSet(stored.Sources, ids),
+				// older: made by an earlier instruction, the teacher may make it anew.
+				"version": stored.TaskVersion, "older": essayShape(stored.TaskVersion) != a.cohortShape(),
 				"output": output, "common": resolver.annotations(output),
 			}
 			if result["status"] == portraitReady || result["status"] == portraitNone {

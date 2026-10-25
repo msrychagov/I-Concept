@@ -41,45 +41,38 @@ func quoteOf(row essayRow) map[string]any {
 	return map[string]any{"question": row.Number, "quote": strings.Join(words[:min(4, len(words))], " ")}
 }
 
-// goodEssay answers the way the instruction asks, for the input it is given.
+// goodEssay answers the way the instruction essay/v2 asks, for the input it is given.
 func goodEssay(user string) map[string]any {
 	input := readEssayInput(&testing.T{}, user)
 	quote := []any{quoteOf(input.Essay[0])}
-	moment := func() map[string]any {
-		return map[string]any{"text": "По ответам видно, что автор об этом пишет.", "quotes": quote}
-	}
-	change := []any{}
+	before := []any{}
 	if len(input.Previous) > 0 {
-		for _, name := range essayMoments {
-			change = append(change, map[string]any{"moment": name, "text": "Раньше было иначе.", "before": quoteOf(input.Previous[0]), "after": quoteOf(input.Essay[0])})
-		}
+		before = []any{quoteOf(input.Previous[0])}
 	}
-	// An instructor of the list who is named in answer 2.4 is thanked; another
-	// name is written as the author wrote it.
+	// A teacher named in answer 2.4 is thanked, by the surname the author wrote.
 	teachers := []any{}
 	for _, row := range input.Essay {
-		if row.Number != "2.4" {
-			continue
+		name := ""
+		switch {
+		case row.Number != "2.4":
+		case strings.Contains(row.Answer, "Сидоров"):
+			name = "Сидоров"
+		case strings.Contains(row.Answer, "Иванов"):
+			name = "Иванов"
 		}
-		who := ""
-		for _, entry := range input.Instructor {
-			if strings.Contains(row.Answer, "Иванов") && strings.Contains(entry.Who, "Иванов") {
-				who = entry.Label
-			}
-		}
-		if strings.Contains(row.Answer, "Сидоров") {
-			who = "полковник Сидоров"
-		}
-		if who != "" {
-			teachers = append(teachers, map[string]any{"who": who, "kind": "благодарность", "text": "Благодарит за помощь.", "quotes": []any{quoteOf(row)}})
+		if name != "" {
+			teachers = append(teachers, map[string]any{"position": "преподаватель", "name": name, "kind": "благодарность", "text": "Благодарит за помощь.", "quotes": []any{quoteOf(row)}})
 		}
 	}
 	return map[string]any{
-		"summary":  "Автор пришёл в ВУЦ с ожиданиями и привык к порядкам.",
-		"moments":  map[string]any{"beliefs": moment(), "emotions": moment(), "values": moment(), "abilities": moment()},
-		"positive": []any{map[string]any{"text": "Автор ценит помощь товарищей.", "about": "о себе", "basis": "сказано автором", "quotes": quote}},
-		"negative": []any{}, "attention": []any{map[string]any{"text": "Автору нужна поддержка в первые недели.", "about": "о ВУЦ", "basis": "вывод по тексту", "quotes": quote}}, "teachers": teachers, "change": change,
-		"conclusion": map[string]any{"text": "По ответам видно, что становление идёт.", "quotes": quote},
+		"formation":   map[string]any{"text": "Автор пришёл в ВУЦ с ожиданиями и привык к порядкам.", "quotes": quote, "before": before},
+		"moments":     map[string]any{"text": "Автор ценит помощь товарищей.", "quotes": []any{quoteOf(input.Essay[0]), quoteOf(input.Essay[1])}},
+		"environment": map[string]any{"text": "Порядки ВУЦ автор принимает, когда понимает их смысл.", "quotes": quote},
+		"recommendations": []any{
+			map[string]any{"text": "Поддержать автора в первые недели.", "quotes": quote},
+			map[string]any{"text": "Опираться на его интерес к службе.", "quotes": quote},
+		},
+		"teachers": teachers,
 	}
 }
 
@@ -95,11 +88,24 @@ func essayModel(mutate func(map[string]any, essayInput)) *fakeModel {
 }
 
 func newEssayPortraitFixture(t *testing.T) *essayFixture {
+	return newEssayPortraitFixtureAt(t, "")
+}
+
+// newEssayPortraitFixtureAt registers the essay tasks of a version, "" for the newest.
+func newEssayPortraitFixtureAt(t *testing.T, version string) *essayFixture {
 	t.Helper()
 	f := newEssayFixture(t)
 	prompts, err := promptbank.Load()
 	if err != nil {
 		t.Fatal(err)
+	}
+	if version != "" {
+		chosen := []promptbank.Prompt{}
+		for _, task := range []string{essayForm, essayCohortTask} {
+			prompt, _ := promptbank.Find(prompts, task, version)
+			chosen = append(chosen, prompt)
+		}
+		prompts = chosen
 	}
 	f.service.RegisterPrompts(prompts...)
 	f.service.portraits.pause = 0
@@ -145,11 +151,11 @@ func TestSubmittedEssayGetsAnAnalysisFromTheInputOfItsOwn(t *testing.T) {
 		t.Fatalf("%+v %v after %d calls", view, err, m.count())
 	}
 	call := m.calls[0]
-	if !strings.HasPrefix(call.System, "Ты помогаешь преподавателю военного учебного центра") || !strings.Contains(string(call.Schema), `"conclusion"`) {
+	if !strings.HasPrefix(call.System, "Ты помогаешь преподавателю военного учебного центра") || !strings.Contains(string(call.Schema), `"formation"`) || call.MaxTokens != 6000 {
 		t.Fatalf("instruction or schema: %.80s", call.System)
 	}
 	// The order of the keys, the cut data, the patronymic kept and nothing of the person.
-	if !strings.HasPrefix(call.User, "{\n \"эссе\": [") || strings.Index(call.User, `"эссе"`) > strings.Index(call.User, `"преподаватели"`) {
+	if !strings.HasPrefix(call.User, "{\n \"эссе\": [") {
 		t.Fatalf("keys: %.60s", call.User)
 	}
 	input := readEssayInput(t, call.User)
@@ -162,10 +168,11 @@ func TestSubmittedEssayGetsAnAnalysisFromTheInputOfItsOwn(t *testing.T) {
 	if got := input.Essay[7].Answer; input.Essay[7].Number != "2.4" || got != "Благодарю Игоря Петровича за помощь, пишите мне на [скрыто]." {
 		t.Fatalf("answer 2.4: %q", got)
 	}
-	if len(input.Instructor) != 1 || input.Instructor[0].Label != "[преподаватель 1]" || input.Instructor[0].Who != "Иванов Игорь Петрович, полковник" {
-		t.Fatalf("instructors: %+v", input.Instructor)
+	// The list of the instructors does not go: v2 tells them by positions (decided 25 October 2026).
+	if len(input.Instructor) != 0 || strings.Contains(call.User, "преподаватели") {
+		t.Fatalf("instructors reached the model: %+v", input.Instructor)
 	}
-	for _, banned := range []string{login.Account.Name, login.Account.Email, "Выпуск 2027", "2401", "Эссе в конце"} {
+	for _, banned := range []string{login.Account.Name, login.Account.Email, "Выпуск 2027", "2401", "Эссе в конце", "Иванов Игорь Петрович"} {
 		if strings.Contains(call.User, banned) {
 			t.Fatalf("%q reached the model", banned)
 		}
@@ -204,11 +211,13 @@ func TestEarlierEssayOfTheSameAuthorGoesWithTheNewOne(t *testing.T) {
 		t.Fatalf("earlier essay: %+v", input.Previous[:1])
 	}
 	var output struct {
-		Change []struct{ Moment string } `json:"change"`
+		Formation struct {
+			Before []struct{ Question string } `json:"before"`
+		} `json:"formation"`
 	}
 	_ = json.Unmarshal(view.Portrait.Output, &output)
-	if len(output.Change) != 4 || output.Change[3].Moment != "восприятие своих возможностей" {
-		t.Fatalf("change: %+v", output.Change)
+	if len(output.Formation.Before) != 1 || output.Formation.Before[0].Question != "1.1" || view.Portrait.Version != "v2" {
+		t.Fatalf("quotes of the earlier essay: %+v", output.Formation)
 	}
 }
 
@@ -233,7 +242,9 @@ func TestEarlierEssayIsTheLastOneHandedInBeforeFromAnyAssignment(t *testing.T) {
 	}
 }
 
-func TestChangingTheInstructorListMakesTheAnalysesAgain(t *testing.T) {
+// The list of the instructors is no part of the input of v2: changing it makes
+// no analysis again (an instructor who left changes nothing).
+func TestChangingTheInstructorListDoesNotMakeTheAnalysesOfV2Again(t *testing.T) {
 	f := newEssayPortraitFixture(t)
 	m := essayModel(nil)
 	f.service.UseModel(m)
@@ -246,7 +257,7 @@ func TestChangingTheInstructorListMakesTheAnalysesAgain(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.idle()
-	if m.count() != 2 || !strings.Contains(m.calls[1].User, `"преподаватели"`) {
+	if m.count() != 1 {
 		t.Fatalf("%d calls after the list changed", m.count())
 	}
 	view, _ := f.portrait(f.owner, id)
@@ -308,6 +319,7 @@ func essayPayloadFor(answers map[string]string, previous map[string]string, labe
 	return payload
 }
 
+// The answer of v1 is checked as it always was.
 func TestCheckEssayAnswer(t *testing.T) {
 	answers := map[string]string{"1.1": "Я пошёл «в ВУЦ» ради «службы» и отсрочки.", "1.2": "Первые дни было   очень  страшно, ЁЛКИ-палки.", "2.4": "Хочу поблагодарить полковника Иванова за помощь."}
 	earlier := map[string]string{"1.1": "Раньше я хотел только отсрочку от армии.", "1.2": "Раньше было совсем страшно.", "2.4": "Раньше никого не помню."}
@@ -416,7 +428,7 @@ func TestCheckEssayAnswer(t *testing.T) {
 	}
 }
 
-// goodEssayFor is a good answer to a small input made by essayPayloadFor.
+// goodEssayFor is a good answer of v1 to a small input made by essayPayloadFor.
 func goodEssayFor(payload *object) map[string]any {
 	quote := []any{map[string]any{"question": "1.1", "quote": "Я пошёл «в ВУЦ» ради «службы»"}}
 	moment := func() map[string]any {

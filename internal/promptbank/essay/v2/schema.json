@@ -1,0 +1,52 @@
+{
+  "type": "object",
+  "properties": {
+    "formation": {
+      "type": "object",
+      "description": "Как меняются представления автора о себе и что изменилось с прежнего эссе, 2–3 предложения",
+      "properties": {
+        "text": {"type": "string"},
+        "quotes": {"type": "array", "items": {"$ref": "#/$defs/quote"}},
+        "before": {"type": "array", "description": "Цитаты из прежнего эссе, 1–2; пусто, если прежнего нет", "items": {"$ref": "#/$defs/quote"}}
+      },
+      "required": ["text", "quotes", "before"]
+    },
+    "moments": {"$ref": "#/$defs/paragraph", "description": "Убеждения, эмоции, ценности, восприятие своих возможностей, 3–4 предложения"},
+    "environment": {"$ref": "#/$defs/paragraph", "description": "Отношение к ВУЦ и преподавателям, 2–3 предложения"},
+    "recommendations": {"type": "array", "description": "Рекомендации преподавателю, 2–4", "items": {"$ref": "#/$defs/paragraph"}},
+    "teachers": {
+      "type": "array",
+      "description": "Преподаватели и командиры, которых называет автор",
+      "items": {
+        "type": "object",
+        "properties": {
+          "position": {"type": "string", "enum": ["начальник ВУЦ", "заместитель начальника ВУЦ", "начальник кафедры", "начальник цикла", "куратор взвода", "преподаватель", "не указано"]},
+          "name": {"type": "string", "description": "Фамилия, как написал автор; без фамилии — имя и отчество; пусто, если не назван"},
+          "kind": {"type": "string", "enum": ["благодарность", "проблема", "упоминание"]},
+          "text": {"type": "string"},
+          "quotes": {"type": "array", "items": {"$ref": "#/$defs/quote"}}
+        },
+        "required": ["position", "name", "kind", "text", "quotes"]
+      }
+    }
+  },
+  "required": ["formation", "moments", "environment", "recommendations", "teachers"],
+  "$defs": {
+    "quote": {
+      "type": "object",
+      "properties": {
+        "question": {"type": "string", "description": "Номер вопроса, например 1.2"},
+        "quote": {"type": "string", "description": "Дословный кусок ответа, 3–30 слов"}
+      },
+      "required": ["question", "quote"]
+    },
+    "paragraph": {
+      "type": "object",
+      "properties": {
+        "text": {"type": "string"},
+        "quotes": {"type": "array", "items": {"$ref": "#/$defs/quote"}}
+      },
+      "required": ["text", "quotes"]
+    }
+  }
+}

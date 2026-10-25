@@ -157,16 +157,17 @@ func TestCheckAllowsEntriesWithCandidatesFromTheList(t *testing.T) {
 	}
 }
 
-// Through the layer: the model labels «Кузнецову», the stored analysis has no label.
+// Through the layer of v1 (v2 has no labels): the model labels «Кузнецову», the
+// stored analysis has no label.
 func TestAnalysisStoresNamesakeEntryWithoutTheLabelAndTheSummaryShowsItApart(t *testing.T) {
-	f := newEssayPortraitFixture(t)
+	f := newEssayPortraitFixtureAt(t, "v1")
 	journalOut := captureJournal(t)
 	for _, entry := range []InstructorInput{{Surname: "Кузнецов", Name: "Илья", Patronymic: "Павлович", Rank: "майор"}, {Surname: "Кузнецов", Name: "Никита", Patronymic: "Львович", Rank: "капитан"}} {
 		if _, err := f.service.SaveInstructor(f.owner, "", entry); err != nil {
 			t.Fatal(err)
 		}
 	}
-	m := essayModel(func(answer map[string]any, input essayInput) {
+	m := essayModelV1(func(answer map[string]any, input essayInput) {
 		for _, row := range input.Essay {
 			if row.Number == "2.4" {
 				answer["teachers"] = []any{map[string]any{"who": "[преподаватель 1]", "kind": "благодарность", "text": "Благодарит за помощь.", "quotes": []any{quoteOf(row)}}}
