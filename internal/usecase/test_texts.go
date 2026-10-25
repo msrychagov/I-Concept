@@ -128,3 +128,41 @@ func platoonCountProblems(texts map[string]string) []string {
 	}
 	return problems
 }
+
+// selfDetermination is what a point about the self-determination as a
+// military specialist speaks of.
+var selfDetermination = regexp.MustCompile(`самоопредел|выбор|военн[а-я]*\s+специал`)
+
+// selfDeterminationProblems: when the leading status of the military
+// speciality is the undetermined identity or the moratorium, one point of the
+// recommendations goes to group 2 about the self-determination as a military
+// specialist; when it is the imposed one, about the personal sense of the
+// choice (field recommendations of test/v3). The group of the imposed one is
+// taken to be 2 as well (approved by the user on 25 October 2026).
+func selfDeterminationProblems(output map[string]any, payload *object) []string {
+	leading := ""
+	for _, block := range objectList(payload.values["профессиональная_идентичность"]) {
+		if strings.HasPrefix(lowerText(objectText(block, "профессия")), "военн") {
+			leading = objectText(block, "ведущий_статус")
+		}
+	}
+	status := lowerText(leading)
+	undecided := strings.Contains(status, "мораторий") || strings.Contains(status, "неопределенн")
+	if !undecided && !strings.Contains(status, "навязанн") {
+		return nil
+	}
+	items, _ := output["recommendations"].([]any)
+	for _, item := range items {
+		record, _ := item.(map[string]any)
+		number, _ := numberOf(record["group"])
+		text, _ := record["text"].(string)
+		text = lowerText(text)
+		if number == 2 && (undecided && selfDetermination.MatchString(text) || !undecided && strings.Contains(text, "смысл") && strings.Contains(text, "выбор")) {
+			return nil
+		}
+	}
+	if undecided {
+		return []string{fmt.Sprintf("recommendations: по военной специальности ведущий статус «%s» — нужен пункт к группе 2 о самоопределении как военного специалиста, со словом «самоопределение»", leading)}
+	}
+	return []string{fmt.Sprintf("recommendations: по военной специальности ведущий статус «%s» — нужен пункт к группе 2 о личном смысле выбора, со словами «смысл» и «выбор»", leading)}
+}

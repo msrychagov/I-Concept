@@ -105,3 +105,43 @@ func TestPlatoonCountsInWords(t *testing.T) {
 		t.Errorf("platoon: %s", problems)
 	}
 }
+
+// With the moratorium by the military speciality, as at Лебедев and Козлов on
+// 25 October, a point to group 2 is about the self-determination.
+func TestSelfDeterminationPoint(t *testing.T) {
+	a := testApp(t)
+	data := a.TestPortrait(fixedTestSession(a, a.bank.Version))
+	military := -1
+	for n, p := range data.Identity {
+		if p.ID == "military" {
+			military = n
+		}
+	}
+	if military < 0 {
+		t.Fatal("no military block")
+	}
+	for leading, want := range map[string]string{
+		"мораторий (кризис выбора)":   "о самоопределении как военного специалиста",
+		"неопределённая идентичность": "о самоопределении как военного специалиста",
+		"навязанная":                  "о личном смысле выбора",
+		"сформированная":              "",
+	} {
+		data.Identity[military].LeadingText = leading
+		payload := a.testPayloadFor("v3", data)
+		answer := goodTestAnswerV2(string(canonicalJSON(payload)))
+		if problems := checkTestAnswerV2(answer, payload); len(problems) != 0 {
+			t.Errorf("%s, a good answer fails: %v", leading, problems)
+		}
+		var second map[string]any
+		for _, item := range answer["recommendations"].([]any) {
+			if item.(map[string]any)["group"] == 2 {
+				second = item.(map[string]any)
+			}
+		}
+		second["text"] = "Привлечь к наставничеству для конкретизации профессиональных компетенций."
+		problems := strings.Join(checkTestAnswerV2(answer, payload), "; ")
+		if want == "" && strings.Contains(problems, "к группе 2") || want != "" && !strings.Contains(problems, "ведущий статус «"+leading+"» — нужен пункт к группе 2 "+want) {
+			t.Errorf("%s: %q", leading, problems)
+		}
+	}
+}

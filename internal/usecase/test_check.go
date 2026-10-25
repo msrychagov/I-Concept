@@ -436,5 +436,6 @@ func checkTestAnswerV2(output map[string]any, payload *object) []string {
 	problems = append(problems, recommendationProblems(output, payload, 3, 4, func(group int, kind string) bool {
 		return types[group] == "" || kind == types[group] || kind == "психологическая" && lowEV
 	})...)
+	problems = append(problems, selfDeterminationProblems(output, payload)...)
 	return problems
 }
