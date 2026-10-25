@@ -400,6 +400,23 @@ func numberOf(value any) (float64, bool) {
 	return 0, false
 }
 
+// checkTestAnswerV4 returns what is wrong with an answer to test/v4: the
+// rules of v2 and v3 and no level of the climate of the platoon.
+func checkTestAnswerV4(output map[string]any, payload *object) []string {
+	problems := checkTestAnswerV2(output, payload)
+	components, _ := output["components"].(map[string]any)
+	text, _ := components["text"].(string)
+	texts := map[string]string{"components.text": text}
+	for _, key := range []string{"portrait", "identity", "ideal", "activity", "conclusion"} {
+		texts[key] = outputText(output, key)
+	}
+	recommendationTexts(output, texts)
+	for _, key := range sortedTextKeys(texts) {
+		problems = append(problems, climateLevelProblems(key, texts[key])...)
+	}
+	return problems
+}
+
 // checkTestAnswerV2 returns what is wrong with an answer to test/v2.
 func checkTestAnswerV2(output map[string]any, payload *object) []string {
 	problems := []string{}
