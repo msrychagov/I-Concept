@@ -78,3 +78,13 @@ func (h *Handler) formPotential(w http.ResponseWriter, r *http.Request) {
 	value, err := h.service.PotentialSummaryFor(h.teacherID(r), r.PathValue("formId"), r.URL.Query().Get("platoon"))
 	h.respond(w, value, err)
 }
+
+// formAutobiography is the printed autobiography of a submitted autobiography.
+func (h *Handler) formAutobiography(w http.ResponseWriter, r *http.Request) {
+	value, err := h.service.AutobiographyTextFor(h.teacherID(r), r.PathValue("id"))
+	h.respond(w, value, err)
+}
+func (h *Handler) formOwnAutobiography(w http.ResponseWriter, r *http.Request) {
+	value, err := h.service.OwnAutobiographyText(loginToken(r, "student"), r.PathValue("id"))
+	h.respond(w, value, err)
+}

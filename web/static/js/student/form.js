@@ -178,7 +178,7 @@
         const s = data.submission;
         if (view === 'done' || s.completed) {
             const texts = data.form.texts || {};
-            app.innerHTML = `<main class="consent"><div class="eyebrow">${esc(data.form.title)}</div><h1>${esc(texts.doneTitle || 'Автобиография сдана')}</h1><p>${esc(texts.doneText || 'Спасибо. Сведения переданы преподавателю. Изменить ответы после сдачи нельзя.')}</p><a class="button" href="/student">Вернуться в кабинет</a></main>`;
+            app.innerHTML = `<main class="consent"><div class="eyebrow">${esc(data.form.title)}</div><h1>${esc(texts.doneTitle || 'Автобиография сдана')}</h1><p>${esc(texts.doneText || 'Спасибо. Сведения переданы преподавателю. Изменить ответы после сдачи нельзя.')}</p><div class="done-actions">${data.form.id === 'autobiography' ? `<a class="button secondary" href="/autobiography/print?role=student&id=${encodeURIComponent(submissionId)}">Автобиография для печати</a>` : ''}<a class="button" href="/student">Вернуться в кабинет</a></div></main>`;
             return;
         }
         if (!s.consent) {

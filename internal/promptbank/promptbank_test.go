@@ -31,6 +31,7 @@ func TestLatestVersionMatchesTheWikiWhenItIsThere(t *testing.T) {
 	prompts, _ := Load()
 	for _, c := range []struct{ task, version, path string }{
 		{"autobiography", "", "../../../Вики/Автобиография/Сравнение моделей/Инструкция.md"},
+		{"autobiography", "v3", "../../../Вики/Автобиография/Инструкция v3 — черновик.md"},
 		{"test", "", "../../../Вики/Тестирование/Инструкция v5.md"},
 		{"test", "v4", "../../../Вики/Тестирование/Инструкция v4.md"},
 		{"test", "v3", "../../../Вики/Тестирование/Инструкция v3.md"},
