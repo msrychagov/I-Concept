@@ -335,6 +335,9 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 	problems = append(problems, sentenceProblem("ideal", texts["ideal"], 2, 2)...)
 	problems = append(problems, sentenceProblem("activity", texts["activity"], activityLeast, 4)...)
 	problems = append(problems, sentenceProblem("conclusion", texts["conclusion"], 2, 2)...)
+	for _, key := range []string{"overview", "ideal", "activity", "conclusion"} {
+		problems = append(problems, ratedLevelProblems(key, texts[key])...)
+	}
 
 	identity, given := payload.values["профессиональная_идентичность"]
 	problems = append(problems, identityProblems(texts["identity"], given, nil)...)

@@ -389,6 +389,9 @@ func checkTestAnswerV2(output map[string]any, payload *object) []string {
 	problems = append(problems, sentenceProblem("activity", outputText(output, "activity"), activityLeast, 4)...)
 	problems = append(problems, sentenceProblem("conclusion", outputText(output, "conclusion"), 2, 2)...)
 	problems = append(problems, componentProblems(components, payload)...)
+	for _, key := range []string{"portrait", "ideal", "activity", "conclusion"} {
+		problems = append(problems, ratedLevelProblems(key, outputText(output, key))...)
+	}
 
 	names := map[string]string{}
 	for _, k := range objectList(payload.values["виды_деятельности"]) {
