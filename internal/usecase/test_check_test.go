@@ -346,7 +346,9 @@ func TestSecondCatalogueFitsBySituation(t *testing.T) {
 	for _, g := range a.defender.Groups {
 		names[g.ID] = g.Name
 	}
-	has := func(codes map[string][]string, group, code string) bool { return slices.Contains(codes[names[group]], code) }
+	has := func(codes map[string][]string, group, code string) bool {
+		return slices.Contains(codes[names[group]], code)
+	}
 	old, high, low := fitting("v3", true), fitting("v4", false), fitting("v4", true)
 	for _, code := range []string{"R22", "R23", "R24"} {
 		for group := range names {
