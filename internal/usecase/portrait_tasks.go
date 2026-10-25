@@ -395,11 +395,11 @@ func absenceProblems(where, text string, empty []string) []string {
 	problems := []string{}
 	for _, area := range empty {
 		if words, ok := areaWords[area]; ok && words.MatchString(text) {
-			problems = append(problems, fmt.Sprintf("%s: направление без опыта («%s»)", where, area))
+			problems = append(problems, fmt.Sprintf("%s: направление без опыта («%s») — не упоминай его", where, area))
 		}
 	}
 	if found := absence.FindStringSubmatch(text); found != nil {
-		problems = append(problems, fmt.Sprintf("%s: написано об отсутствии («%s»)", where, strings.ToLower(found[2])))
+		problems = append(problems, fmt.Sprintf("%s: написано об отсутствии («%s») — убери это, пиши только о том, что у студента есть", where, strings.ToLower(found[2])))
 	}
 	return problems
 }
@@ -448,7 +448,7 @@ func checkAutobiographyAnswerV4(output map[string]any, payload *object) []string
 			problems = append(problems, absenceProblems(where, text, empty)...)
 		}
 		if !marked {
-			problems = append(problems, "paragraphs: нет «по опыту в …»")
+			problems = append(problems, "paragraphs: нет «по опыту в …» — каждую фразу о качествах начни словами «По опыту в …», а не «По увлечению …» или «Студент увлекается …»")
 		}
 	}
 	consider, ok := stringList(output["consider"])
