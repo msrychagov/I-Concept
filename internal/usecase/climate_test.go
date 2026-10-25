@@ -133,3 +133,22 @@ func TestDemoPlatoonsRateTheirClimate(t *testing.T) {
 		t.Fatalf("adequacy %v, pressure %d", adequacy, pressure)
 	}
 }
+
+// The student gets both statements of a pair and its seven options.
+func TestStudentGetsBothStatementsOfAPair(t *testing.T) {
+	a := testApp(t)
+	s := fixedTestSession(a, a.bank.Version)
+	found := 0
+	for _, item := range a.publicItems(s) {
+		if item["module"] != "CL" {
+			continue
+		}
+		found++
+		if item["type"] != "pair" || item["text"] == "" || item["opposite"] == nil || item["opposite"] == "" || len(item["options"].([]map[string]string)) != 7 {
+			t.Fatalf("pair: %v", item)
+		}
+	}
+	if found != 14 {
+		t.Fatalf("%d pairs", found)
+	}
+}

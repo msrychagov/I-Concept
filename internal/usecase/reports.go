@@ -12,6 +12,9 @@ func (a *Service) publicItems(s model.Session) []map[string]any {
 		if i.Hint != "" {
 			m["hint"] = i.Hint
 		}
+		if i.Opposite != "" {
+			m["opposite"] = i.Opposite
+		}
 		if i.Topic != "" {
 			m["topic"] = i.Topic
 		}
