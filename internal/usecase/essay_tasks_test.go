@@ -49,24 +49,19 @@ func goodEssay(user string) map[string]any {
 	if len(input.Previous) > 0 {
 		before = []any{quoteOf(input.Previous[0])}
 	}
-	// An instructor of the list who is named in answer 2.4 is thanked; another
-	// name is written as the author wrote it.
+	// A teacher named in answer 2.4 is thanked, by the surname the author wrote.
 	teachers := []any{}
 	for _, row := range input.Essay {
-		if row.Number != "2.4" {
-			continue
+		name := ""
+		switch {
+		case row.Number != "2.4":
+		case strings.Contains(row.Answer, "Сидоров"):
+			name = "Сидоров"
+		case strings.Contains(row.Answer, "Иванов"):
+			name = "Иванов"
 		}
-		who := ""
-		for _, entry := range input.Instructor {
-			if strings.Contains(row.Answer, "Иванов") && strings.Contains(entry.Who, "Иванов") {
-				who = entry.Label
-			}
-		}
-		if strings.Contains(row.Answer, "Сидоров") {
-			who = "полковник Сидоров"
-		}
-		if who != "" {
-			teachers = append(teachers, map[string]any{"who": who, "kind": "благодарность", "text": "Благодарит за помощь.", "quotes": []any{quoteOf(row)}})
+		if name != "" {
+			teachers = append(teachers, map[string]any{"position": "преподаватель", "name": name, "kind": "благодарность", "text": "Благодарит за помощь.", "quotes": []any{quoteOf(row)}})
 		}
 	}
 	return map[string]any{
@@ -93,11 +88,24 @@ func essayModel(mutate func(map[string]any, essayInput)) *fakeModel {
 }
 
 func newEssayPortraitFixture(t *testing.T) *essayFixture {
+	return newEssayPortraitFixtureAt(t, "")
+}
+
+// newEssayPortraitFixtureAt registers the essay tasks of a version, "" for the newest.
+func newEssayPortraitFixtureAt(t *testing.T, version string) *essayFixture {
 	t.Helper()
 	f := newEssayFixture(t)
 	prompts, err := promptbank.Load()
 	if err != nil {
 		t.Fatal(err)
+	}
+	if version != "" {
+		chosen := []promptbank.Prompt{}
+		for _, task := range []string{essayForm, essayCohortTask} {
+			prompt, _ := promptbank.Find(prompts, task, version)
+			chosen = append(chosen, prompt)
+		}
+		prompts = chosen
 	}
 	f.service.RegisterPrompts(prompts...)
 	f.service.portraits.pause = 0
@@ -147,7 +155,7 @@ func TestSubmittedEssayGetsAnAnalysisFromTheInputOfItsOwn(t *testing.T) {
 		t.Fatalf("instruction or schema: %.80s", call.System)
 	}
 	// The order of the keys, the cut data, the patronymic kept and nothing of the person.
-	if !strings.HasPrefix(call.User, "{\n \"эссе\": [") || strings.Index(call.User, `"эссе"`) > strings.Index(call.User, `"преподаватели"`) {
+	if !strings.HasPrefix(call.User, "{\n \"эссе\": [") {
 		t.Fatalf("keys: %.60s", call.User)
 	}
 	input := readEssayInput(t, call.User)
@@ -160,10 +168,11 @@ func TestSubmittedEssayGetsAnAnalysisFromTheInputOfItsOwn(t *testing.T) {
 	if got := input.Essay[7].Answer; input.Essay[7].Number != "2.4" || got != "Благодарю Игоря Петровича за помощь, пишите мне на [скрыто]." {
 		t.Fatalf("answer 2.4: %q", got)
 	}
-	if len(input.Instructor) != 1 || input.Instructor[0].Label != "[преподаватель 1]" || input.Instructor[0].Who != "Иванов Игорь Петрович, полковник" {
-		t.Fatalf("instructors: %+v", input.Instructor)
+	// The list of the instructors does not go: v2 tells them by positions (decided 25 October 2026).
+	if len(input.Instructor) != 0 || strings.Contains(call.User, "преподаватели") {
+		t.Fatalf("instructors reached the model: %+v", input.Instructor)
 	}
-	for _, banned := range []string{login.Account.Name, login.Account.Email, "Выпуск 2027", "2401", "Эссе в конце"} {
+	for _, banned := range []string{login.Account.Name, login.Account.Email, "Выпуск 2027", "2401", "Эссе в конце", "Иванов Игорь Петрович"} {
 		if strings.Contains(call.User, banned) {
 			t.Fatalf("%q reached the model", banned)
 		}
@@ -233,7 +242,9 @@ func TestEarlierEssayIsTheLastOneHandedInBeforeFromAnyAssignment(t *testing.T) {
 	}
 }
 
-func TestChangingTheInstructorListMakesTheAnalysesAgain(t *testing.T) {
+// The list of the instructors is no part of the input of v2: changing it makes
+// no analysis again (an instructor who left changes nothing).
+func TestChangingTheInstructorListDoesNotMakeTheAnalysesOfV2Again(t *testing.T) {
 	f := newEssayPortraitFixture(t)
 	m := essayModel(nil)
 	f.service.UseModel(m)
@@ -246,7 +257,7 @@ func TestChangingTheInstructorListMakesTheAnalysesAgain(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.idle()
-	if m.count() != 2 || !strings.Contains(m.calls[1].User, `"преподаватели"`) {
+	if m.count() != 1 {
 		t.Fatalf("%d calls after the list changed", m.count())
 	}
 	view, _ := f.portrait(f.owner, id)

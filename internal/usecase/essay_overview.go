@@ -495,6 +495,91 @@ func (a *Service) teacherBlock(db model.Database, vuc string, authors []essayAut
 	return map[string]any{"listed": entries, "unlisted": unlisted}
 }
 
+// essayTeacherLine is what one author wrote about a person.
+type essayTeacherLine struct {
+	Kind         string      `json:"kind"`
+	Student      string      `json:"student"`
+	Platoon      string      `json:"platoon"`
+	SubmissionID string      `json:"submissionId"`
+	Text         string      `json:"text"`
+	Quotes       []quoteView `json:"quotes"`
+}
+
+// essayPerson is a person of a position as the authors named him: by the
+// surname, without case and «ё»; a typo gives another person (the risk the
+// user accepted on 25 October 2026). Name is "" for those nobody named.
+type essayPerson struct {
+	Name     string             `json:"name"`
+	Thanks   int                `json:"thanks"`
+	Problems int                `json:"problems"`
+	Mentions int                `json:"mentions"`
+	Lines    []essayTeacherLine `json:"lines"`
+}
+
+type essayPositionGroup struct {
+	Position string        `json:"position"`
+	People   []essayPerson `json:"people"`
+}
+
+// teacherBlockV2 groups what the analyses of v2 say about the instructors by
+// position, in the order of essayPositions, and inside a position by the name
+// the authors wrote. No list of the center is used: an instructor who left
+// changes nothing (decided 25 October 2026).
+func (a *Service) teacherBlockV2(db model.Database, authors []essayAuthor) map[string]any {
+	people := map[string]map[string]*essayPerson{}
+	order := map[string][]string{}
+	for _, author := range authors {
+		student, _ := studentOf(db, author.Submission)
+		for _, raw := range listOf(author.Analysis, "teachers") {
+			record := asMap(raw)
+			position := textOf(record["position"])
+			if !slices.Contains(essayPositions, position) {
+				position = "не указано"
+			}
+			name := textOf(record["name"])
+			key := normalWord(strings.Join(strings.Fields(name), " "))
+			if people[position] == nil {
+				people[position] = map[string]*essayPerson{}
+			}
+			person := people[position][key]
+			if person == nil {
+				person = &essayPerson{Name: name, Lines: []essayTeacherLine{}}
+				people[position][key] = person
+				order[position] = append(order[position], key)
+			}
+			line := essayTeacherLine{Kind: textOf(record["kind"]), Student: student.Name, Platoon: student.Platoon, SubmissionID: author.Submission.ID, Text: textOf(record["text"]), Quotes: quotesOf("", record["quotes"])}
+			switch line.Kind {
+			case "благодарность":
+				person.Thanks++
+			case "проблема":
+				person.Problems++
+			default:
+				person.Mentions++
+			}
+			person.Lines = append(person.Lines, line)
+		}
+	}
+	groups := []essayPositionGroup{}
+	for _, position := range essayPositions {
+		list := []essayPerson{}
+		for _, key := range order[position] {
+			list = append(list, *people[position][key])
+		}
+		if len(list) == 0 {
+			continue
+		}
+		// The most named first; those nobody named last.
+		sort.SliceStable(list, func(i, j int) bool {
+			if (list[i].Name == "") != (list[j].Name == "") {
+				return list[j].Name == ""
+			}
+			return len(list[i].Lines) > len(list[j].Lines)
+		})
+		groups = append(groups, essayPositionGroup{Position: position, People: list})
+	}
+	return map[string]any{"positions": groups}
+}
+
 // ownEssayAssignment finds an essay assignment of the teacher and its cohort.
 func ownEssayAssignment(db model.Database, teacherID, id string) (model.Assignment, model.Cohort, model.Account, error) {
 	t, err := managementTeacher(db, teacherID)
@@ -537,8 +622,13 @@ func (a *Service) essaySummary(db model.Database, teacherID, assignmentID string
 		"canCompose": len(authors) >= cohortMinimum,
 		"status":     portraitOff,
 		"summary":    nil,
-		// The block of instructors is made of every analysis shown, of any version.
-		"teachers": a.teacherBlock(db, t.VUC, a.cohortAuthorsOf(db, as.ID, 0)),
+	}
+	// The block of v2 stands on the positions in the analyses of v2; the block
+	// of v1 on the list of the center and every analysis shown.
+	if a.cohortShape() == 2 {
+		result["teachers"] = a.teacherBlockV2(db, a.cohortAuthorsOf(db, as.ID, 2))
+	} else {
+		result["teachers"] = a.teacherBlock(db, t.VUC, a.cohortAuthorsOf(db, as.ID, 0))
 	}
 	task, known := a.portraits.task(essayCohortTask)
 	if !known {

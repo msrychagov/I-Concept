@@ -90,12 +90,12 @@ func TestCheckEssayAnswerV2(t *testing.T) {
 		"to my regret": {nil, nil, func(o map[string]any) {
 			advice(o)[0].(map[string]any)["text"] = "К сожалению, автор устал."
 		}, "recommendations, пункт 1: недопустимое слово («к сожалению»)"},
-		"the instructors are checked as in v1": {nil, []string{"[преподаватель 3]"}, func(o map[string]any) {
-			o["teachers"] = []any{map[string]any{"who": "[преподаватель 7]", "kind": "благодарность", "text": "За помощь.", "quotes": []any{map[string]any{"question": "2.4", "quote": "поблагодарить полковника Иванова"}}}}
-		}, "teachers, запись 1: метка не из списка"},
-		"a label in who is right": {nil, []string{"[преподаватель 3]"}, func(o map[string]any) {
-			o["teachers"] = []any{map[string]any{"who": "[преподаватель 3]", "kind": "благодарность", "text": "За помощь.", "quotes": []any{map[string]any{"question": "2.4", "quote": "поблагодарить полковника Иванова"}}}}
+		"a teacher of v2": {nil, nil, func(o map[string]any) {
+			o["teachers"] = []any{map[string]any{"position": "преподаватель", "name": "Иванов", "kind": "благодарность", "text": "За помощь.", "quotes": []any{map[string]any{"question": "2.4", "quote": "поблагодарить полковника Иванова"}}}}
 		}, ""},
+		"a label instead of a position": {nil, nil, func(o map[string]any) {
+			o["teachers"] = []any{map[string]any{"who": "[преподаватель 3]", "kind": "благодарность", "text": "За помощь.", "quotes": []any{map[string]any{"question": "2.4", "quote": "поблагодарить полковника Иванова"}}}}
+		}, "teachers, запись 1: position — только должность из списка"},
 	}
 	for name, c := range cases {
 		payload := essayPayloadFor(answers, c.previous, c.labels...)
@@ -239,10 +239,18 @@ func TestCleaningOfV2DropsWrongReferencesAndRecommendationsOfOneAuthor(t *testin
 
 // ---- from v1 to v2 ----------------------------------------------------------
 
-// goodEssayV1 answers the way the instruction essay/v1 asks.
+// goodEssayV1 answers the way the instruction essay/v1 asks: an instructor of
+// the list named in answer 2.4 by his label.
 func goodEssayV1(user string) map[string]any {
-	answer := goodEssay(user)
 	input := readEssayInput(&testing.T{}, user)
+	teachers := []any{}
+	for _, row := range input.Essay {
+		for _, entry := range input.Instructor {
+			if row.Number == "2.4" && strings.Contains(row.Answer, "Иванов") && strings.Contains(entry.Who, "Иванов") {
+				teachers = append(teachers, map[string]any{"who": entry.Label, "kind": "благодарность", "text": "Благодарит за помощь.", "quotes": []any{quoteOf(row)}})
+			}
+		}
+	}
 	quote := []any{quoteOf(input.Essay[0])}
 	moment := func() map[string]any {
 		return map[string]any{"text": "По ответам видно, что автор об этом пишет.", "quotes": quote}
@@ -253,10 +261,21 @@ func goodEssayV1(user string) map[string]any {
 		"positive":   []any{map[string]any{"text": "Автор ценит помощь товарищей.", "about": "о себе", "basis": "сказано автором", "quotes": quote}},
 		"negative":   []any{},
 		"attention":  []any{map[string]any{"text": "Автору нужна поддержка.", "about": "о ВУЦ", "basis": "вывод по тексту", "quotes": quote}},
-		"teachers":   answer["teachers"],
+		"teachers":   teachers,
 		"change":     []any{},
 		"conclusion": map[string]any{"text": "По ответам видно, что становление идёт.", "quotes": quote},
 	}
+}
+
+func essayModelV1(mutate func(map[string]any, essayInput)) *fakeModel {
+	return &fakeModel{name: "fake", reply: func(_ int, c Completion) (string, error) {
+		answer := goodEssayV1(c.User)
+		if mutate != nil {
+			mutate(answer, readEssayInput(&testing.T{}, c.User))
+		}
+		data, _ := json.Marshal(answer)
+		return string(data), nil
+	}}
 }
 
 // A center that had the analyses and the summary of v1 when v2 came: the
@@ -327,8 +346,9 @@ func TestAnalysesOfV1AreShownWhileV2IsMadeAndStayOutOfTheSummary(t *testing.T) {
 	if old["canCompose"] != false || summary["version"] != "v1" || summary["older"] != true || len(sources[0].(map[string]any)["quotes"].([]any)) != 1 {
 		t.Fatalf("the summary of v1: %+v", old)
 	}
-	if listed := old["teachers"].(map[string]any)["listed"].([]any); len(listed) != 1 {
-		t.Fatalf("the block of instructors stands on the analyses of v1 too: %+v", old["teachers"])
+	// The block of v2 stands on the analyses of v2 only (decision Д16): none yet.
+	if positions := old["teachers"].(map[string]any)["positions"].([]any); len(positions) != 0 {
+		t.Fatalf("the block of instructors: %+v", old["teachers"])
 	}
 
 	// With the model the analyses of v2 are made by themselves and the summary of v2 on the button.
@@ -352,15 +372,15 @@ func TestAnalysesOfV1AreShownWhileV2IsMadeAndStayOutOfTheSummary(t *testing.T) {
 	}
 }
 
-// A label stands only on quotes that name the instructor: by surname (a typo
-// counts), name, patronymic or rank, in any case.
-func TestLabelOfAnInstructorNeedsHisWordInTheQuotes(t *testing.T) {
+// An entry about a person of v2: a position from the list and the name as the
+// author wrote it, found in the quotes in any case.
+func TestTeachersOfV2HavePositionsAndTheNamesOfTheAuthor(t *testing.T) {
 	answers := map[string]string{
 		"1.1": "Я пошёл в ВУЦ ради службы и отсрочки.",
-		"1.2": "Старшина Громов показал ещё раз и не ругался.",
-		"2.4": "Благодарю полковнику Ивнову и Игоря Петровича за помощь.",
+		"1.2": "Начальник цикла полковник Иванов дал мне ответить. Капитан Белоцерковкий поручил группу.",
+		"2.4": "Хочу поблагодарить Илью Павловича и куратора нашего взвода за помощь.",
 	}
-	entry := func(label string, quotes ...string) map[string]any {
+	entry := func(position, name string, quotes ...string) map[string]any {
 		list := []any{}
 		for _, quote := range quotes {
 			question := "2.4"
@@ -369,31 +389,71 @@ func TestLabelOfAnInstructorNeedsHisWordInTheQuotes(t *testing.T) {
 			}
 			list = append(list, map[string]any{"question": question, "quote": quote})
 		}
-		return map[string]any{"who": label, "kind": "благодарность", "text": "За помощь.", "quotes": list}
+		return map[string]any{"position": position, "name": name, "kind": "благодарность", "text": "За помощь.", "quotes": list}
 	}
 	for name, c := range map[string]struct {
-		record map[string]any
-		want   bool
+		teachers []any
+		want     string
 	}{
-		"by a rank and a surname with a typo": {entry("[преподаватель 1]", "Благодарю полковнику Ивнову"), false},
-		"by a surname with a typo only":       {entry("[преподаватель 1]", "полковнику Ивнову и"), false},
-		"by a name and a patronymic":          {entry("[преподаватель 1]", "и Игоря Петровича за помощь"), false},
-		"someone else":                        {entry("[преподаватель 1]", "Старшина Громов показал ещё раз"), true},
-		"one quote of two is enough":          {entry("[преподаватель 1]", "Старшина Громов показал ещё раз", "Благодарю полковнику Ивнову"), false},
-		"as the author wrote it":              {entry("старшина Громов", "Старшина Громов показал ещё раз"), false},
+		"a surname in another case":        {[]any{entry("начальник цикла", "Иванов", "Начальник цикла полковник Иванов дал мне ответить")}, ""},
+		"a surname with the author's typo": {[]any{entry("преподаватель", "Белоцерковкий", "Капитан Белоцерковкий поручил группу")}, ""},
+		"a name and a patronymic":          {[]any{entry("не указано", "Илья Павлович", "Хочу поблагодарить Илью Павловича")}, ""},
+		"nobody named":                     {[]any{entry("куратор взвода", "", "и куратора нашего взвода за помощь")}, ""},
+		"a mended typo":                    {[]any{entry("преподаватель", "Белоцерковский", "Капитан Белоцерковкий поручил группу")}, "teachers, запись 1: name нет в цитатах"},
+		"a made-up surname":                {[]any{entry("куратор взвода", "Петров", "и куратора нашего взвода за помощь")}, "teachers, запись 1: name нет в цитатах"},
+		"a rank in the name":               {[]any{entry("начальник цикла", "полковник Иванов", "Начальник цикла полковник Иванов дал мне ответить")}, "без меток и званий"},
+		"a label":                          {[]any{entry("преподаватель", "[преподаватель 3]", "Начальник цикла полковник Иванов дал мне ответить")}, "без меток и званий"},
+		"a position out of the list":       {[]any{entry("командир роты", "Иванов", "Начальник цикла полковник Иванов дал мне ответить")}, "position — только должность из списка"},
+		"one person twice":                 {[]any{entry("начальник цикла", "Иванов", "Начальник цикла полковник Иванов дал мне ответить"), entry("начальник цикла", "иванов", "Начальник цикла полковник Иванов дал мне ответить")}, "teachers, запись 2: тот же человек, что в записи 1"},
+		"one surname in two positions":     {[]any{entry("начальник цикла", "Иванов", "Начальник цикла полковник Иванов дал мне ответить"), entry("преподаватель", "Иванов", "Начальник цикла полковник Иванов дал мне ответить")}, ""},
+		"no name field":                    {[]any{map[string]any{"position": "преподаватель", "kind": "упоминание", "text": "Т.", "quotes": []any{map[string]any{"question": "2.4", "quote": "Хочу поблагодарить Илью Павловича"}}}}, "teachers, запись 1: нет поля name"},
 	} {
-		payload := essayPayloadFor(answers, nil, "[преподаватель 1]")
-		output := map[string]any{"teachers": []any{c.record}}
-		problems := strings.Join(labelWordProblems(roundTrip(t, output), payload), " | ")
-		if got := strings.Contains(problems, "teachers, запись 1: в цитатах нет ни фамилии"); got != c.want {
-			t.Errorf("%s: %q", name, problems)
+		payload := essayPayloadFor(answers, nil)
+		output := goodEssayV2For(payload)
+		output["teachers"] = c.teachers
+		found := []string{}
+		for _, problem := range checkEssayAnswerV2(roundTrip(t, output), payload) {
+			if strings.HasPrefix(problem, "teachers") {
+				found = append(found, problem)
+			}
+		}
+		problems := strings.Join(found, " | ")
+		switch {
+		case c.want == "" && problems != "":
+			t.Errorf("%s: %s", name, problems)
+		case c.want != "" && !strings.Contains(problems, c.want):
+			t.Errorf("%s: want %q, got %q", name, c.want, problems)
+		}
+		if strings.Contains(problems, "Петров") || strings.Contains(problems, "Белоцерковский") {
+			t.Errorf("%s: the problem repeats the name: %s", name, problems)
 		}
 	}
-	if surnameWithTypo("Громов", []string{"Гром пришёл"}) || !surnameWithTypo("Белоцерковский", []string{"капитан Белоцерковкий"}) {
-		t.Fatal("typo of a surname")
+}
+
+// The block of v2 groups positions in their order and, inside, the names as the
+// authors wrote them, without case and «ё»; a typo is another person.
+func TestTeacherBlockOfV2GroupsPositionsAndNames(t *testing.T) {
+	record := func(position, name, kind string) any {
+		return map[string]any{"position": position, "name": name, "kind": kind, "text": "Т.", "quotes": []any{}}
 	}
-	if got := instructorOf("Кузнецов Илья Павлович, старший лейтенант"); got.Surname != "Кузнецов" || got.Patronymic != "Павлович" || got.Rank != "старший лейтенант" {
-		t.Fatalf("instructor: %+v", got)
+	author := func(id string, teachers ...any) essayAuthor {
+		return essayAuthor{Submission: model.FormSubmission{ID: id}, Analysis: map[string]any{"teachers": teachers}, Version: "v2"}
+	}
+	block := (&Service{}).teacherBlockV2(model.Database{}, []essayAuthor{
+		author("1", record("преподаватель", "Громов", "благодарность"), record("начальник цикла", "Иванов", "благодарность"), record("преподаватель", "", "упоминание")),
+		author("2", record("преподаватель", "громов", "проблема"), record("преподаватель", "Белоцерковкий", "благодарность"), record("должность", "Орлов", "упоминание")),
+		author("3", record("преподаватель", "Белоцерковский", "благодарность"), record("преподаватель", "Громов", "благодарность")),
+	})
+	groups := block["positions"].([]essayPositionGroup)
+	got := []string{}
+	for _, group := range groups {
+		for _, person := range group.People {
+			got = append(got, fmt.Sprintf("%s/%s %d+%d+%d", group.Position, person.Name, person.Thanks, person.Problems, person.Mentions))
+		}
+	}
+	want := "[начальник цикла/Иванов 1+0+0 преподаватель/Громов 2+1+0 преподаватель/Белоцерковкий 1+0+0 преподаватель/Белоцерковский 1+0+0 преподаватель/ 0+0+1 не указано/Орлов 0+0+1]"
+	if fmt.Sprint(got) != want {
+		t.Fatalf("block:\n%v\nwant\n%s", got, want)
 	}
 }
 

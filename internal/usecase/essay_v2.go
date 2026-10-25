@@ -3,6 +3,7 @@ package usecase
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -172,8 +173,7 @@ func checkEssayAnswerV2(output map[string]any, payload *object) []string {
 	if len(previous) == 0 {
 		problems = append(problems, noEarlierProblems(output)...)
 	}
-	problems = append(problems, teacherProblems(output, payload, current)...)
-	return append(problems, labelWordProblems(output, payload)...)
+	return append(problems, teacherProblemsV2(output, current)...)
 }
 
 // familyWords find a recommendation that stands on the family of the author,
@@ -205,96 +205,83 @@ func noEarlierProblems(output map[string]any) []string {
 	return problems
 }
 
-// instructorOf reads an entry of the list in the input, «Иванов Игорь Петрович,
-// полковник», back into the four things a student may call him by.
-func instructorOf(who string) model.Instructor {
-	names, rank, _ := strings.Cut(who, ",")
-	parts := strings.Fields(names)
-	instructor := model.Instructor{Rank: strings.TrimSpace(rank)}
-	if len(parts) > 0 {
-		instructor.Surname = parts[0]
-	}
-	if len(parts) > 1 {
-		instructor.Name = parts[1]
-	}
-	if len(parts) > 2 {
-		instructor.Patronymic = strings.Join(parts[2:], " ")
-	}
-	return instructor
-}
+// essayPositions are the positions of v2 a person the author names may hold
+// (decided 25 October 2026 after the supervisor's answer), in the order of the
+// block «Преподаватели» of the summary; «не указано» when the essay does not
+// tell or the person holds none of them.
+var essayPositions = []string{"начальник ВУЦ", "заместитель начальника ВУЦ", "начальник кафедры", "начальник цикла", "куратор взвода", "преподаватель", "не указано"}
 
-// labelWordProblems finds an entry with a label whose quotes hold no word of
-// that instructor: no surname, name, patronymic or rank, in any case. A
-// surname with a typo counts. Such a label is a guess of the model: «старшина
-// Громов» given to a captain of the list (decided 25 October 2026 after the run).
-func labelWordProblems(output map[string]any, payload *object) []string {
-	list := map[string]model.Instructor{}
-	for _, entry := range objectList(payload.values["преподаватели"]) {
-		list[objectText(entry, "метка")] = instructorOf(objectText(entry, "кто"))
+// nameInQuotes says whether every word of the name the model gave is in the
+// quotes of the entry, in any case: «Ковальчук» in «подполковника Ковальчука»,
+// «Илья Павлович» in «Илью Павловича». A name the model made up or mended is not.
+func nameInQuotes(name string, quotes any) bool {
+	texts := []string{}
+	for _, quote := range quoteList(quotes) {
+		texts = append(texts, textOf(quote["quote"]))
 	}
-	problems := []string{}
-	teachers, _ := asList(output["teachers"])
-	for n, raw := range teachers {
-		record := asMap(raw)
-		self, labelled := list[textOf(record["who"])]
-		if record == nil || !labelled {
-			continue
-		}
-		texts := []string{}
-		for _, quote := range quoteList(record["quotes"]) {
-			texts = append(texts, textOf(quote["quote"]))
-		}
-		if found, _ := foundIn(self, texts); len(found) > 0 || surnameWithTypo(self.Surname, texts) {
-			continue
-		}
-		problems = append(problems, fmt.Sprintf("teachers, запись %d: в цитатах нет ни фамилии, ни имени, ни отчества, ни звания преподавателя с этой меткой — если не уверен, что автор пишет о нём, пиши, как его называет автор", n+1))
-	}
-	return problems
-}
-
-// surnameWithTypo finds the surname written with a typo, «Белоцерковкий» for
-// «Белоцерковский»: a word whose stem is one letter off a short surname or two
-// off a long one, in any case.
-func surnameWithTypo(surname string, texts []string) bool {
-	stem := wordStem(surname)
-	if len(stem) < 5 {
+	_, words := tokens(name)
+	if len(words) == 0 {
 		return false
 	}
-	most := 1
-	if len(stem) >= 8 {
-		most = 2
-	}
-	for _, text := range texts {
-		_, normal := tokens(text)
-		for _, token := range normal {
-			for _, ending := range caseEndings {
-				if base, ok := strings.CutSuffix(token, ending); ok && editDistance([]rune(base), stem) <= most {
-					return true
-				}
+	for _, word := range words {
+		found := false
+		for _, text := range texts {
+			_, normal := tokens(text)
+			if slices.ContainsFunc(normal, func(token string) bool { return isWordOf(token, word) }) {
+				found = true
 			}
 		}
+		if !found {
+			return false
+		}
 	}
-	return false
+	return true
 }
 
-// editDistance is the number of letters to add, drop or change to turn one word into the other.
-func editDistance(a, b []rune) int {
-	row := make([]int, len(b)+1)
-	for j := range row {
-		row[j] = j
+// teacherProblemsV2 checks the list «teachers» of v2: a position and a kind
+// from their lists, a text, one or two quotes of the new essay; a name, when
+// there is one, written in the quotes, with no label and no rank; one person —
+// one entry. A problem never repeats the name: it goes to the journal.
+func teacherProblemsV2(output map[string]any, current map[string]string) []string {
+	teachers, ok := asList(output["teachers"])
+	if !ok {
+		return []string{"teachers: нет списка"}
 	}
-	for i := 1; i <= len(a); i++ {
-		previous := row[0]
-		row[0] = i
-		for j := 1; j <= len(b); j++ {
-			cost := 1
-			if a[i-1] == b[j-1] {
-				cost = 0
+	problems, seen := []string{}, map[string]int{}
+	for n, raw := range teachers {
+		where, record := fmt.Sprintf("teachers, запись %d", n+1), asMap(raw)
+		if record == nil {
+			problems = append(problems, where+": не запись")
+			continue
+		}
+		if !oneOf(record["position"], essayPositions) {
+			problems = append(problems, where+": position — только должность из списка или «не указано»")
+		}
+		if !oneOf(record["kind"], essayKinds) {
+			problems = append(problems, where+": kind должно быть «благодарность», «проблема» или «упоминание»")
+		}
+		problems = append(problems, textProblems(where, record["text"])...)
+		problems = append(problems, quotesProblems(where, record["quotes"], current, 1, 2)...)
+		name, isText := record["name"].(string)
+		name = strings.TrimSpace(name)
+		switch {
+		case !isText:
+			problems = append(problems, where+": нет поля name")
+		case name == "":
+		case strings.Contains(name, "[") || militaryRank.MatchString(name):
+			problems = append(problems, where+": в name только фамилия или имя и отчество, без меток и званий")
+		case !nameInQuotes(name, record["quotes"]):
+			problems = append(problems, where+": name нет в цитатах записи — пиши фамилию так, как её написал автор, и дай цитату, где он её пишет, или оставь name пустым")
+		}
+		if name != "" {
+			key := textOf(record["position"]) + "|" + normalWord(name)
+			if first, twice := seen[key]; twice {
+				problems = append(problems, fmt.Sprintf("%s: тот же человек, что в записи %d — один человек, одна запись", where, first))
 			}
-			previous, row[j] = row[j], min(row[j]+1, row[j-1]+1, previous+cost)
+			seen[key] = n + 1
 		}
 	}
-	return row[len(b)]
+	return problems
 }
 
 // ---- the summary of a cohort, v2 ------------------------------------------
@@ -410,12 +397,10 @@ func trimTexts(output map[string]any) int {
 	return changes
 }
 
-// cleanEssayAnswerV2 takes the marks off the start of the texts and the
-// labels of namesakes off the entries about instructors (essay_namesakes.go).
-func cleanEssayAnswerV2(a *Service, db model.Database, s Source, output map[string]any, payload *object) (map[string]any, int) {
-	changes := trimTexts(output)
-	output, more := cleanEssayAnswer(a, db, s, output, payload)
-	return output, changes + more
+// cleanEssayAnswerV2 takes the marks off the start of the texts. There are no
+// labels in v2, so no namesakes to take them off (essay_namesakes.go is v1's).
+func cleanEssayAnswerV2(_ *Service, _ model.Database, _ Source, output map[string]any, _ *object) (map[string]any, int) {
+	return output, trimTexts(output)
 }
 
 // checkCohortAnswerV2 returns what is wrong with an answer to the instruction

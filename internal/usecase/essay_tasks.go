@@ -13,8 +13,9 @@ import (
 // moments of the self-concept. The instruction, the schema and what the program
 // checks are in Вики/Эссе выпускника/Инструкция.md.
 
-// essayTask takes a submitted essay. The patronymic is not cut out: the model
-// must tell «Игорь Петрович» from the instructors of the list.
+// essayTask takes a submitted essay. The patronymic is not cut out: in v1 the
+// model told «Игорь Петрович» from the instructors of the list, in v2 it writes
+// «Илья Павлович» when the author gave no surname (decision Д13).
 func (a *Service) essayTask(prompt promptbank.Prompt) portraitTask {
 	// Four moments, three lists, teachers, a comparison and a conclusion, with
 	// a quote under each point: more than the autobiography; tries are many
@@ -22,8 +23,19 @@ func (a *Service) essayTask(prompt promptbank.Prompt) portraitTask {
 	// long answer on the first run on GigaChat. The paragraphs of v2 are half as
 	// long (essay_v2.go).
 	check, clean, tokens := checkEssayAnswer, cleanEssayAnswer, 8000
-	if essayShape(prompt.Version) >= 2 {
+	shape := essayShape(prompt.Version)
+	var earlier func(a *Service, db model.Database, s Source) []*object
+	if shape >= 2 {
 		check, clean, tokens = checkEssayAnswerV2, cleanEssayAnswerV2, 6000
+		// The input of v2 has no list of instructors: the analysis of v1, made
+		// with the list, is shown while the one of v2 is made.
+		earlier = func(a *Service, db model.Database, s Source) []*object {
+			submission, _ := findSubmission(db, s)
+			if payload, err := a.essayPayload(db, submission, true); err == nil {
+				return []*object{payload}
+			}
+			return nil
+		}
 	}
 	return portraitTask{
 		ID: essayForm, Version: prompt.Version, Prompt: prompt,
@@ -35,10 +47,9 @@ func (a *Service) essayTask(prompt promptbank.Prompt) portraitTask {
 		},
 		Payload: func(a *Service, db model.Database, s Source) (*object, error) {
 			submission, _ := findSubmission(db, s)
-			return a.essayPayload(db, submission)
+			return a.essayPayload(db, submission, shape == 1)
 		},
-		Clean: clean,
-		Check: check,
+		Clean: clean, Check: check, Earlier: earlier,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			submission, ok := findSubmission(db, s)
 			return ok && teacherOwnsSubmission(db, teacherID, submission)

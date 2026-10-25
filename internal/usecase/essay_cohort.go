@@ -125,8 +125,11 @@ func (a *Service) essayAnalysisOf(db model.Database, submission model.FormSubmis
 	if !ok {
 		return nil
 	}
-	payload, _, err := a.prepare(db, task, Source{"submission", submission.ID})
+	payload, err := a.essayPayload(db, submission, essayShape(version) == 1)
 	if err != nil {
+		return nil
+	}
+	if _, err = maskPersonal(payload, task.Keep...); err != nil {
 		return nil
 	}
 	fingerprint := payloadFingerprint(payload)

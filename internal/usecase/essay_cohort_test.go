@@ -190,15 +190,15 @@ func TestSummaryIsComposedOnTheButtonAndCountedByTheProgram(t *testing.T) {
 		t.Fatalf("%d calls after a second button", m.count())
 	}
 
-	// The block of instructors needs no summary: the program counts the labels.
-	block := done["teachers"].(map[string]any)
-	listed := block["listed"].([]any)
-	unlisted := block["unlisted"].([]any)
-	if len(listed) != 1 || listed[0].(map[string]any)["who"] != "Иванов Игорь Петрович, полковник" || listed[0].(map[string]any)["thanks"] != 2.0 || len(listed[0].(map[string]any)["lines"].([]any)) != 2 {
-		t.Fatalf("listed: %+v", listed)
+	// The block of instructors needs no summary: the program groups the positions and the surnames.
+	positions := done["teachers"].(map[string]any)["positions"].([]any)
+	if len(positions) != 1 || positions[0].(map[string]any)["position"] != "преподаватель" {
+		t.Fatalf("positions: %+v", positions)
 	}
-	if len(unlisted) != 1 || unlisted[0].(map[string]any)["who"] != "полковник Сидоров" {
-		t.Fatalf("unlisted: %+v", unlisted)
+	people := positions[0].(map[string]any)["people"].([]any)
+	first, second := people[0].(map[string]any), people[1].(map[string]any)
+	if len(people) != 2 || first["name"] != "Иванов" || first["thanks"] != 2.0 || len(first["lines"].([]any)) != 2 || second["name"] != "Сидоров" || second["thanks"] != 1.0 {
+		t.Fatalf("people: %+v", people)
 	}
 
 	// A new essay makes the summary stale until the button is pressed again.
