@@ -14,9 +14,9 @@ func TestRatedLevelOfTheConditions(t *testing.T) {
 		"Студент включён во все четыре вида деятельности на высоком уровне, активно использует ресурсы; условия ВУЦ оцениваются высоко, особенно по ясности норм.": "высоко",
 		"Студент включён во все четыре вида деятельности на высоком или среднем уровне, особенно в учебной, и высоко оценивает организационные условия ВУЦ.":       "высоко",
 		"Условия среды оцениваются высоко по возможностям значимой деятельности, но ниже по понятности требований.":                                                "высоко",
-		"Взвод даёт условиям ВУЦ высокие оценки.":                        "высок",
-		"Организационные условия оцениваются как низкие.":                "низк",
-		"Условия ВУЦ — на среднем уровне.":                               "средн",
+		"Взвод даёт условиям ВУЦ высокие оценки.":                        "высок…",
+		"Организационные условия оцениваются как низкие.":                "низк…",
+		"Условия ВУЦ — на среднем уровне.":                               "средн…",
 		"Студент невысоко оценивает доверие и уважение достоинства.":     "невысоко",
 		"Студент включён в учебную деятельность на высоком уровне.":      "",
 		"Условия ВУЦ он оценивает выше в личностном плане.":              "",
@@ -26,7 +26,7 @@ func TestRatedLevelOfTheConditions(t *testing.T) {
 		"Учебная деятельность — на низком уровне, условия недостаточны.": "",
 	} {
 		problems := strings.Join(ratedLevelProblems("activity", text), "; ")
-		if want == "" && problems != "" || want != "" && !strings.Contains(problems, "activity: уровень («"+want+"») у оценки условий") {
+		if want == "" && problems != "" || want != "" && !strings.Contains(problems, "activity: слово «"+want+"» об оценке условий или признаков среды запрещено") {
 			t.Errorf("%q: %q", text, problems)
 		}
 	}
@@ -38,7 +38,7 @@ func TestRatedLevelInBothAnswers(t *testing.T) {
 	payload := a.testPayloadFor("v3", a.TestPortrait(fixedTestSession(a, a.bank.Version)))
 	answer := goodTestAnswerV2(string(canonicalJSON(payload)))
 	answer["activity"] = "Студент включён в деятельность ВУЦ. Условия ВУЦ оцениваются высоко. Это сдерживает соборность."
-	if problems := strings.Join(checkTestAnswerV2(answer, payload), "; "); !strings.Contains(problems, "activity: уровень («высоко»)") {
+	if problems := strings.Join(checkTestAnswerV2(answer, payload), "; "); !strings.Contains(problems, "activity: слово «высоко»") {
 		t.Errorf("portrait: %s", problems)
 	}
 
@@ -47,7 +47,7 @@ func TestRatedLevelInBothAnswers(t *testing.T) {
 	platoon := f.service.platoonPayload(f.service.platoonPortrait("101", f.service.platoonStudents(db, f.teacherID, "101")))
 	conclusion := goodPlatoonAnswer(string(canonicalJSON(platoon)))
 	conclusion["activity"] = "Взвод включён в учебную деятельность. Взвод высоко оценивает организационные условия. Это сдерживает соборность."
-	if problems := strings.Join(checkPlatoonAnswer(conclusion, platoon), "; "); !strings.Contains(problems, "activity: уровень («высоко»)") {
+	if problems := strings.Join(checkPlatoonAnswer(conclusion, platoon), "; "); !strings.Contains(problems, "activity: слово «высоко»") {
 		t.Errorf("platoon: %s", problems)
 	}
 }

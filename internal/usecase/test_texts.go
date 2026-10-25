@@ -45,12 +45,14 @@ func ratedLevelProblems(field, text string) []string {
 		if m := levelAdverb.FindStringSubmatch(clause); m != nil && strings.Contains(clause, "оцен") {
 			found = m[2]
 		} else if m := ratingLevel.FindStringSubmatch(clause); m != nil {
-			found = m[1] + m[2]
+			found = m[1] + m[2] + "…"
 		} else if m := conditionLevel.FindStringSubmatch(clause); m != nil {
-			found = m[2]
+			found = m[2] + "…"
 		}
+		// The run of 25 October: told «пиши «оценивает выше»», the model kept
+		// «высоко оценивает» for five attempts; it is told the word itself.
 		if found != "" {
-			return []string{fmt.Sprintf("%s: уровень («%s») у оценки условий или признаков среды — пиши «оценивает выше», «выражено сильнее», «недостаточно»", field, found)}
+			return []string{fmt.Sprintf("%s: слово «%s» об оценке условий или признаков среды запрещено — пиши «выше всего оценивает …», «ниже оценивает …», «недостаточно»", field, found)}
 		}
 	}
 	return nil
