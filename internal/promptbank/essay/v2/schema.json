@@ -16,16 +16,17 @@
     "recommendations": {"type": "array", "description": "Рекомендации преподавателю, 2–4", "items": {"$ref": "#/$defs/paragraph"}},
     "teachers": {
       "type": "array",
-      "description": "Преподаватели, которых называет автор",
+      "description": "Преподаватели и командиры, которых называет автор",
       "items": {
         "type": "object",
         "properties": {
-          "who": {"type": "string"},
+          "position": {"type": "string", "enum": ["начальник ВУЦ", "заместитель начальника ВУЦ", "начальник кафедры", "начальник цикла", "куратор взвода", "преподаватель", "не указано"]},
+          "name": {"type": "string", "description": "Фамилия, как написал автор; без фамилии — имя и отчество; пусто, если не назван"},
           "kind": {"type": "string", "enum": ["благодарность", "проблема", "упоминание"]},
           "text": {"type": "string"},
           "quotes": {"type": "array", "items": {"$ref": "#/$defs/quote"}}
         },
-        "required": ["who", "kind", "text", "quotes"]
+        "required": ["position", "name", "kind", "text", "quotes"]
       }
     }
   },
