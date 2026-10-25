@@ -94,3 +94,42 @@ func TestPlatoonClimate(t *testing.T) {
 		t.Fatalf("platoon portrait: %+v", data.Climate)
 	}
 }
+
+// The demo platoons 102 and 104 rated their climate differently, every
+// student all the pairs; in 104 the others see one student better and one
+// worse than he sees himself, and some are under outer pressure.
+func TestDemoPlatoonsRateTheirClimate(t *testing.T) {
+	a := testApp(t)
+	db, err := a.demoDatabase()
+	if err != nil {
+		t.Fatal(err)
+	}
+	byPlatoon := map[string][]studentPortrait{}
+	adequacy, pressure := map[string]int{}, 0
+	for _, record := range db.Sessions {
+		s := record.Session
+		if !s.Methods || (s.Group != "102" && s.Group != "104") {
+			continue
+		}
+		data := a.TestPortrait(s)
+		if !data.Climate.Complete() || data.Climate.Equal {
+			t.Fatalf("%s: climate %+v", s.Participant, data.Climate)
+		}
+		byPlatoon[s.Group] = append(byPlatoon[s.Group], studentPortrait{methodsStudent(s), data})
+		if s.Group == "104" {
+			for _, c := range data.Components {
+				adequacy[c.Adequacy]++
+				if c.Pressure == "yes" {
+					pressure++
+				}
+			}
+		}
+	}
+	high, low := platoonClimate(byPlatoon["102"]), platoonClimate(byPlatoon["104"])
+	if high == nil || low == nil || *high.Sum <= *low.Sum || len(low.Rated) != len(demoPlatoon104) {
+		t.Fatalf("climates: %+v, %+v", high, low)
+	}
+	if adequacy["better"] == 0 || adequacy["worse"] == 0 || adequacy["same"] == 0 || pressure == 0 {
+		t.Fatalf("adequacy %v, pressure %d", adequacy, pressure)
+	}
+}

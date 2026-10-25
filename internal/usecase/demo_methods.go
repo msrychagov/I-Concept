@@ -41,17 +41,52 @@ func (a *Service) addDemoMethods(db *model.Database, full model.Profile, created
 		seen++
 		s := model.Session{ID: uuid(), StudentID: student.ID, AssignmentID: as.ID, Kind: "student", Participant: student.Name, Group: student.Platoon, Wave: as.Title, Profile: clone(p), BankVersion: a.bank.Version, Created: created, Updated: now.Add(-time.Duration(seen) * time.Hour).Format(time.RFC3339), Seed: uint32(profile.seed), Consent: true, ConsentAt: created, Activity: true, Motivation: true, Methods: true, Completed: true, Answers: map[string]int{}, Notes: map[string]string{}, Plan: []model.PlanItem{}, TeacherID: teacherID}
 		demoProfileAnswers(a.itemsFor(s), &s, profile.seed, profile.strength, profile.stories)
+		a.demoClimateAnswers(&s, profile.seed)
 		db.Sessions = append(db.Sessions, model.SessionRecord{TokenHash: hash(token()), Session: s})
 	}
 }
 
+// demoClimate are the ratings of the climate of a demo platoon (+3…−3) by
+// pair of the method of Lutoshkin, around which its students answer: platoon
+// 102 rates its climate higher; in platoon 104 the criticism, the common work,
+// the groups within and the unity in hard times are rated against.
+var demoClimate = map[string][]int{
+	"102": {3, 2, 2, 2, 1, 2, 2, 2, 1, 0, 0, 1, 2, 3},
+	"104": {1, 1, -1, 0, 0, -2, 1, -1, 0, 1, 0, -2, 0, 2},
+}
+
+// demoClimateAnswers rates the pairs of the climate around the ratings of the
+// student's platoon, a point up or down now and then.
+func (a *Service) demoClimateAnswers(s *model.Session, seed uint64) {
+	base, method := demoClimate[s.Group], a.bank.Climate
+	if method == nil || base == nil {
+		return
+	}
+	r := rand.New(rand.NewPCG(seed, seed+7))
+	for n, pair := range method.Pairs {
+		item, ok := a.item(pair.Item)
+		if !ok || n >= len(base) {
+			continue
+		}
+		score := max(-3, min(3, base[n]+[]int{-1, 0, 0, 1}[r.IntN(4)]))
+		for k, o := range item.Options {
+			if int(o.Score) == score {
+				s.Answers[pair.Item] = k
+			}
+		}
+	}
+}
+
 // demoPlatoonStudent is an invented student of platoon 104: the real and the
-// ideal self by group of the image (G1–G5), how often the best option of a
+// ideal self by group of the image (G1–G5), how the others see him in his
+// opinion against the real self (mirror), how often the best option of a
 // method is chosen, whether the emotional stability is low, the leading status
-// of identity in each block (a scale of the key) and what he wrote.
+// of identity in each block (a scale of the key) and what he wrote. What the
+// others expect is his ideal self.
 type demoPlatoonStudent struct {
 	name        string
 	real, ideal [5]int
+	mirror      int
 	varied      bool
 	strength    float64
 	lowEmotion  bool
@@ -64,25 +99,25 @@ type demoPlatoonStudent struct {
 // in every quality and low emotional stability (Вики/Тестирование/План портрета
 // test-v2.md, step 8). The students and their answers are invented.
 var demoPlatoon104 = []demoPlatoonStudent{
-	{name: "Морозов Кирилл Андреевич", real: [5]int{9, 9, 9, 9, 9}, ideal: [5]int{10, 10, 10, 10, 10}, strength: 0.85, military: "SF", civil: "SF", stories: map[string]string{
+	{name: "Морозов Кирилл Андреевич", real: [5]int{9, 9, 9, 9, 9}, ideal: [5]int{10, 10, 10, 10, 10}, mirror: -1, strength: 0.85, military: "SF", civil: "SF", stories: map[string]string{
 		"ACT_15": "Был на летних сборах, командовал отделением на полевом выходе.",
 		"ACT_18": "Составляю план подготовки к каждому занятию и разбираю ошибки после контрольных.",
 		"ACT_23": "Участвовал в подготовке военно-патриотической игры для школьников.",
 		"ACT_31": "Выступал за ВУЦ на соревнованиях по военно-прикладному многоборью.",
 		"ACT_38": "Помогал товарищам по взводу готовиться к зачёту по тактической подготовке.",
 	}},
-	{name: "Лебедев Глеб Сергеевич", real: [5]int{6, 5, 6, 6, 8}, ideal: [5]int{10, 10, 10, 10, 9}, strength: 0.5, military: "M", civil: "SF", stories: map[string]string{
+	{name: "Лебедев Глеб Сергеевич", real: [5]int{6, 5, 6, 6, 8}, ideal: [5]int{10, 10, 10, 10, 9}, mirror: 3, strength: 0.5, military: "M", civil: "SF", stories: map[string]string{
 		"ACT_14": "Сдал нормативы по физической подготовке на «хорошо».",
 		"ACT_24": "Участвовал в церемонии возложения цветов в День защитника Отечества.",
 	}},
-	{name: "Егоров Тимур Олегович", real: [5]int{5, 5, 6, 5, 5}, ideal: [5]int{6, 6, 7, 6, 6}, strength: 0.4, military: "NP", civil: "M", stories: map[string]string{
+	{name: "Егоров Тимур Олегович", real: [5]int{5, 5, 6, 5, 5}, ideal: [5]int{6, 6, 7, 6, 6}, mirror: -3, strength: 0.4, military: "NP", civil: "M", stories: map[string]string{
 		"ACT_30": "Был на экскурсии в музее военной истории вместе со взводом.",
 	}},
-	{name: "Павлов Роман Игоревич", real: [5]int{8, 7, 7, 8, 7}, ideal: [5]int{7, 9, 9, 7, 9}, strength: 0.6, military: "NV", civil: "SF", stories: map[string]string{
+	{name: "Павлов Роман Игоревич", real: [5]int{8, 7, 7, 8, 7}, ideal: [5]int{7, 9, 9, 7, 9}, mirror: -1, strength: 0.6, military: "NV", civil: "SF", stories: map[string]string{
 		"ACT_20": "Распорядок соблюдаю, опозданий на занятия не было.",
 		"ACT_34": "Выступал на концерте ВУЦ ко Дню Победы.",
 	}},
-	{name: "Козлов Даниил Витальевич", real: [5]int{7, 6, 8, 6, 5}, ideal: [5]int{10, 10, 10, 10, 10}, varied: true, strength: 0.55, lowEmotion: true, military: "M", civil: "NP", stories: map[string]string{
+	{name: "Козлов Даниил Витальевич", real: [5]int{7, 6, 8, 6, 5}, ideal: [5]int{10, 10, 10, 10, 10}, mirror: -1, varied: true, strength: 0.55, lowEmotion: true, military: "M", civil: "NP", stories: map[string]string{
 		"ACT_29": "Был на встрече с ветеранами боевых действий.",
 		"ACT_37": "Получил благодарность за помощь в организации дня открытых дверей ВУЦ.",
 	}},
@@ -120,7 +155,7 @@ func (a *Service) addDemoPlatoon(db *model.Database, full model.Profile, created
 				if student.varied {
 					real = max(0, min(10, real+k%3-1))
 				}
-				s.Answers[item.ID] = map[string]int{"R": real, "I": student.ideal[g], "Z": max(0, real-1), "N": student.ideal[g]}[kind]
+				s.Answers[item.ID] = map[string]int{"R": real, "I": student.ideal[g], "Z": max(0, min(10, real+student.mirror)), "N": student.ideal[g]}[kind]
 			case item.Module == "U" && student.lowEmotion:
 				worst := 0
 				for k, o := range item.Options {
@@ -142,6 +177,7 @@ func (a *Service) addDemoPlatoon(db *model.Database, full model.Profile, created
 				}
 			}
 		}
+		a.demoClimateAnswers(&s, seed)
 		db.Sessions = append(db.Sessions, model.SessionRecord{TokenHash: hash(token()), Session: s})
 	}
 }
