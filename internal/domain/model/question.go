@@ -14,6 +14,24 @@ type Bank struct {
 	// Identity is the method of the statuses of professional identity; its
 	// options add points to several scales, so it is not one of Methods.
 	Identity *IdentityMethod `json:"identity,omitempty"`
+	// Climate is the express method of the climate of the platoon; its pairs
+	// have no level, only the ratings and their sum.
+	Climate *ClimateMethod `json:"climate,omitempty"`
+}
+
+// ClimateMethod is the express method of the social and psychological climate
+// of a collective by А. Н. Лутошкин, the collective being the student's
+// platoon: pairs of opposite statements rated from +3 to −3 (Option.Score).
+type ClimateMethod struct {
+	Method string        `json:"method"`
+	Pairs  []ClimatePair `json:"pairs"`
+}
+
+// ClimatePair is a question of the method and the side of the climate it is
+// about, named by its positive pole.
+type ClimatePair struct {
+	Item string `json:"item"`
+	Side string `json:"side"`
 }
 
 // IdentityMethod is the method of the statuses of professional identity
@@ -98,6 +116,9 @@ type Option struct {
 }
 
 type Item struct {
+	// Opposite is the second statement of a question of type "pair"; Text is
+	// the first one.
+	Opposite     string   `json:"opposite,omitempty"`
 	Hint         string   `json:"hint,omitempty"`
 	Topic        string   `json:"topic,omitempty"`
 	ResponseOnly bool     `json:"responseOnly,omitempty"`

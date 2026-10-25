@@ -71,6 +71,8 @@ window.testPortrait = (() => {
     const SIGNATURE = 'По результатам тестирования: самооценка студента и методики';
     const PLATOON_SIGNATURE = 'По результатам тестирования взвода: самооценка студентов и методики';
     const number = v => v == null ? '—' : String(v).replace('.', ',');
+    // A rating of the climate, from +3 to −3, with its sign.
+    const signed = v => v == null ? '—' : v > 0 ? '+' + number(v) : v < 0 ? '−' + number(-v) : '0';
     const capital = text => text ? text[0].toUpperCase() + text.slice(1) : '';
 
     function levels(m, esc) {
@@ -82,8 +84,11 @@ window.testPortrait = (() => {
         // The statuses of professional identity have ranges, not levels: a
         // marked status is not better or worse, so the ranges are not coloured.
         const identity = (m.identity || []).map(p => `<tr class="test-portrait-group"><th colspan="3">Профессиональная идентичность — ${esc(p.name.toLowerCase())}<small>${esc(p.method)}</small></th></tr>${p.statuses.map(x => `<tr><td>${esc(capital(x.name))}</td><td>${x.score == null ? '—' : `${x.score} <small>из 0–${x.max}</small>`}</td><td><span class="potential-level identity-range level-${x.range ? 'initial' : 'none'}">${esc(x.range || 'не определён')}</span></td></tr>`).join('')}<tr><td colspan="3">Ведущий статус: <b>${esc(p.leadingText)}</b></td></tr>`).join('');
-        return `<div class="table-scroll"><table class="test-portrait-levels"><thead><tr><th>Показатель</th><th>Баллы</th><th>Уровень</th></tr></thead><tbody>${methods}<tr class="test-portrait-group"><th colspan="3">Виды деятельности (по анкете деятельностного компонента)</th></tr>${kinds}${identity}</tbody></table></div>
-   <p class="muted">Уровни посчитаны программой по ключам методик из таблицы 8 руководителя${identity ? ', выраженность статусов профессиональной идентичности — по ключу методики А. А. Азбель, составленному на школьниках' : ''}; это самоотчёт студента, а не установленное качество личности.</p>`;
+        const c = m.climate;
+        const climate = c ? `<tr class="test-portrait-group"><th colspan="3">Климат взвода — по оценке самого студента<small>${esc(c.method)}</small></th></tr><tr><td>Сумма по ${c.total} парам</td><td>${c.sum == null ? `— <small>отвечено ${c.answered} из ${c.total}</small>` : `${signed(c.sum)} <small class="climate-range">из ${signed(c.min)}…${signed(c.max)}</small>`}</td><td><span class="muted">уровней нет</span></td></tr>${c.sum == null ? '' : `<tr><td colspan="3">${c.equal ? 'Все стороны климата студент оценил одинаково.' : `Сильнее всего: ${esc(c.strongest.join('; '))}.<br>Слабее всего: ${esc(c.weakest.join('; '))}.`}</td></tr>`}` : '';
+        return `<div class="table-scroll"><table class="test-portrait-levels"><thead><tr><th>Показатель</th><th>Баллы</th><th>Уровень</th></tr></thead><tbody>${methods}<tr class="test-portrait-group"><th colspan="3">Виды деятельности (по анкете деятельностного компонента)</th></tr>${kinds}${identity}${climate}</tbody></table></div>
+   ${c ? `<details class="climate-pairs"><summary>Оценки климата взвода по парам</summary><div class="table-scroll"><table class="test-portrait-levels"><thead><tr><th>Сторона климата</th><th>Оценка</th></tr></thead><tbody>${c.pairs.map(p => `<tr><td>${esc(capital(p.side))}<small>${esc(p.answer || 'нет ответа')}</small></td><td>${signed(p.score)}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+   <p class="muted">Уровни посчитаны программой по ключам методик из таблицы 8 руководителя${identity ? ', выраженность статусов профессиональной идентичности — по ключу методики А. А. Азбель, составленному на школьниках' : ''}; это самоотчёт студента, а не установленное качество личности.${c ? ' Климат взвода — оценки от +3 до −3 по парам противоположных утверждений; уровней климата нет: единого ключа методики не принято.' : ''}</p>`;
     }
 
     // The groups of the image of the defender: the real and the ideal self of
@@ -91,11 +96,23 @@ window.testPortrait = (() => {
     // program found, and the congruence of the images.
     function image(m, esc) {
         if (!(m.defender || []).length) return '';
-        const rows = m.defender.map(g => `<tr><td>${esc(g.name)}<small>Я-реальное ${number(g.real)} · Я-идеальное ${number(g.ideal)} · до образа ${number(g.distance)}</small></td><td>${esc(g.situationText)}${g.note ? `<small>${esc(g.note)}</small>` : ''}</td></tr>`).join('');
+        const others = g => (g.norm == null ? '' : ` · чего ждут другие ${number(g.norm)}`) + (g.mirror == null ? '' : ` · как видят другие ${number(g.mirror)}`);
+        const rows = m.defender.map(g => `<tr><td>${esc(g.name)}<small>Я-реальное ${number(g.real)} · Я-идеальное ${number(g.ideal)} · до образа ${number(g.distance)}${esc(others(g))}</small></td><td>${esc(g.situationText)}${danilova(g, esc)}${g.note ? `<small>${esc(g.note)}</small>` : ''}</td></tr>`).join('');
         const c = m.congruence;
+        const marked = (m.components || []).filter(x => x.pressure === 'yes' || x.adequacy === 'better' || x.adequacy === 'worse');
+        const counted = (m.components || []).some(x => x.pressure || x.adequacy) || m.defender.some(g => g.pressure || g.adequacy);
+        const components = marked.length ? `<p>По компонентам Я-концепции:</p><ul class="danilova-components">${marked.map(x => `<li>${esc(capital(x.name))}: ${esc([x.pressure === 'yes' ? 'внешнее давление' : '', x.adequacy === 'better' || x.adequacy === 'worse' ? 'студент ' + x.adequacyText : ''].filter(Boolean).join('; '))}</li>`).join('')}</ul>` : '';
         return `<h4>Образ защитника Отечества</h4><div class="table-scroll"><table class="test-portrait-levels test-portrait-image"><thead><tr><th>Группа качеств</th><th>Ситуация</th></tr></thead><tbody>${rows}</tbody></table></div>
-   ${c ? `<p>Согласованность Я-реального и Я-идеального: ${esc(c.text.replace(/\.$/, ''))}${c.value == null ? '' : ` <span class="muted">(коэффициент ${number(c.value)})</span>`}.</p>` : ''}
-   <p class="muted">Образ — верх шкалы 0–10; ситуация — по расстоянию от Я-идеального до образа и от Я-реального до Я-идеального.</p>`;
+   ${c ? `<p>Согласованность Я-реального и Я-идеального: ${esc(c.text.replace(/\.$/, ''))}${c.value == null ? '' : ` <span class="muted">(коэффициент ${number(c.value)})</span>`}.</p>` : ''}${components}
+   <p class="muted">Образ — верх шкалы 0–10; ситуация — по расстоянию от Я-идеального до образа и от Я-реального до Я-идеального.${counted ? ' Внешнее давление и взгляд других — по правилам О. Ю. Даниловой: «чего ждут другие» или «как видят другие» отличается от Я-реального на 3 балла и больше; это мнение самого студента, а не оценка товарищей.' : ''}</p>`;
+    }
+
+    // The rules of Danilova in a group, only when the program marked them.
+    function danilova(g, esc) {
+        const lines = [];
+        if (g.pressure === 'yes') lines.push('Внешнее давление: ' + g.pressureText);
+        if (g.adequacy === 'better' || g.adequacy === 'worse') lines.push('Самооценка: студент ' + g.adequacyText);
+        return lines.map(line => `<small>${esc(line)}</small>`).join('');
     }
 
     function tables(m, esc) {
@@ -177,6 +194,19 @@ window.testPortrait = (() => {
    ${list ? `<div class="potential-students"><h3>${esc(group.name)} — ${esc(list.text.toLowerCase())}: ${list.students.length}</h3><ul>${list.students.map(s => `<li><button class="text-button" data-session="${esc(s.sessionId)}">${esc(s.name)}</button></li>`).join('')}</ul></div>` : ''}`;
     }
 
+    // The climate of the platoon by the students who answered all the pairs:
+    // the mean sum and the mean of every pair, the sides the program found
+    // strongest and weakest; no level.
+    function climate(platoon, esc) {
+        const c = platoon.climate;
+        if (!c) return '';
+        // The marks are not coloured: the sides are not levels.
+        const mark = side => c.strongest.includes(side) ? ' <span class="muted">· сильнее всего</span>' : c.weakest.includes(side) ? ' <span class="muted">· слабее всего</span>' : '';
+        return `<h4>Климат взвода</h4><p class="muted">${esc(c.method)}. Оценили все пары: ${c.rated.length} — ${esc(c.rated.map(s => s.name).join(', '))}. Средняя сумма: <b>${signed(c.sum)}</b> из ${signed(c.min)}…${signed(c.max)}. Уровней климата нет.</p>
+   <div class="table-scroll"><table class="potential-summary climate-summary"><thead><tr><th>Сторона климата</th><th>Средняя оценка</th></tr></thead><tbody>${c.pairs.map(p => `<tr><th scope="row">${esc(capital(p.side))}${mark(p.side)}</th><td>${signed(p.mean)}</td></tr>`).join('')}</tbody></table></div>
+   ${c.equal ? '<p class="muted">Все стороны климата оценены одинаково.</p>' : ''}`;
+    }
+
     // The conclusion by a platoon: made by the button of three students at
     // least; above the table of levels. Returns the function that stops it.
     function mountPlatoon({element, api, esc, group, platoon, open}) {
@@ -189,7 +219,7 @@ window.testPortrait = (() => {
         let selected = null;
         const groups = element.querySelector('[data-platoon-groups]');
         const drawGroups = () => {
-            groups.innerHTML = platoon.students ? situations(platoon, esc, selected) : '';
+            groups.innerHTML = platoon.students ? situations(platoon, esc, selected) + climate(platoon, esc) : '';
             groups.querySelectorAll('[data-group]').forEach(b => b.onclick = () => {
                 const next = {group: b.dataset.group, situation: b.dataset.situation};
                 selected = selected && selected.group === next.group && selected.situation === next.situation ? null : next;

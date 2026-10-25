@@ -34,6 +34,9 @@ type Criterion struct {
 	Note     string   `json:"note,omitempty"`
 	Data     []string `json:"data"`
 	Texts    bool     `json:"texts,omitempty"`
+	// Climate marks the criterion the climate of the platoon gives data to
+	// from test/v4 and test-platoon/v2 on.
+	Climate bool `json:"climate,omitempty"`
 }
 
 // EnvironmentSign is one of the six signs of positive activity and
@@ -44,6 +47,9 @@ type EnvironmentSign struct {
 	Description string   `json:"description"`
 	Note        string   `json:"note,omitempty"`
 	Data        []string `json:"data"`
+	// Climate marks the sign the student's rating of the climate of his
+	// platoon goes to from test/v4 on.
+	Climate bool `json:"climate,omitempty"`
 }
 
 // DefenderGroupDef is one group of the image. Qualities are the indicators
@@ -74,11 +80,14 @@ type RecommendationType struct {
 	Name string `json:"name"`
 }
 
-// Direction is one direction of the catalogue of recommendations.
+// Direction is one direction of the catalogue of recommendations. Edition is
+// the edition of the catalogue it came in, zero for the first: an instruction
+// gets the catalogue of its own edition, so the input of the older ones stays.
 type Direction struct {
-	ID     string   `json:"id"`
-	Name   string   `json:"name"`
-	Type   string   `json:"type"`
-	Groups []string `json:"groups"`
-	Source string   `json:"source"`
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Type    string   `json:"type"`
+	Groups  []string `json:"groups"`
+	Source  string   `json:"source"`
+	Edition int      `json:"edition,omitempty"`
 }

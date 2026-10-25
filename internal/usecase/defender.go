@@ -72,7 +72,10 @@ type DefenderKind struct {
 // module A over the qualities answered in both images; Distance is 10 − Ideal,
 // Gap is Ideal − Real. All are nil when no quality of the group is answered:
 // then there is no situation. Statements is the mean of module B (1–5) over the
-// qualities, a description without a level.
+// qualities, a description without a level. Norm and Mirror are the means of
+// the normative and the mirror self over the qualities answered in it and in
+// the real self, with the rules of Danilova by them (Pressure, Adequacy);
+// empty without such qualities.
 type DefenderGroup struct {
 	ID            string           `json:"id"`
 	Name          string           `json:"name"`
@@ -81,6 +84,12 @@ type DefenderGroup struct {
 	Ideal         *float64         `json:"ideal"`
 	Distance      *float64         `json:"distance"`
 	Gap           *float64         `json:"gap"`
+	Norm          *float64         `json:"norm,omitempty"`
+	Mirror        *float64         `json:"mirror,omitempty"`
+	Pressure      string           `json:"pressure,omitempty"`
+	PressureText  string           `json:"pressureText,omitempty"`
+	Adequacy      string           `json:"adequacy,omitempty"`
+	AdequacyText  string           `json:"adequacyText,omitempty"`
 	Situation     string           `json:"situation"`
 	SituationText string           `json:"situationText"`
 	Type          string           `json:"type"`
@@ -157,6 +166,29 @@ func defenderGroups(image model.DefenderImage, data *TestPortraitData, score fun
 			g.TypeText = types[g.Type]
 		}
 		g.SituationText = situationText[g.Situation]
+		// The rules of Danilova, each over the qualities answered in the real
+		// self and in the image it needs.
+		against := func(get func(ImagePair) *float64) (real, other *float64) {
+			reals, others := []float64{}, []float64{}
+			for _, q := range def.Qualities {
+				if pair, ok := pairs[q]; ok && pair.Real != nil && get(pair) != nil {
+					reals, others = append(reals, *pair.Real), append(others, *get(pair))
+				}
+			}
+			if len(reals) == 0 {
+				return nil, nil
+			}
+			r, o := round1(meanOf(reals)), round1(meanOf(others))
+			return &r, &o
+		}
+		if real, norm := against(func(p ImagePair) *float64 { return p.Norm }); norm != nil {
+			g.Norm, g.Pressure = norm, pressureOf(*real, *norm)
+			g.PressureText = pressureTexts[g.Pressure]
+		}
+		if real, mirror := against(func(p ImagePair) *float64 { return p.Mirror }); mirror != nil {
+			g.Mirror, g.Adequacy = mirror, adequacyOf(*real, *mirror)
+			g.AdequacyText = adequacyTexts[g.Adequacy]
+		}
 		if len(statements) > 0 {
 			v := math.Round(meanOf(statements)*100) / 100
 			g.Statements = &v

@@ -13,7 +13,7 @@ import (
 // with one key: every option gives one or two points to one of four scales,
 // every scale gets at most 25, and its five ranges start at zero.
 func TestPilot25HasTheIdentityMethod(t *testing.T) {
-	bank, err := Load()
+	bank, err := load25()
 	if err != nil {
 		t.Fatal(err)
 	}

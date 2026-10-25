@@ -6,7 +6,7 @@ import (
 	"vucdiagnostic/internal/domain/model"
 )
 
-//go:embed bank.json pilot-2.0.json psychological.json activity.json methods.json identity.json defender.json environment.json
+//go:embed bank.json pilot-2.0.json psychological.json activity.json methods.json identity.json climate.json defender.json environment.json
 var files embed.FS
 
 // Defender returns the tables of the portrait by the test: the image of the
@@ -38,9 +38,37 @@ func Defender() (model.DefenderImage, error) {
 	return image, nil
 }
 
-// Load returns pilot-2.5: pilot-2.4 and the method of the statuses of
-// professional identity by А. А. Азбель in two blocks (identity.json).
+// Load returns pilot-2.6: pilot-2.5 and the express method of the climate of
+// the platoon by А. Н. Лутошкин (climate.json; Вики/Тестирование/Лутошкин —
+// адаптация для ВУЦ.md, approved on 25 October 2026).
 func Load() (model.Bank, error) {
+	bank, err := load25()
+	if err != nil {
+		return bank, err
+	}
+	data, err := files.ReadFile("climate.json")
+	if err != nil {
+		return bank, err
+	}
+	var addition model.Bank
+	if err := json.Unmarshal(data, &addition); err != nil {
+		return bank, err
+	}
+	bank.Version = addition.Version
+	for key, value := range addition.Modules {
+		bank.Modules[key] = value
+	}
+	for key, value := range addition.Instructions {
+		bank.Instructions[key] = value
+	}
+	bank.Items = append(bank.Items, addition.Items...)
+	bank.Climate = addition.Climate
+	return bank, nil
+}
+
+// load25 returns pilot-2.5: pilot-2.4 and the method of the statuses of
+// professional identity by А. А. Азбель in two blocks (identity.json).
+func load25() (model.Bank, error) {
 	bank, err := load24()
 	if err != nil {
 		return bank, err
@@ -170,5 +198,9 @@ func Previous() ([]model.Bank, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []model.Bank{bank, recent, previous, activity, methods}, nil
+	identity, err := load25()
+	if err != nil {
+		return nil, err
+	}
+	return []model.Bank{bank, recent, previous, activity, methods, identity}, nil
 }

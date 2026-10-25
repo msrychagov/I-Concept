@@ -36,6 +36,15 @@ func splitPlatoon(s Source) (teacherID, group string, ok bool) {
 }
 
 func (a *Service) platoonTask(prompt promptbank.Prompt) portraitTask {
+	// The conclusion by v1 is shown while the one by v2 is made: the input of
+	// v2 has the climate and the second edition of the catalogue.
+	var earlier func(a *Service, db model.Database, s Source) []*object
+	if climateInput(testPlatoonTask, prompt.Version) {
+		earlier = func(a *Service, db model.Database, s Source) []*object {
+			teacherID, group, _ := splitPlatoon(s)
+			return []*object{a.platoonPayloadFor("v1", a.platoonPortrait(group, a.platoonStudents(db, teacherID, group)))}
+		}
+	}
 	return portraitTask{
 		ID: testPlatoonTask, Version: prompt.Version, Prompt: prompt,
 		MaxTokens: 4000, Attempts: 5, Manual: true,
@@ -45,8 +54,9 @@ func (a *Service) platoonTask(prompt promptbank.Prompt) portraitTask {
 		},
 		Payload: func(a *Service, db model.Database, s Source) (*object, error) {
 			teacherID, group, _ := splitPlatoon(s)
-			return a.platoonPayload(a.platoonPortrait(group, a.platoonStudents(db, teacherID, group))), nil
+			return a.platoonPayloadFor(prompt.Version, a.platoonPortrait(group, a.platoonStudents(db, teacherID, group))), nil
 		},
+		Earlier: earlier,
 		Stamp: func(a *Service, db model.Database, s Source) (string, []string) {
 			teacherID, group, _ := splitPlatoon(s)
 			ids := []string{}
@@ -145,7 +155,55 @@ func platoonPointList(points []PlatoonPoint) any {
 	return list
 }
 
-// platoonPayload is the input of the model by a platoon: numbers only, no names.
+// The texts of the climate in the input of test-platoon/v2 (Инструкция по взводу v2.md).
+const (
+	platoonClimateNote     = "по оценкам самих студентов взвода; уровня климата нет"
+	platoonClimateEqual    = "все стороны климата оценены одинаково"
+	platoonClimateSee      = "климат взвода — в «климат_взвода»"
+	platoonClimateCoverage = "по взводу"
+	platoonClimateOwnNote  = "по оценкам самих студентов"
+)
+
+// platoonPayloadFor builds the input of an instruction version. The input of
+// v1 stays as it was: the conclusions made are found by its fingerprint. From
+// v2 on it has the second edition of the catalogue and, when three students
+// at least answered all the pairs of the method, the climate of the platoon
+// (Д5, Д6).
+func (a *Service) platoonPayloadFor(version string, data PlatoonPortraitData) *object {
+	payload := a.platoonPayload(data)
+	if !climateInput(testPlatoonTask, version) {
+		return payload
+	}
+	numbers := map[string]int{}
+	for n, g := range a.defender.Groups {
+		numbers[g.ID] = n + 1
+	}
+	payload.set("каталог_рекомендаций", a.catalogueList(numbers, catalogueEdition(testPlatoonTask, version)))
+	climate := data.Climate
+	if climate == nil {
+		return payload
+	}
+	o := newObject()
+	o.set("оценили", len(climate.Rated))
+	if climate.Equal {
+		o.set("пометка", platoonClimateNote+"; "+platoonClimateEqual)
+	} else {
+		o.set("сильнее_всего", anyList(climate.Strongest))
+		o.set("слабее_всего", anyList(climate.Weakest))
+		o.set("пометка", platoonClimateNote)
+	}
+	payload.insertAfter("признаки_среды", "климат_взвода", o)
+	for n, sign := range objectList(payload.values["признаки_среды"]) {
+		if n < len(a.defender.Signs) && a.defender.Signs[n].Climate {
+			sign.set("пометка", platoonClimateSee)
+		}
+	}
+	a.climateCriterion(payload, platoonClimateCoverage, platoonClimateOwnNote, platoonClimateSee)
+	return payload
+}
+
+// platoonPayload is the input of the model by a platoon of test-platoon/v1:
+// numbers only, no names.
 func (a *Service) platoonPayload(data PlatoonPortraitData) *object {
 	payload := newObject()
 	payload.set("студентов", data.Students)
@@ -302,7 +360,7 @@ func (a *Service) platoonPayload(data PlatoonPortraitData) *object {
 		signs = append(signs, o)
 	}
 	payload.set("признаки_среды", signs)
-	payload.set("каталог_рекомендаций", a.catalogueList(numbers))
+	payload.set("каталог_рекомендаций", a.catalogueList(numbers, 1))
 	return payload
 }
 
@@ -321,7 +379,36 @@ func climateProblems(field, text string) []string {
 	return nil
 }
 
-// checkPlatoonAnswer returns what is wrong with an answer to test-platoon/v1.
+// climateLevel is a word of a level next to the climate: the climate has no
+// level (decision Д5); «благоприятный» and «неблагоприятный» name the levels
+// of the key of Lutoshkin (approved by the user on 25 October 2026).
+var climateLevel = regexp.MustCompile(`высок|средн|низк|уровн|благоприят`)
+
+// sentenceBreak splits a text into sentences for the check of the climate.
+var sentenceBreak = regexp.MustCompile(`[.!?;]`)
+
+// climateReach is how many letters around the word «климат» the check looks.
+const climateReach = 60
+
+func climateLevelProblems(field, text string) []string {
+	for _, sentence := range sentenceBreak.Split(lowerText(text), -1) {
+		letters := []rune(sentence)
+		word := []rune("климат")
+		for at := 0; at+len(word) <= len(letters); at++ {
+			if string(letters[at:at+len(word)]) != string(word) {
+				continue
+			}
+			around := string(letters[max(0, at-climateReach):min(len(letters), at+len(word)+climateReach)])
+			if found := climateLevel.FindString(around); found != "" {
+				return []string{fmt.Sprintf("%s: у климата нет уровня («%s…») — описывай климат сторонами, которые выражены сильнее и слабее, без «высокий», «низкий» и «благоприятный»", field, found)}
+			}
+		}
+	}
+	return nil
+}
+
+// checkPlatoonAnswer returns what is wrong with an answer to test-platoon/v1
+// and v2: v2 differs only by the input.
 func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 	problems := []string{}
 	texts := map[string]string{}
@@ -381,8 +468,14 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 		problems = append(problems, fieldProblems(field, text)...)
 		texts[field] = text
 	}
+	// The climate is measured when the input has it (test-platoon/v2 and a
+	// platoon that took the method); it has no level either way.
+	_, measured := payload.values["климат_взвода"]
 	for _, key := range sortedTextKeys(texts) {
-		problems = append(problems, climateProblems(key, texts[key])...)
+		if !measured {
+			problems = append(problems, climateProblems(key, texts[key])...)
+		}
+		problems = append(problems, climateLevelProblems(key, texts[key])...)
 	}
 	problems = append(problems, unfoundStateProblems(texts, payload)...)
 	total, _ := payload.values["студентов"].(int)

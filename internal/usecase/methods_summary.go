@@ -52,6 +52,9 @@ type PlatoonView struct {
 	Minimum   int                    `json:"minimum"`
 	Defender  []PlatoonDefenderGroup `json:"defender"`
 	Catalogue []model.Direction      `json:"catalogue"`
+	// Climate is the climate of the platoon by the method of Lutoshkin; nil
+	// when fewer than three students answered all its pairs.
+	Climate *PlatoonClimate `json:"climate,omitempty"`
 }
 
 // latestMethodSessions are the latest finished sessions with the methods of
@@ -164,7 +167,7 @@ func (a *Service) MethodsSummaryFor(teacherID, group string) (MethodsSummary, er
 	summary.Rows = a.levelRows(portraits)
 	if group != "" {
 		platoon := a.platoonPortrait(group, portraits)
-		summary.Platoon = &PlatoonView{Students: platoon.Students, Minimum: platoonMinimum, Defender: platoon.Defender, Catalogue: a.defender.Directions}
+		summary.Platoon = &PlatoonView{Students: platoon.Students, Minimum: platoonMinimum, Defender: platoon.Defender, Catalogue: a.defender.Directions, Climate: platoon.Climate}
 	}
 	slices.Sort(summary.Groups)
 	return summary, nil

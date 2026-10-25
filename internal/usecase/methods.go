@@ -15,8 +15,9 @@ import (
 
 // methodModules hold the questions of the methods; they are asked only when
 // the assignment includes the methods. AZM and AZC are the two blocks of the
-// method of professional identity (identity.go).
-var methodModules = map[string]bool{"W": true, "U": true, "X": true, "K": true, "AZM": true, "AZC": true}
+// method of professional identity (identity.go), CL the climate of the
+// platoon (climate.go).
+var methodModules = map[string]bool{"W": true, "U": true, "X": true, "K": true, "AZM": true, "AZC": true, "CL": true}
 
 func methodModule(module string) bool { return methodModules[module] }
 
@@ -81,17 +82,23 @@ type KindLevel struct {
 
 // ImagePair compares the real and the ideal self of one quality or component
 // on the scale 0–10, by the norms of Dembo — Rubinstein (Prikhozhan) ×10.
+// Pressure and Adequacy are the rules of О. Ю. Данилова (Д1, Д2): empty when
+// there are no answers of the image they need.
 type ImagePair struct {
-	ID        string   `json:"id"`
-	Name      string   `json:"name"`
-	Component string   `json:"component"`
-	Real      *float64 `json:"real"`
-	Ideal     *float64 `json:"ideal"`
-	Mirror    *float64 `json:"mirror,omitempty"`
-	Norm      *float64 `json:"norm,omitempty"`
-	Gap       *float64 `json:"gap"`
-	GapText   string   `json:"gapText"`
-	SelfText  string   `json:"selfText"`
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	Component    string   `json:"component"`
+	Real         *float64 `json:"real"`
+	Ideal        *float64 `json:"ideal"`
+	Mirror       *float64 `json:"mirror,omitempty"`
+	Norm         *float64 `json:"norm,omitempty"`
+	Gap          *float64 `json:"gap"`
+	GapText      string   `json:"gapText"`
+	SelfText     string   `json:"selfText"`
+	Pressure     string   `json:"pressure,omitempty"`
+	PressureText string   `json:"pressureText,omitempty"`
+	Adequacy     string   `json:"adequacy,omitempty"`
+	AdequacyText string   `json:"adequacyText,omitempty"`
 }
 
 type DescriptiveGroup struct {
@@ -123,6 +130,9 @@ type TestPortraitData struct {
 	Congruence *Congruence     `json:"congruence,omitempty"`
 	// Identity is the professional identity by block, when the method was given.
 	Identity []IdentityProfile `json:"identity,omitempty"`
+	// Climate is the student's rating of the climate of his platoon, when the
+	// method was given (climate.go).
+	Climate *Climate `json:"climate,omitempty"`
 	// Criteria are the criteria of the first chapter by kind of activity and
 	// EnvironmentSigns the six signs of positive activity and environment,
 	// each with its data (environment.go).
@@ -252,6 +262,40 @@ func gapText(gap float64) string {
 	return "выраженное расхождение"
 }
 
+// The rules of О. Ю. Данилова (Вики/Тестирование/План П2, П5 и климат по
+// Лутошкину.md, decisions Д1 and Д2, approved on 25 October 2026): what the
+// others expect (the normative self) minus the real self, 3 and more, is an
+// outer pressure; how the others see the student in his opinion (the mirror
+// self) minus the real self, 3 and more or −3 and less, is a self-esteem that
+// differs from it. Rounded as in gapText; the threshold is Danilova's.
+var pressureTexts = map[string]string{
+	"yes": "студент считает, что окружение ждёт от него заметно большего",
+	"no":  "нет",
+}
+
+var adequacyTexts = map[string]string{
+	"better": "считает, что другие видят его лучше, чем он себя",
+	"worse":  "считает, что другие видят его хуже, чем он себя",
+	"same":   "совпадает",
+}
+
+func pressureOf(real, norm float64) string {
+	if math.Round(round1(norm-real)) >= 3 {
+		return "yes"
+	}
+	return "no"
+}
+
+func adequacyOf(real, mirror float64) string {
+	switch d := math.Round(round1(mirror - real)); {
+	case d >= 3:
+		return "better"
+	case d <= -3:
+		return "worse"
+	}
+	return "same"
+}
+
 func imagePair(id, name, component string, values map[string][]float64) ImagePair {
 	pair := ImagePair{ID: id, Name: name, Component: component}
 	mean := func(xs []float64) *float64 {
@@ -271,6 +315,14 @@ func imagePair(id, name, component string, values map[string][]float64) ImagePai
 		pair.Gap = &gap
 		pair.GapText = gapText(gap)
 		pair.SelfText = selfText(*pair.Real)
+	}
+	if pair.Real != nil && pair.Norm != nil {
+		pair.Pressure = pressureOf(*pair.Real, *pair.Norm)
+		pair.PressureText = pressureTexts[pair.Pressure]
+	}
+	if pair.Real != nil && pair.Mirror != nil {
+		pair.Adequacy = adequacyOf(*pair.Real, *pair.Mirror)
+		pair.AdequacyText = adequacyTexts[pair.Adequacy]
 	}
 	return pair
 }
@@ -382,6 +434,7 @@ func (a *Service) TestPortrait(s model.Session) *TestPortraitData {
 	data.Defender = defenderGroups(a.defender, data, indicatorScore)
 	data.Congruence = congruence(data.Images)
 	data.Identity = a.identityProfiles(engine, s)
+	data.Climate = a.climate(engine, s)
 	data.Criteria, data.EnvironmentSigns = environmentData(a.defender, engine, s, data, indicatorScore)
 	data.Catalogue = a.defender.Directions
 	return data

@@ -254,3 +254,40 @@ func TestCriteriaDataComeFromTheSession(t *testing.T) {
 		}
 	}
 }
+
+// keptInput compares an input with its file in testdata; with -update the
+// file is rewritten. The stored portraits are found by the fingerprint of
+// their input, so the input of an instruction already used must not change.
+func keptInput(t *testing.T, name string, got []byte) {
+	t.Helper()
+	path := filepath.Join("testdata", "test_input", name)
+	if *update {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, got, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("the input in %s changed", name)
+	}
+}
+
+// The input of v2 and v3 (the same) must not change either: a session of
+// pilot-2.5 and one of the current bank with the same answers give it.
+func TestTestPayloadV3IsKept(t *testing.T) {
+	a := testApp(t)
+	for _, version := range []string{"pilot-2.5", a.bank.Version} {
+		data := a.TestPortrait(fixedTestSession(a, version))
+		if string(canonicalJSON(a.testPayloadFor("v2", data))) != string(canonicalJSON(a.testPayloadFor("v3", data))) {
+			t.Fatalf("%s: the inputs of v2 and v3 differ", version)
+		}
+		keptInput(t, "v3.json", indentedJSON(a.testPayloadFor("v3", data)))
+	}
+}
