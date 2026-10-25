@@ -563,6 +563,12 @@
     width: 100%
 }
 
+/* The climate of the platoon has two columns: it fits a phone without scrolling. */
+.table-scroll table.climate-summary {
+    min-width: 0;
+    width: 100%
+}
+
 .test-portrait-levels td:first-child {
     hyphens: auto;
     overflow-wrap: break-word

@@ -802,6 +802,10 @@ tbody tr:last-child td {
     text-transform: uppercase
 }
 
+.climate-range {
+    white-space: nowrap
+}
+
 .answer-options {
     display: grid;
     gap: .65rem;
