@@ -367,13 +367,7 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 	}
 
 	problems = append(problems, recommendationProblems(output, payload, 3, 5, nil)...)
-	recommendations, _ := output["recommendations"].([]any)
-	for n, item := range recommendations {
-		if record, ok := item.(map[string]any); ok {
-			text, _ := record["text"].(string)
-			texts[fmt.Sprintf("recommendations.%d.text", n+1)] = text
-		}
-	}
+	recommendationTexts(output, texts)
 	individual, ok := output["individual"].([]any)
 	if !ok || len(individual) > 3 {
 		problems = append(problems, "individual: нужен список не больше чем из трёх пунктов")
@@ -387,6 +381,7 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 	for _, key := range sortedTextKeys(texts) {
 		problems = append(problems, climateProblems(key, texts[key])...)
 	}
+	problems = append(problems, unfoundStateProblems(texts, payload)...)
 	return problems
 }
 

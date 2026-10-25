@@ -54,3 +54,48 @@ func ratedLevelProblems(field, text string) []string {
 	}
 	return nil
 }
+
+// unfoundStates are the states a psychologist might write of that the test
+// does not measure, each by the stems of its words. In an answer such a word
+// must come from the input — from what the student wrote of himself — or it is
+// made up: rule 5 of test/v3 and rule 4 of test-platoon/v1, «опирайся только
+// на входные данные».
+var unfoundStates = [][]string{{"тревог", "тревож"}, {"страх"}, {"агресси"}, {"апати"}, {"депресси"}, {"выгоран"}, {"переутомл"}, {"конфликтн"}, {"замкнут"}, {"импульсивн"}, {"неуверенн"}, {"застенчив"}, {"раздражит"}, {"вспыльчив"}}
+
+// containsAny says whether a text has one of the stems.
+func containsAny(text string, stems []string) bool {
+	for _, stem := range stems {
+		if strings.Contains(text, stem) {
+			return true
+		}
+	}
+	return false
+}
+
+// unfoundStateProblems finds in the texts of an answer a state the input has
+// no word of.
+func unfoundStateProblems(texts map[string]string, payload *object) []string {
+	input := lowerText(string(canonicalJSON(payload)))
+	problems := []string{}
+	for _, key := range sortedTextKeys(texts) {
+		lower := lowerText(texts[key])
+		for _, stems := range unfoundStates {
+			if containsAny(lower, stems) && !containsAny(input, stems) {
+				problems = append(problems, fmt.Sprintf("%s: о состоянии «%s…», о котором во входных данных ничего нет — пиши только о том, что в них есть", key, stems[0]))
+			}
+		}
+	}
+	return problems
+}
+
+// recommendationTexts adds the texts of the recommendations to the texts of an
+// answer, under recommendations.N.text.
+func recommendationTexts(output map[string]any, texts map[string]string) {
+	items, _ := output["recommendations"].([]any)
+	for n, item := range items {
+		if record, ok := item.(map[string]any); ok {
+			text, _ := record["text"].(string)
+			texts[fmt.Sprintf("recommendations.%d.text", n+1)] = text
+		}
+	}
+}

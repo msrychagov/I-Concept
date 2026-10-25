@@ -49,3 +49,31 @@ func TestRatedLevelInBothAnswers(t *testing.T) {
 		t.Errorf("platoon: %s", problems)
 	}
 }
+
+// A state is made up when the input has no word of it, as «тревога» in the
+// portrait of 25 October; a student who wrote of it himself may be written of.
+func TestUnfoundStates(t *testing.T) {
+	a := testApp(t)
+	payload := a.testPayloadFor("v3", a.TestPortrait(fixedTestSession(a, a.bank.Version)))
+	answer := goodTestAnswerV2(string(canonicalJSON(payload)))
+	answer["recommendations"].([]any)[1].(map[string]any)["text"] = "Организовать консультацию психолога для проработки тревоги в стрессовых ситуациях."
+	if problems := strings.Join(checkTestAnswerV2(answer, payload), "; "); !strings.Contains(problems, "recommendations.2.text: о состоянии «тревог…», о котором во входных данных ничего нет") {
+		t.Errorf("portrait: %s", problems)
+	}
+
+	told := newObject()
+	told.set("рассказы_о_деятельности", []any{"Перед сборами тревожился, но справился."})
+	texts := map[string]string{"activity": "Студент справляется с тревогой.", "conclusion": "Студент замкнут."}
+	if problems := strings.Join(unfoundStateProblems(texts, told), "; "); problems != "conclusion: о состоянии «замкнут…», о котором во входных данных ничего нет — пиши только о том, что в них есть" {
+		t.Errorf("told: %s", problems)
+	}
+
+	f := newPlatoonFixture(t, 3)
+	db := mustSnapshot(t, f.service.repo)
+	platoon := f.service.platoonPayload(f.service.platoonPortrait("101", f.service.platoonStudents(db, f.teacherID, "101")))
+	conclusion := goodPlatoonAnswer(string(canonicalJSON(platoon)))
+	conclusion["individual"] = []any{"Студентам с повышенной тревожностью — консультация психолога."}
+	if problems := strings.Join(checkPlatoonAnswer(conclusion, platoon), "; "); !strings.Contains(problems, "individual.1: о состоянии «тревог…»") {
+		t.Errorf("platoon: %s", problems)
+	}
+}
