@@ -277,3 +277,11 @@ func TestSelfDeterminationHintNamesTheCodes(t *testing.T) {
 		t.Errorf("%q, fitting %q", problems, fitting)
 	}
 }
+
+// A mentor given to the student is told its own words.
+func TestAppointmentHintNamesTheMentor(t *testing.T) {
+	got := strings.Join(fieldProblems("recommendations.1.text", "Назначить наставника из числа старших курсантов."), "; ")
+	if !strings.Contains(got, "пиши «поручить» или «привлечь к»") || !strings.HasSuffix(got, "наставник для студента — «закрепить за студентом наставника»") {
+		t.Errorf("%s", got)
+	}
+}

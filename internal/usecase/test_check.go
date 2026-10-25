@@ -130,7 +130,9 @@ func fieldProblems(field, text string) []string {
 		problems = append(problems, fmt.Sprintf("%s: недопустимое слово («%s»)", field, strings.ToLower(found)))
 	}
 	if found := appointment.FindString(text); found != "" {
-		problems = append(problems, fmt.Sprintf("%s: о назначении на должность («%s») — пиши «поручить» или «привлечь к», например «поручить наставничество над младшими»", field, strings.ToLower(found)))
+		// The run of 25 October: «назначить наставника» to direction R13 three
+		// times; «поручить» does not fit a mentor given to the student.
+		problems = append(problems, fmt.Sprintf("%s: о назначении на должность («%s») — пиши «поручить» или «привлечь к», например «поручить наставничество над младшими»; наставник для студента — «закрепить за студентом наставника»", field, strings.ToLower(found)))
 	}
 	return problems
 }
