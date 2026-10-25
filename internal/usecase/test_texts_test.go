@@ -77,3 +77,31 @@ func TestUnfoundStates(t *testing.T) {
 		t.Errorf("platoon: %s", problems)
 	}
 }
+
+// The conclusion of 25 October counted the students: «у одного …, у двух …».
+func TestPlatoonCountsInWords(t *testing.T) {
+	for text, want := range map[string]string{
+		"По военной специальности у одного студента сформированная идентичность, у двух — мораторий.": "двух",
+		"Двое из трёх студентов приняли образ.":                                                       "двое",
+		"Мораторий у трёх студентов взвода.":                                                          "трех",
+		"Два из пяти студентов на высоком уровне.":                                                    "два",
+		"У большинства сформированная идентичность, у одного студента — мораторий.":                   "",
+		"Взвод включён во все четыре вида деятельности.":                                              "",
+		"Около половины студентов ближе к образу в пяти группах.":                                     "",
+		"Треть студентов оценивает условия выше.":                                                     "",
+	} {
+		problems := strings.Join(platoonCountProblems(map[string]string{"identity": text}), "; ")
+		if want == "" && problems != "" || want != "" && !strings.Contains(problems, "identity: число студентов числительным («"+want+"»)") {
+			t.Errorf("%q: %q", text, problems)
+		}
+	}
+
+	f := newPlatoonFixture(t, 3)
+	db := mustSnapshot(t, f.service.repo)
+	platoon := f.service.platoonPayload(f.service.platoonPortrait("101", f.service.platoonStudents(db, f.teacherID, "101")))
+	conclusion := goodPlatoonAnswer(string(canonicalJSON(platoon)))
+	conclusion["recommendations"].([]any)[0].(map[string]any)["text"] = "Провести беседу с двумя студентами, у которых мораторий."
+	if problems := strings.Join(checkPlatoonAnswer(conclusion, platoon), "; "); !strings.Contains(problems, "recommendations.1.text: число студентов числительным («двумя»)") {
+		t.Errorf("platoon: %s", problems)
+	}
+}

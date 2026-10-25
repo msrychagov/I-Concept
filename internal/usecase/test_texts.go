@@ -99,3 +99,32 @@ func recommendationTexts(output map[string]any, texts map[string]string) {
 		}
 	}
 }
+
+// numeral is a number written in words, from two up.
+const numeral = `два|две|двух|двум|двумя|три|трех|трем|тремя|четыре|четырех|четырем|четырьмя|пять|пяти|пятью|шесть|шести|семь|семи|восемь|восьми|девять|девяти|десять|десяти|[а-я]+надцат[а-я]*|двадцат[а-я]*|тридцат[а-я]*`
+
+// platoonCount finds a number of students given by a numeral: «двое», «у
+// двух», «трёх студентов», «два из …». Rule 1 of test-platoon/v1 wants it
+// relative to the platoon; «один студент» the rule allows itself, and «четыре
+// вида деятельности» or «пять групп» are not students.
+var platoonCount = []*regexp.Regexp{
+	regexp.MustCompile(`(?:^|[^а-я])(двое|двоих|трое|троих|четверо|четверых|пятеро|пятерых|шестеро|шестерых|семеро|семерых)(?:[^а-я]|$)`),
+	regexp.MustCompile(`(?:^|[^а-я])у\s+(` + numeral + `)(?:[^а-я]|$)`),
+	regexp.MustCompile(`(?:^|[^а-я])(` + numeral + `)\s+(?:[а-я]+\s+)?(?:студент|курсант|человек|из\s)`),
+}
+
+// platoonCountProblems finds a numeral of students in the texts of the
+// conclusion by a platoon.
+func platoonCountProblems(texts map[string]string) []string {
+	problems := []string{}
+	for _, key := range sortedTextKeys(texts) {
+		lower := lowerText(texts[key])
+		for _, pattern := range platoonCount {
+			if m := pattern.FindStringSubmatch(lower); m != nil {
+				problems = append(problems, fmt.Sprintf("%s: число студентов числительным («%s») — пиши относительно взвода: «большинство», «около половины», «треть», «несколько студентов»", key, m[1]))
+				break
+			}
+		}
+	}
+	return problems
+}
