@@ -303,6 +303,10 @@ func (a *Service) formEntry(db model.Database, as model.Assignment, student mode
 	if submission.Completed {
 		entry["status"] = "Завершено"
 		entry["finishedAt"] = submission.CompletedAt
+		// The student prints the own autobiography for the personal file.
+		if submission.FormID == autobiographyForm {
+			entry["printable"] = true
+		}
 		return entry, true
 	}
 	entry["status"] = "В процессе"

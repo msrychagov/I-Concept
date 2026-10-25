@@ -22,17 +22,22 @@ func (m *countingModel) Complete(_ context.Context, c usecase.Completion) (useca
 	return usecase.Reply{Text: m.reply(c.User), Version: "fake-1", In: 1, Out: 1}, nil
 }
 
-// portraitAnswer is an answer that follows the instruction for the given input.
+// portraitAnswer is an answer that follows the newest instruction (v4) for the given input.
 func portraitAnswer(user string) string {
 	var input struct {
-		Levels map[string]string `json:"уровни"`
+		Levels  map[string]string `json:"уровни"`
+		Hobbies []string          `json:"увлечения"`
 	}
 	_ = json.Unmarshal([]byte(user), &input)
-	potential := []any{}
-	for _, area := range []string{"спорт", "музыка и творчество", "военно-патриотическая деятельность", "наука", "волонтёрство", "иностранные языки"} {
-		potential = append(potential, map[string]any{"area": area, "level": input.Levels[area], "facts": "Сведений нет", "conclusion": "Опыт не указан"})
+	active := len(input.Hobbies) > 0
+	for _, level := range input.Levels {
+		active = active || level != "не выражен"
 	}
-	data, _ := json.Marshal(map[string]any{"summary": "Краткая характеристика.", "potential": potential, "hobbies": []any{}, "attention": map[string]any{"use": []any{}, "consider": []any{"Факт."}}})
+	paragraphs := []any{"Занятий, по которым можно назвать качества и навыки, студент не указал."}
+	if active {
+		paragraphs = []any{"По опыту в занятиях — усидчивость.", "Пригодится на занятиях ВУЦ."}
+	}
+	data, _ := json.Marshal(map[string]any{"paragraphs": paragraphs, "consider": []any{"Воспитывался обоими родителями."}})
 	return string(data)
 }
 
@@ -88,7 +93,7 @@ func TestPortraitRoutes(t *testing.T) {
 	view := s.waitFor(t, "ready")
 	portrait := view["portrait"].(map[string]any)
 	output := portrait["output"].(map[string]any)
-	if output["summary"] != "Краткая характеристика." || len(output["potential"].([]any)) != 6 || portrait["created"] == "" || m.calls.Load() != 1 {
+	if len(output["paragraphs"].([]any)) == 0 || len(output["consider"].([]any)) != 1 || portrait["created"] == "" || m.calls.Load() != 1 {
 		t.Fatalf("view %v after %d calls", view, m.calls.Load())
 	}
 

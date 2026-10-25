@@ -9,8 +9,32 @@ import (
 	"vucdiagnostic/internal/promptbank"
 )
 
-// goodPortrait answers the way the instruction asks, for the input it is given.
+// goodPortrait answers the way the newest instruction (v4) asks, for the input it is given.
 func goodPortrait(user string) map[string]any {
+	user, _, _ = strings.Cut(user, "\n\n"+retryNote)
+	var input struct {
+		Levels   map[string]string `json:"уровни"`
+		Hobbies  []string          `json:"увлечения"`
+		Criminal string            `json:"уголовная_ответственность"`
+	}
+	_ = json.Unmarshal([]byte(user), &input)
+	active := len(input.Hobbies) > 0
+	for _, level := range input.Levels {
+		active = active || level != "не выражен"
+	}
+	paragraphs := []any{noActivities + "."}
+	if active {
+		paragraphs = []any{"По опыту в занятиях у студента внимательность и усидчивость.", "Это пригодится на занятиях ВУЦ."}
+	}
+	consider := []any{"Воспитывался обоими родителями."}
+	if input.Criminal == "привлекался" {
+		consider = append(consider, "Привлекался к уголовной ответственности; подробности — в ответах студента.")
+	}
+	return map[string]any{"paragraphs": paragraphs, "consider": consider}
+}
+
+// goodPortraitV3 answers the way the instruction v3 asks.
+func goodPortraitV3(user string) map[string]any {
 	user, _, _ = strings.Cut(user, "\n\n"+retryNote)
 	var input struct {
 		Levels   map[string]string `json:"уровни"`
@@ -36,8 +60,17 @@ func goodPortrait(user string) map[string]any {
 
 // portraitModel answers with goodPortrait changed by the mutate function.
 func portraitModel(mutate func(map[string]any)) *fakeModel {
+	return answeringModel(goodPortrait, mutate)
+}
+
+// portraitModelV3 answers the instruction v3.
+func portraitModelV3(mutate func(map[string]any)) *fakeModel {
+	return answeringModel(goodPortraitV3, mutate)
+}
+
+func answeringModel(good func(string) map[string]any, mutate func(map[string]any)) *fakeModel {
 	return &fakeModel{name: "fake", reply: func(_ int, c Completion) (string, error) {
-		answer := goodPortrait(c.User)
+		answer := good(c.User)
 		if mutate != nil {
 			mutate(answer)
 		}
@@ -47,13 +80,25 @@ func portraitModel(mutate func(map[string]any)) *fakeModel {
 }
 
 func newAutobiographyFixture(t *testing.T) *formFixture {
+	return newAutobiographyFixtureAt(t, 0)
+}
+
+// newAutobiographyFixtureAt registers the autobiography instructions up to
+// the version upTo (0 — all of them), so that an older one is the newest.
+func newAutobiographyFixtureAt(t *testing.T, upTo int) *formFixture {
 	t.Helper()
 	f := newFormFixture(t)
 	prompts, err := promptbank.Load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	f.service.RegisterPrompts(prompts...)
+	kept := []promptbank.Prompt{}
+	for _, prompt := range prompts {
+		if n, _ := promptbank.Number(prompt.Version); upTo == 0 || prompt.Task != autobiographyForm || n <= upTo {
+			kept = append(kept, prompt)
+		}
+	}
+	f.service.RegisterPrompts(kept...)
 	f.service.portraits.pause = 0
 	t.Cleanup(f.service.Close)
 	return f
@@ -100,7 +145,7 @@ func TestSubmittedAutobiographyGetsAPortraitOnceAndTheSameForEqualAnswers(t *tes
 		t.Fatalf("%+v after %d calls", view, m.count())
 	}
 	call := m.calls[0]
-	if !strings.HasPrefix(call.System, "Ты помогаешь преподавателю военного учебного центра") || !strings.Contains(string(call.Schema), `"required": ["summary", "potential", "hobbies", "attention"]`) {
+	if !strings.HasPrefix(call.System, "Ты помогаешь преподавателю военного учебного центра") || !strings.Contains(string(call.Schema), `"required": ["paragraphs", "consider"]`) {
 		t.Fatalf("instruction or schema: %.80s", call.System)
 	}
 	// What was sent is the anonymised input and nothing of the person.
@@ -165,6 +210,7 @@ func TestSubmissionWorksWithoutAModel(t *testing.T) {
 	}
 }
 
+// The instruction v3 is checked as it was: three tries.
 func TestAnswerThatBreaksTheRulesFailsAfterThreeTries(t *testing.T) {
 	for name, tc := range map[string]struct {
 		mutate  func(map[string]any)
@@ -194,8 +240,8 @@ func TestAnswerThatBreaksTheRulesFailsAfterThreeTries(t *testing.T) {
 		}, "нет «по опыту в …»"},
 	} {
 		t.Run(name, func(t *testing.T) {
-			f := newAutobiographyFixture(t)
-			m := portraitModel(tc.mutate)
+			f := newAutobiographyFixtureAt(t, 3)
+			m := portraitModelV3(tc.mutate)
 			f.service.UseModel(m)
 			f.submit()
 			f.idle()
@@ -204,7 +250,7 @@ func TestAnswerThatBreaksTheRulesFailsAfterThreeTries(t *testing.T) {
 				t.Fatalf("%d calls, %+v", m.count(), view)
 			}
 			// «Повторить» with a good model makes the portrait.
-			m.reply = portraitModel(nil).reply
+			m.reply = portraitModelV3(nil).reply
 			if retry, err := f.service.RetryPortrait(f.student.OwnerID, "autobiography", f.submission); err != nil || retry.Status == portraitFailed {
 				t.Fatalf("retry: %+v %v", retry, err)
 			}
@@ -221,10 +267,10 @@ func TestNewInstructionVersionMakesANewPortraitAndKeepsTheOld(t *testing.T) {
 	release := make(chan struct{})
 	m := &fakeModel{name: "fake", reply: func(call int, c Completion) (string, error) {
 		answer := goodPortrait(c.User)
-		answer["summary"] = "Текст первой версии."
+		answer["consider"] = []any{"Текст первой версии."}
 		if call > 1 {
 			<-release
-			answer["summary"] = "Текст второй версии."
+			answer["consider"] = []any{"Текст второй версии."}
 		}
 		data, _ := json.Marshal(answer)
 		return string(data), nil
@@ -272,8 +318,11 @@ func TestPortraitUsesTheLevelsOfTheProgramAndFindsThemInTheInput(t *testing.T) {
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		t.Fatalf("%v and %v", got, want)
 	}
-	if problems := checkAutobiographyAnswer(goodPortrait(string(canonicalJSON(payload))), payload); len(problems) != 0 {
-		t.Fatalf("a good answer fails: %v", problems)
+	if problems := checkAutobiographyAnswer(goodPortraitV3(string(canonicalJSON(payload))), payload); len(problems) != 0 {
+		t.Fatalf("a good answer of v3 fails: %v", problems)
+	}
+	if problems := checkAutobiographyAnswerV4(goodPortrait(string(canonicalJSON(payload))), payload); len(problems) != 0 {
+		t.Fatalf("a good answer of v4 fails: %v", problems)
 	}
 }
 
@@ -289,7 +338,7 @@ func TestWhatToConsiderHoldsFactsWithoutConclusions(t *testing.T) {
 		"Студент обучается на факультете компьютерных наук и занимается математикой, что указывает на сильную академическую подготовку.",
 		"Отец — военнослужащий, что следует учесть при распределении по нарядам.",
 	} {
-		if problems := considerProblems([]any{point}, payload); len(problems) != 1 || !strings.Contains(problems[0], "вывод вместо факта") || strings.Contains(problems[0], point) {
+		if problems := considerProblems("attention.consider", []any{point}, payload); len(problems) != 1 || !strings.Contains(problems[0], "вывод вместо факта") || strings.Contains(problems[0], point) {
 			t.Errorf("%q: %v", point, problems)
 		}
 	}
@@ -305,7 +354,7 @@ func TestWhatToConsiderHoldsFactsWithoutConclusions(t *testing.T) {
 		"Студент не проходил военную службу по призыву.",
 		"Опыт владения иностранными языками не указан.",
 	} {
-		if problems := considerProblems([]any{point}, payload); len(problems) != 0 {
+		if problems := considerProblems("attention.consider", []any{point}, payload); len(problems) != 0 {
 			t.Errorf("%q: %v", point, problems)
 		}
 	}
@@ -316,7 +365,7 @@ func TestWhatToConsiderHoldsFactsWithoutConclusions(t *testing.T) {
 		"Привлекался к уголовной ответственности, подробности - в ответах студента.":                   true,
 		"Студент сообщил о привлечении к уголовной ответственности (подробности — в ответах студента)": true,
 	} {
-		if problems := considerProblems([]any{point}, payload); (len(problems) == 0) != ok {
+		if problems := considerProblems("attention.consider", []any{point}, payload); (len(problems) == 0) != ok {
 			t.Errorf("%q: %v", point, problems)
 		}
 	}
@@ -599,7 +648,7 @@ func TestRetryTellsTheModelWhatTheCheckFound(t *testing.T) {
 		messages = append(messages, c.User)
 		answer := goodPortrait(c.User)
 		if call == 1 {
-			answer["attention"].(map[string]any)["consider"] = []any{"Женат — обстоятельство, влияющее на нагрузку."}
+			answer["consider"] = []any{"Женат — обстоятельство, влияющее на нагрузку."}
 		}
 		data, _ := json.Marshal(answer)
 		return string(data), nil
