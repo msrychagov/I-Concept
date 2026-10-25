@@ -353,7 +353,7 @@ func (a *Service) cohortPayloadV2(db model.Database, assignmentID string) (*obje
 // its place: left without authors, it is refused by the check.
 func cleanCohortAnswerV2(_ *Service, _ model.Database, _ Source, output map[string]any, payload *object) (map[string]any, int) {
 	known := payloadRefs(payload)
-	changes := 0
+	changes := trimTexts(output)
 	for _, key := range essayParagraphs {
 		if paragraph := asMap(output[key]); paragraph != nil {
 			refs, dropped := cleanRefs(paragraph["refs"], known, kindIs(key))
@@ -379,6 +379,43 @@ func cleanCohortAnswerV2(_ *Service, _ model.Database, _ Source, output map[stri
 		output["recommendations"] = kept
 	}
 	return output, changes
+}
+
+// leadingMarks are what the model sometimes puts before a text: «: Авторы …».
+const leadingMarks = " \t\n:;,.—–-"
+
+// trimTexts takes the marks off the start of the paragraphs and the
+// recommendations of an answer of v2 and counts the texts it changed.
+func trimTexts(output map[string]any) int {
+	changes := 0
+	trim := func(item map[string]any) {
+		if text, ok := item["text"].(string); ok {
+			if trimmed := strings.TrimLeft(text, leadingMarks); trimmed != text {
+				item["text"] = trimmed
+				changes++
+			}
+		}
+	}
+	for _, key := range essayParagraphs {
+		if paragraph := asMap(output[key]); paragraph != nil {
+			trim(paragraph)
+		}
+	}
+	advice, _ := asList(output["recommendations"])
+	for _, raw := range advice {
+		if item := asMap(raw); item != nil {
+			trim(item)
+		}
+	}
+	return changes
+}
+
+// cleanEssayAnswerV2 takes the marks off the start of the texts and the
+// labels of namesakes off the entries about instructors (essay_namesakes.go).
+func cleanEssayAnswerV2(a *Service, db model.Database, s Source, output map[string]any, payload *object) (map[string]any, int) {
+	changes := trimTexts(output)
+	output, more := cleanEssayAnswer(a, db, s, output, payload)
+	return output, changes + more
 }
 
 // checkCohortAnswerV2 returns what is wrong with an answer to the instruction

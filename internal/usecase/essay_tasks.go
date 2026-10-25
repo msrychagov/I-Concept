@@ -21,9 +21,9 @@ func (a *Service) essayTask(prompt promptbank.Prompt) portraitTask {
 	// because a quote must be word for word. 5000 tokens cut off the JSON of a
 	// long answer on the first run on GigaChat. The paragraphs of v2 are half as
 	// long (essay_v2.go).
-	check, tokens := checkEssayAnswer, 8000
+	check, clean, tokens := checkEssayAnswer, cleanEssayAnswer, 8000
 	if essayShape(prompt.Version) >= 2 {
-		check, tokens = checkEssayAnswerV2, 6000
+		check, clean, tokens = checkEssayAnswerV2, cleanEssayAnswerV2, 6000
 	}
 	return portraitTask{
 		ID: essayForm, Version: prompt.Version, Prompt: prompt,
@@ -37,7 +37,7 @@ func (a *Service) essayTask(prompt promptbank.Prompt) portraitTask {
 			submission, _ := findSubmission(db, s)
 			return a.essayPayload(db, submission)
 		},
-		Clean: cleanEssayAnswer,
+		Clean: clean,
 		Check: check,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			submission, ok := findSubmission(db, s)

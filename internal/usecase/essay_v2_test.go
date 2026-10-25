@@ -463,3 +463,18 @@ func TestSummaryOfV2NamesNoInstructorAndGoesOverNoAuthor(t *testing.T) {
 		}
 	}
 }
+
+// «: Авторы …» — the marks before a text are taken off by the program.
+func TestCleaningOfV2TakesTheMarksOffTheStartOfTexts(t *testing.T) {
+	output := goodCohortV2("")
+	output["formation"].(map[string]any)["text"] = ": Авторы приходят."
+	output["recommendations"].([]any)[0].(map[string]any)["text"] = " — Ввести планы."
+	got, changes, problems := cleanedV2(t, cohortPayloadV2For(), output)
+	if len(problems) != 0 || changes != 2 || got["formation"].(map[string]any)["text"] != "Авторы приходят." || got["recommendations"].([]any)[0].(map[string]any)["text"] != "Ввести планы." {
+		t.Fatalf("%d changes, %v, problems %v", changes, got["formation"], problems)
+	}
+	essay := map[string]any{"formation": map[string]any{"text": ";Автор пришёл."}, "recommendations": []any{map[string]any{"text": "«Сначала» понять задачу."}}}
+	if n := trimTexts(essay); n != 1 || essay["formation"].(map[string]any)["text"] != "Автор пришёл." || essay["recommendations"].([]any)[0].(map[string]any)["text"] != "«Сначала» понять задачу." {
+		t.Fatalf("essay: %d %v", n, essay)
+	}
+}
