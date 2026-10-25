@@ -7,9 +7,13 @@ import (
 	"testing"
 )
 
-// goodTestAnswerV2 answers test/v2 the way it asks, for the input it is given.
+// goodTestAnswerV2 answers test/v2 the way it asks, for the input it is
+// given; an input with the dictionary of the terms is answered as test/v5 asks.
 func goodTestAnswerV2(user string) map[string]any {
 	user, _, _ = strings.Cut(user, "\n\n"+retryNote)
+	if strings.Contains(user, `"словарь"`) {
+		return goodTestAnswerV5(user)
+	}
 	var input struct {
 		Methods []struct {
 			Component string `json:"компонент"`

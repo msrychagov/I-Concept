@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "properties": {
+    "paragraphs": {
+      "type": "object",
+      "description": "Заключение: четыре связных абзаца без заголовков",
+      "properties": {
+        "values": {"type": "string", "description": "Общее состояние, ценности и мотивы, отношение к людям, товарищам, Отечеству и службе"},
+        "will": {"type": "string", "description": "Эмоции и воля, использование и осмысление опыта, профессиональное самоопределение"},
+        "image": {"type": "string", "description": "Каким видит себя и каким хочет стать, близость к образу защитника Отечества"},
+        "environment": {"type": "string", "description": "Среда и деятельность ВУЦ и их влияние"}
+      },
+      "required": ["values", "will", "image", "environment"]
+    },
+    "recommendations": {
+      "type": "array",
+      "description": "Направления работы из каталога, 3–4, без повторов",
+      "items": {
+        "type": "object",
+        "properties": {
+          "group": {"type": "integer"},
+          "code": {"type": "string"},
+          "text": {"type": "string"}
+        },
+        "required": ["group", "code", "text"]
+      }
+    },
+    "conclusion": {"type": "string", "description": "Общий вывод по человеку, два предложения"}
+  },
+  "required": ["paragraphs", "recommendations", "conclusion"]
+}

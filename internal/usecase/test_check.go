@@ -122,7 +122,7 @@ func fieldProblems(field, text string) []string {
 		// The run of 25 October: the model wrote «в группе 3» for three attempts.
 		hint := ""
 		if groupNumber.MatchString(text) {
-			hint = " — группу образа называй словами, например «в коммуникативных и коллективистских качествах», а не номером"
+			hint = groupNumberHint
 		}
 		problems = append(problems, field+": цифры в тексте"+hint)
 	}
@@ -449,22 +449,39 @@ func checkTestAnswerV2(output map[string]any, payload *object) []string {
 	recommendationTexts(output, texts)
 	problems = append(problems, unfoundStateProblems(texts, payload)...)
 
+	names := levelNames(payload)
+	for _, key := range []string{"portrait", "activity", "conclusion"} {
+		problems = append(problems, namedLevelProblems(key, outputText(output, key), names)...)
+	}
+	problems = append(problems, namedLevelProblems("components.text", text, names)...)
+
+	given, leading := leadingStatuses(payload)
+	problems = append(problems, identityProblems(outputText(output, "identity"), given, leading)...)
+	problems = append(problems, recommendationProblems(output, payload, recommendationLeast, 4, situationAllowed(payload))...)
+	problems = append(problems, selfDeterminationProblems(output, payload)...)
+	problems = append(problems, repeatedDirectionProblems(output)...)
+	return problems
+}
+
+// levelNames are the levels of the input by the name of a scale of a method
+// and by the first word of a kind of activity: a text that names one must
+// give its level.
+func levelNames(payload *object) map[string]string {
 	names := map[string]string{}
 	for _, k := range objectList(payload.values["виды_деятельности"]) {
 		if words := strings.Fields(objectText(k, "вид")); len(words) > 0 {
 			names[words[0]] = objectText(k, "уровень")
 		}
 	}
-	lowEV := false
 	for _, m := range objectList(payload.values["методики"]) {
 		names[objectText(m, "показатель")] = objectText(m, "уровень")
-		lowEV = lowEV || objectText(m, "компонент") == portraitComponentNames["EV"] && objectText(m, "уровень") == levelText["low"]
 	}
-	for _, key := range []string{"portrait", "activity", "conclusion"} {
-		problems = append(problems, namedLevelProblems(key, outputText(output, key), names)...)
-	}
-	problems = append(problems, namedLevelProblems("components.text", text, names)...)
+	return names
+}
 
+// leadingStatuses says whether the input has the professional identity and
+// gives, by block, the names of its leading statuses.
+func leadingStatuses(payload *object) (bool, [][]string) {
 	identity, given := payload.values["профессиональная_идентичность"]
 	leading := [][]string{}
 	for _, block := range objectList(identity) {
@@ -476,17 +493,23 @@ func checkTestAnswerV2(output map[string]any, payload *object) []string {
 		}
 		leading = append(leading, names)
 	}
-	problems = append(problems, identityProblems(outputText(output, "identity"), given, leading)...)
+	return given, leading
+}
 
+// situationAllowed says whether a type of direction fits the situation of a
+// group: its own type, any when the group has none, a psychological one when
+// a scale of the emotional-volitional component is low.
+func situationAllowed(payload *object) func(group int, kind string) bool {
+	lowEV := false
+	for _, m := range objectList(payload.values["методики"]) {
+		lowEV = lowEV || objectText(m, "компонент") == portraitComponentNames["EV"] && objectText(m, "уровень") == levelText["low"]
+	}
 	types := map[int]string{}
 	for _, g := range objectList(payload.values["образ_защитника"]) {
 		number, _ := g.values["номер"].(int)
 		types[number] = objectText(g, "тип_рекомендации")
 	}
-	problems = append(problems, recommendationProblems(output, payload, recommendationLeast, 4, func(group int, kind string) bool {
+	return func(group int, kind string) bool {
 		return types[group] == "" || kind == types[group] || kind == "психологическая" && lowEV
-	})...)
-	problems = append(problems, selfDeterminationProblems(output, payload)...)
-	problems = append(problems, repeatedDirectionProblems(output)...)
-	return problems
+	}
 }
