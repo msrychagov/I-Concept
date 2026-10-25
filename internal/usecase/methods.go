@@ -141,6 +141,10 @@ type TestPortraitData struct {
 	// Catalogue is the catalogue of recommendations, for the screen to name
 	// the directions of the portrait.
 	Catalogue []model.Direction `json:"catalogue,omitempty"`
+	// ComponentLevels is the level of every component by the levels of its
+	// scales (componentLevelText), for the table of the methods: since test/v5
+	// the text does not name the components (decision Д2 of Инструкция v5.md).
+	ComponentLevels map[string]string `json:"componentLevels,omitempty"`
 }
 
 // methodDefinitions are those of the session's bank version; a session of an
@@ -437,5 +441,19 @@ func (a *Service) TestPortrait(s model.Session) *TestPortraitData {
 	data.Climate = a.climate(engine, s)
 	data.Criteria, data.EnvironmentSigns = environmentData(a.defender, engine, s, data, indicatorScore)
 	data.Catalogue = a.defender.Directions
+	data.ComponentLevels = componentLevels(data.Methods)
 	return data
+}
+
+// componentLevels names the level of every component that has scales.
+func componentLevels(methods []MethodLevel) map[string]string {
+	byComponent := map[string][]string{}
+	for _, m := range methods {
+		byComponent[m.Component] = append(byComponent[m.Component], m.Level)
+	}
+	levels := map[string]string{}
+	for code, list := range byComponent {
+		levels[code] = componentLevelText(list)
+	}
+	return levels
 }

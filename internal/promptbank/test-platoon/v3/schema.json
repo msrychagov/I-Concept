@@ -1,0 +1,32 @@
+{
+  "type": "object",
+  "properties": {
+    "paragraphs": {
+      "type": "object",
+      "description": "Заключение по взводу: четыре связных абзаца без заголовков",
+      "properties": {
+        "values": {"type": "string", "description": "Общее состояние взвода, ценности и мотивы, отношение к людям, товарищам, Отечеству и службе"},
+        "will": {"type": "string", "description": "Эмоции и воля, использование и осмысление опыта, профессиональное самоопределение"},
+        "image": {"type": "string", "description": "Какими студенты видят себя и какими хотят стать, близость взвода к образу защитника Отечества"},
+        "environment": {"type": "string", "description": "Среда и деятельность ВУЦ и их влияние"}
+      },
+      "required": ["values", "will", "image", "environment"]
+    },
+    "recommendations": {
+      "type": "array",
+      "description": "Направления работы со взводом из каталога, 3–5, без повторов",
+      "items": {
+        "type": "object",
+        "properties": {
+          "group": {"type": "integer"},
+          "code": {"type": "string"},
+          "text": {"type": "string"}
+        },
+        "required": ["group", "code", "text"]
+      }
+    },
+    "individual": {"type": "array", "items": {"type": "string"}, "description": "Кому нужна отдельная работа, без имён, 0–3"},
+    "conclusion": {"type": "string", "description": "Общий вывод по взводу, два предложения"}
+  },
+  "required": ["paragraphs", "recommendations", "individual", "conclusion"]
+}

@@ -1,11 +1,13 @@
 // The portrait by the test (task "test") and the conclusion by a platoon (task
 // "test-platoon"). Above the text — the program's signature that it is the
 // student's self-report; under it — the tables with the program's numbers.
-// The portrait of v2 is the conclusion of a psychologist in seven sections; a
-// portrait of v1 is still shown in its own format while v2 is being made.
+// The portrait of v5 is four paragraphs with no headings, the recommendations
+// and the conclusion; that of v2–v4 is the conclusion of a psychologist in
+// seven sections; a portrait of v1 is still shown in its own format.
 window.portraitRenderers = window.portraitRenderers || {};
 window.portraitRenderers.test = {
     text(output, esc, data) {
+        if (output.paragraphs) return v5(output, esc, data || {});
         if (output.components) return v2(output, esc, data || {});
         const paragraph = (title, text) => text ? `<h4>${esc(title)}</h4><p>${esc(text)}</p>` : '';
         const list = (title, items) => (items || []).length ? `<h4>${esc(title)}</h4><ul>${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
@@ -34,6 +36,21 @@ function testRecommendations(items, esc, data) {
     return (items || []).length ? `<h4>Рекомендации</h4><ul class="test-portrait-recommendations">${items.map(r => `<li><b>${esc(directions[r.code] || r.code)}</b>${groups[r.group] ? ` <span class="muted">(${esc(groups[r.group].toLowerCase())})</span>` : ''}. ${esc(r.text)}</li>`).join('')}</ul>` : '';
 }
 
+// paragraphs are the four paragraphs of the portrait of v5 or of the
+// conclusion by a platoon of v3, in their order, with no headings.
+function testParagraphs(output, esc) {
+    const p = output.paragraphs || {};
+    return ['values', 'will', 'image', 'environment'].filter(key => p[key]).map(key => `<p>${esc(p[key])}</p>`).join('');
+}
+
+function v5(output, esc, data) {
+    return `<div class="test-portrait-text">
+   ${testParagraphs(output, esc)}
+   ${testRecommendations(output.recommendations, esc, data)}
+   ${output.conclusion ? `<h4>Общий вывод</h4><p>${esc(output.conclusion)}</p>` : ''}
+  </div>`;
+}
+
 function v2(output, esc, data) {
     const paragraph = (title, text) => text ? `<h4>${esc(title)}</h4><p>${esc(text)}</p>` : '';
     const c = output.components || {}, levels = c.levels || {};
@@ -53,6 +70,15 @@ function v2(output, esc, data) {
 window.portraitRenderers['test-platoon'] = {
     text(output, esc, data) {
         const paragraph = (title, text) => text ? `<h4>${esc(title)}</h4><p>${esc(text)}</p>` : '';
+        const individual = (output.individual || []).length ? `<h4>Кому нужна отдельная работа</h4><ul>${output.individual.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+        if (output.paragraphs) {
+            return `<div class="test-portrait-text">
+   ${testParagraphs(output, esc)}
+   ${testRecommendations(output.recommendations, esc, data || {})}
+   ${individual}
+   ${paragraph('Общий вывод', output.conclusion)}
+  </div>`;
+        }
         return `<div class="test-portrait-text">
    ${paragraph('Состояние взвода', output.overview)}
    ${paragraph('Компоненты Я-концепции', output.components)}
@@ -60,7 +86,7 @@ window.portraitRenderers['test-platoon'] = {
    ${paragraph('Соответствие образу защитника Отечества', output.ideal)}
    ${paragraph('Деятельность и условия среды', output.activity)}
    ${testRecommendations(output.recommendations, esc, data || {})}
-   ${(output.individual || []).length ? `<h4>Кому нужна отдельная работа</h4><ul>${output.individual.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+   ${individual}
    ${paragraph('Общий вывод', output.conclusion)}
   </div>`;
     }
@@ -78,7 +104,10 @@ window.testPortrait = (() => {
     function levels(m, esc) {
         const methods = Object.keys(COMPONENTS).map(code => {
             const rows = (m.methods || []).filter(x => x.component === code);
-            return rows.length ? `<tr class="test-portrait-group"><th colspan="3">${esc(COMPONENTS[code])} компонент</th></tr>${rows.map(x => `<tr><td>${esc(x.name)}<small>${esc(x.method)}</small></td><td>${x.score == null ? '—' : `${x.score} <small>из ${x.min}–${x.max}</small>`}</td><td><span class="potential-level level-${esc(x.level || 'none')}">${esc(x.levelText)}</span></td></tr>`).join('')}` : '';
+            // The level of the component by its scales, counted by the program:
+            // since v5 the text does not name the components.
+            const level = (m.componentLevels || {})[code];
+            return rows.length ? `<tr class="test-portrait-group"><th colspan="3">${esc(COMPONENTS[code])} компонент${level ? ` — ${esc(level)}` : ''}</th></tr>${rows.map(x => `<tr><td>${esc(x.name)}<small>${esc(x.method)}</small></td><td>${x.score == null ? '—' : `${x.score} <small>из ${x.min}–${x.max}</small>`}</td><td><span class="potential-level level-${esc(x.level || 'none')}">${esc(x.levelText)}</span></td></tr>`).join('')}` : '';
         }).join('');
         const kinds = (m.kinds || []).map(k => `<tr><td>${esc(k.name)}</td><td></td><td><span class="potential-level level-${esc(k.level || 'none')}">${esc(k.levelText)}</span></td></tr>`).join('');
         // The statuses of professional identity have ranges, not levels: a
@@ -88,7 +117,7 @@ window.testPortrait = (() => {
         const climate = c ? `<tr class="test-portrait-group"><th colspan="3">Климат взвода — по оценке самого студента<small>${esc(c.method)}</small></th></tr><tr><td>Сумма по ${c.total} парам</td><td>${c.sum == null ? `— <small>отвечено ${c.answered} из ${c.total}</small>` : `${signed(c.sum)} <small class="climate-range">из ${signed(c.min)}…${signed(c.max)}</small>`}</td><td><span class="muted">уровней нет</span></td></tr>${c.sum == null ? '' : `<tr><td colspan="3">${c.equal ? 'Все стороны климата студент оценил одинаково.' : `Сильнее всего: ${esc(c.strongest.join('; '))}.<br>Слабее всего: ${esc(c.weakest.join('; '))}.`}</td></tr>`}` : '';
         return `<div class="table-scroll"><table class="test-portrait-levels"><thead><tr><th>Показатель</th><th>Баллы</th><th>Уровень</th></tr></thead><tbody>${methods}<tr class="test-portrait-group"><th colspan="3">Виды деятельности (по анкете деятельностного компонента)</th></tr>${kinds}${identity}${climate}</tbody></table></div>
    ${c ? `<details class="climate-pairs"><summary>Оценки климата взвода по парам</summary><div class="table-scroll"><table class="test-portrait-levels"><thead><tr><th>Сторона климата</th><th>Оценка</th></tr></thead><tbody>${c.pairs.map(p => `<tr><td>${esc(capital(p.side))}<small>${esc(p.answer || 'нет ответа')}</small></td><td>${signed(p.score)}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
-   <p class="muted">Уровни посчитаны программой по ключам методик из таблицы 8 руководителя${identity ? ', выраженность статусов профессиональной идентичности — по ключу методики А. А. Азбель, составленному на школьниках' : ''}; это самоотчёт студента, а не установленное качество личности.${c ? ' Климат взвода — оценки от +3 до −3 по парам противоположных утверждений; уровней климата нет: единого ключа методики не принято.' : ''}</p>`;
+   <p class="muted">Уровни посчитаны программой по ключам методик из таблицы 8 руководителя, уровень компонента — по уровням его шкал${identity ? ', выраженность статусов профессиональной идентичности — по ключу методики А. А. Азбель, составленному на школьниках' : ''}; это самоотчёт студента, а не установленное качество личности.${c ? ' Климат взвода — оценки от +3 до −3 по парам противоположных утверждений; уровней климата нет: единого ключа методики не принято.' : ''}</p>`;
     }
 
     // The groups of the image of the defender: the real and the ideal self of

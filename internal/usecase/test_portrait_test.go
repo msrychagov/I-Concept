@@ -228,7 +228,7 @@ func TestEarlierPortraitIsShownWhileTheNewOneIsMade(t *testing.T) {
 		return string(data), nil
 	}})
 	newest, _ := promptbank.Latest(prompts, testPortraitTask)
-	if view := f.wait(); view.Status != portraitReady || view.Portrait.Version != newest.Version || newest.Version == "v1" || !strings.Contains(string(view.Portrait.Output), `"components"`) {
+	if view := f.wait(); view.Status != portraitReady || view.Portrait.Version != newest.Version || newest.Version == "v1" || !strings.Contains(string(view.Portrait.Output), `"recommendations"`) {
 		t.Fatalf("v2: %+v", view)
 	}
 }

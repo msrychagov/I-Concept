@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "paragraphs": {
+      "type": "array",
+      "description": "Вывод: два-три абзаца",
+      "items": {"type": "string"}
+    },
+    "consider": {
+      "type": "array",
+      "description": "Что учесть: только факты",
+      "items": {"type": "string"}
+    }
+  },
+  "required": ["paragraphs", "consider"]
+}

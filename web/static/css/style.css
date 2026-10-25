@@ -1200,3 +1200,15 @@ tbody tr:last-child td {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
+
+/* The printed autobiography: a link next to «Сдана …» and on the screen after submitting. */
+.submitted-note, .done-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem 1rem;
+}
+
+.done-actions {
+    margin-top: 1rem;
+}

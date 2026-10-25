@@ -476,6 +476,57 @@
     font-size: .88rem
 }
 
+/* The conclusion of the instruction v4: paragraphs, then what to consider. */
+.portrait-conclusion {
+    margin-bottom: .6rem
+}
+
+.portrait-conclusion p {
+    margin: 0 0 .6rem;
+    line-height: 1.55
+}
+
+.portrait-conclusion h3 + p, .portrait-conclusion ul {
+    margin-top: 0
+}
+
+.portrait-conclusion h3:not(:first-child) {
+    margin-top: 1rem
+}
+
+.portrait-conclusion ul {
+    margin-bottom: 0;
+    padding-left: 1.1rem
+}
+
+/* «Все направления»: the six areas behind a button. */
+.potential-all {
+    margin-top: .8rem
+}
+
+.potential-all summary {
+    display: inline-block;
+    cursor: pointer;
+    padding: .45rem .9rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-weight: 600;
+    list-style: none
+}
+
+.potential-all summary::-webkit-details-marker {
+    display: none
+}
+
+.potential-all summary:focus-visible {
+    outline: 3px solid var(--gold, #ad9653);
+    outline-offset: 2px
+}
+
+.potential-all[open] summary {
+    margin-bottom: .6rem
+}
+
 .potential-table td {
     vertical-align: top
 }
