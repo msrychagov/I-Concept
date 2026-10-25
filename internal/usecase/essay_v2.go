@@ -161,6 +161,9 @@ func checkEssayAnswerV2(output map[string]any, payload *object) []string {
 			continue
 		}
 		problems = append(problems, v2TextProblems(where, item["text"])...)
+		if familyWords.MatchString(textOf(item["text"])) {
+			problems = append(problems, where+": рекомендация опирается на семью автора — так нельзя (правило 5)")
+		}
 		problems = append(problems, quotesProblems(where, item["quotes"], current, 1, 2)...)
 		words += countWords(textOf(item["text"]))
 	}
@@ -172,6 +175,12 @@ func checkEssayAnswerV2(output map[string]any, payload *object) []string {
 	problems = append(problems, teacherProblems(output, payload, current)...)
 	return append(problems, labelWordProblems(output, payload)...)
 }
+
+// familyWords find a recommendation that stands on the family of the author,
+// which rule 5 of v2 forbids (decided 25 October 2026 after the run): «семья»,
+// «родные», «отец», «мать», «бабушка», «дедушка», «предки», «брат», «сестра».
+// «семинар», «семестр», «материал», «братство» and «Родина» are none of them.
+var familyWords = regexp.MustCompile(`(?i)(^|[^\p{L}])(сем(ь|ей|ейн)\p{L}*|родн(ые|ых|ым|ыми)([^\p{L}]|$)|отц\p{L}*|отец|мат(ь|ери|ерью)([^\p{L}]|$)|бабушк\p{L}*|дедушк\p{L}*|предк\p{L}*|брат(а|у|ом|е|ья|ьев|ьям|ьями)?([^\p{L}]|$)|сестр\p{L}*)`)
 
 // earlierEssay finds words about an earlier essay: written of an author who has
 // none, they invent a comparison or say that there is nothing to compare.
@@ -382,6 +391,12 @@ func checkCohortAnswerV2(output map[string]any, payload *object) []string {
 	text := func(where string, raw any) {
 		problems = append(problems, cohortTextProblems(where, raw)...)
 		problems = append(problems, termProblems(where, textOf(raw))...)
+		if militaryRank.MatchString(textOf(raw)) {
+			problems = append(problems, where+": звание в тексте — не называй конкретных преподавателей, о них отдельный блок")
+		}
+		if singlesOut(textOf(raw)) {
+			problems = append(problems, where+": авторы перечислены по одному («один … другой») — пиши об общем и о различиях, не перебирая авторов")
+		}
 		words += countWords(textOf(raw))
 	}
 	for _, key := range essayParagraphs {
@@ -410,4 +425,45 @@ func checkCohortAnswerV2(output map[string]any, payload *object) []string {
 	}
 	problems = append(problems, sameAdvice(advice)...)
 	return append(problems, tooLong(words)...)
+}
+
+// militaryRank finds a rank in a text of the summary: with a surname it names
+// an instructor, which the summary must not (decided 25 October 2026 after the
+// run: «подполковником Ковальчуком», «старшины Громова»).
+var militaryRank = regexp.MustCompile(`(?i)(^|[^\p{L}])(лейтенант|капитан|майор|подполковник|полковник|генерал|старшин(а|ы|е|у|ой)([^\p{L}]|$)|сержант|прапорщик|ефрейтор)`)
+
+// countedNouns follow «первый» or «один» when they count time or things, not
+// authors: «в первый год …, во второй».
+var countedNouns = []string{"год", "семестр", "курс", "раз", "ден", "дн", "недел", "месяц", "эссе", "выезд", "сбор", "этап", "блок", "вопрос", "занят", "путь", "пут"}
+
+var clauseEnd = regexp.MustCompile(`[.!?;]`)
+
+// singlesOut finds a sentence that goes over the authors one by one: «один …,
+// другой …», «первый …, второй …» (decided 25 October 2026 after the run). The
+// groups «одни …, другие …» are allowed.
+func singlesOut(text string) bool {
+	counted := func(normal []string, at int) bool {
+		if at+1 >= len(normal) {
+			return false
+		}
+		for _, noun := range countedNouns {
+			if strings.HasPrefix(normal[at+1], noun) {
+				return true
+			}
+		}
+		return false
+	}
+	for _, sentence := range clauseEnd.Split(text, -1) {
+		_, normal := tokens(sentence)
+		first := -1
+		for at, word := range normal {
+			switch {
+			case first < 0 && (word == "один" || word == "первый") && !counted(normal, at):
+				first = at
+			case first >= 0 && (word == "другой" || word == "второй") && !counted(normal, at):
+				return true
+			}
+		}
+	}
+	return false
 }

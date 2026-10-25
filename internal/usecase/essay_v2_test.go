@@ -416,3 +416,50 @@ func TestNoWordsOfAnEarlierEssayWhenThereIsNone(t *testing.T) {
 		}
 	}
 }
+
+func TestRecommendationOfV2DoesNotStandOnTheFamily(t *testing.T) {
+	answers := map[string]string{"1.1": "Я пошёл «в ВУЦ» ради «службы» и отсрочки.", "1.2": "Первые дни было очень страшно.", "2.4": "Хочу поблагодарить полковника Иванова."}
+	for text, family := range map[string]bool{
+		"Предложить короткие отчёты отцу о целях.":                    true,
+		"Делиться с родными итогами недели.":                          true,
+		"Подготовить сообщение о службе предков.":                     true,
+		"Использовать семейную историю как ресурс.":                   true,
+		"Рассказать о дедушке на занятии.":                            true,
+		"Позвать брата на присягу.":                                   true,
+		"Готовить материалы к семинару в этом семестре.":              false,
+		"Развивать боевое братство во взводе и любовь к Родине.":      false,
+		"Поручать роль старшего в отделении, опираясь на его память.": false,
+	} {
+		payload := essayPayloadFor(answers, nil)
+		output := goodEssayV2For(payload)
+		output["recommendations"].([]any)[1].(map[string]any)["text"] = text
+		got := strings.Contains(strings.Join(checkEssayAnswerV2(roundTrip(t, output), payload), " | "), "recommendations, пункт 2: рекомендация опирается на семью")
+		if got != family {
+			t.Errorf("%q: %v", text, got)
+		}
+	}
+}
+
+func TestSummaryOfV2NamesNoInstructorAndGoesOverNoAuthor(t *testing.T) {
+	for text, want := range map[string]string{
+		"Авторы связывают изменения с подполковником Ковальчуком.":               "звание в тексте",
+		"Помогает терпеливый показ старшины.":                                    "звание в тексте",
+		"Один связывает цель с пользой, другой — с профессией.":                  "авторы перечислены по одному",
+		"Первый делает ставку на теорию, второй — на память.":                    "авторы перечислены по одному",
+		"Одни быстрее принимают порядок, другим нужна рамка.":                    "",
+		"В первый год авторы тревожатся, во второй год спокойны.":                "",
+		"Один путь ведёт к службе, другой путь — к профессии.":                   "",
+		"Старшинство и порядок важны; преподаватели-офицеры объясняют спокойно.": "",
+	} {
+		output := goodCohortV2("")
+		output["moments"].(map[string]any)["text"] = text
+		_, _, problems := cleanedV2(t, cohortPayloadV2For(), output)
+		joined := strings.Join(problems, " | ")
+		switch {
+		case want == "" && joined != "":
+			t.Errorf("%q: %s", text, joined)
+		case want != "" && !strings.Contains(joined, "moments: "+want):
+			t.Errorf("%q: want %q, got %q", text, want, joined)
+		}
+	}
+}
