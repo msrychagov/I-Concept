@@ -116,15 +116,61 @@ var platoonCount = []*regexp.Regexp{
 	regexp.MustCompile(`(?:^|[^а-я])(` + numeral + `)\s+(?:[а-я]+\s+)?(?:студент|курсант|человек|из\s)`),
 }
 
+// numeralValues are the numbers of the numerals a count of students is
+// written with, to tell the retry the word relative to the platoon.
+var numeralValues = map[string]int{}
+
+func init() {
+	for n, words := range [][]string{
+		2:  {"два", "две", "двух", "двум", "двумя", "двое", "двоих"},
+		3:  {"три", "трех", "трем", "тремя", "трое", "троих"},
+		4:  {"четыре", "четырех", "четырем", "четырьмя", "четверо", "четверых"},
+		5:  {"пять", "пяти", "пятью", "пятеро", "пятерых"},
+		6:  {"шесть", "шести", "шестеро", "шестерых"},
+		7:  {"семь", "семи", "семеро", "семерых"},
+		8:  {"восемь", "восьми"},
+		9:  {"девять", "девяти"},
+		10: {"десять", "десяти"},
+	} {
+		for _, word := range words {
+			numeralValues[word] = n
+		}
+	}
+}
+
+// relativeCount is the word of rule 1 of test-platoon/v1 for so many students
+// of the platoon.
+func relativeCount(count, total int) string {
+	switch {
+	case count == 0 || total == 0:
+		return ""
+	case count >= total:
+		return "все"
+	case 2*count > total:
+		return "большинство"
+	case 2*count == total:
+		return "половина"
+	case 3*count == total:
+		return "треть"
+	}
+	return "несколько студентов"
+}
+
 // platoonCountProblems finds a numeral of students in the texts of the
-// conclusion by a platoon.
-func platoonCountProblems(texts map[string]string) []string {
+// conclusion by a platoon of total students.
+func platoonCountProblems(texts map[string]string, total int) []string {
 	problems := []string{}
 	for _, key := range sortedTextKeys(texts) {
 		lower := lowerText(texts[key])
 		for _, pattern := range platoonCount {
 			if m := pattern.FindStringSubmatch(lower); m != nil {
-				problems = append(problems, fmt.Sprintf("%s: число студентов числительным («%s») — пиши относительно взвода: «большинство», «около половины», «треть», «несколько студентов»", key, m[1]))
+				// The run of 25 October: told the list of words, the model kept
+				// «у двоих» for four attempts; it is told the word that fits.
+				fits := ""
+				if word := relativeCount(numeralValues[m[1]], total); word != "" {
+					fits = fmt.Sprintf("; здесь — «%s»", word)
+				}
+				problems = append(problems, fmt.Sprintf("%s: число студентов числительным («%s») — пиши относительно взвода: «большинство», «около половины», «треть», «несколько студентов»%s", key, m[1], fits))
 				break
 			}
 		}

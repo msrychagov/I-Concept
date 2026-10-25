@@ -92,7 +92,7 @@ func TestPlatoonCountsInWords(t *testing.T) {
 		"Около половины студентов ближе к образу в пяти группах.":                                     "",
 		"Треть студентов оценивает условия выше.":                                                     "",
 	} {
-		problems := strings.Join(platoonCountProblems(map[string]string{"identity": text}), "; ")
+		problems := strings.Join(platoonCountProblems(map[string]string{"identity": text}, 3), "; ")
 		if want == "" && problems != "" || want != "" && !strings.Contains(problems, "identity: число студентов числительным («"+want+"»)") {
 			t.Errorf("%q: %q", text, problems)
 		}
@@ -235,6 +235,22 @@ func TestGroupNumberHint(t *testing.T) {
 	}
 	if got := strings.Join(fieldProblems("activity", "Оценка 7 из 10."), "; "); got != "activity: цифры в тексте" {
 		t.Errorf("figure: %s", got)
+	}
+}
+
+// The retry is told the word that fits the count in the platoon.
+func TestRelativeCount(t *testing.T) {
+	for _, c := range []struct {
+		count, total int
+		want         string
+	}{{2, 3, "большинство"}, {3, 3, "все"}, {1, 3, "треть"}, {2, 4, "половина"}, {2, 5, "несколько студентов"}, {4, 5, "большинство"}, {0, 3, ""}} {
+		if got := relativeCount(c.count, c.total); got != c.want {
+			t.Errorf("%d of %d: %q", c.count, c.total, got)
+		}
+	}
+	got := strings.Join(platoonCountProblems(map[string]string{"components": "Оценка опыта у двоих — на среднем уровне."}, 3), "; ")
+	if !strings.HasSuffix(got, "; здесь — «большинство»") {
+		t.Errorf("hint: %s", got)
 	}
 }
 

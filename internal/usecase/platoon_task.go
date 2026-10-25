@@ -385,7 +385,8 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 		problems = append(problems, climateProblems(key, texts[key])...)
 	}
 	problems = append(problems, unfoundStateProblems(texts, payload)...)
-	problems = append(problems, platoonCountProblems(texts)...)
+	total, _ := payload.values["студентов"].(int)
+	problems = append(problems, platoonCountProblems(texts, total)...)
 	return problems
 }
 
