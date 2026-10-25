@@ -76,6 +76,9 @@ type PlatoonPortraitData struct {
 	EnvironmentSigns []PlatoonSign         `json:"environmentSigns"`
 	// Told is how many students wrote about their activity at all.
 	Told int `json:"told"`
+	// Climate is the climate of the platoon by the students who answered all
+	// the pairs of the method (climate.go); nil without them.
+	Climate *PlatoonClimate `json:"climate,omitempty"`
 }
 
 // PlatoonRelation is a sign of the core over the platoon.
@@ -344,6 +347,7 @@ func (a *Service) platoonPortrait(group string, portraits []studentPortrait) Pla
 		data.Relations = append(data.Relations, relation)
 	}
 
+	data.Climate = platoonClimate(portraits)
 	if method := a.bank.Identity; method != nil {
 		names, ids := map[string]string{"": "не определён"}, []string{}
 		for _, scale := range method.Scales {

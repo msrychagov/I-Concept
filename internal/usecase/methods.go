@@ -15,8 +15,9 @@ import (
 
 // methodModules hold the questions of the methods; they are asked only when
 // the assignment includes the methods. AZM and AZC are the two blocks of the
-// method of professional identity (identity.go).
-var methodModules = map[string]bool{"W": true, "U": true, "X": true, "K": true, "AZM": true, "AZC": true}
+// method of professional identity (identity.go), CL the climate of the
+// platoon (climate.go).
+var methodModules = map[string]bool{"W": true, "U": true, "X": true, "K": true, "AZM": true, "AZC": true, "CL": true}
 
 func methodModule(module string) bool { return methodModules[module] }
 
@@ -129,6 +130,9 @@ type TestPortraitData struct {
 	Congruence *Congruence     `json:"congruence,omitempty"`
 	// Identity is the professional identity by block, when the method was given.
 	Identity []IdentityProfile `json:"identity,omitempty"`
+	// Climate is the student's rating of the climate of his platoon, when the
+	// method was given (climate.go).
+	Climate *Climate `json:"climate,omitempty"`
 	// Criteria are the criteria of the first chapter by kind of activity and
 	// EnvironmentSigns the six signs of positive activity and environment,
 	// each with its data (environment.go).
@@ -430,6 +434,7 @@ func (a *Service) TestPortrait(s model.Session) *TestPortraitData {
 	data.Defender = defenderGroups(a.defender, data, indicatorScore)
 	data.Congruence = congruence(data.Images)
 	data.Identity = a.identityProfiles(engine, s)
+	data.Climate = a.climate(engine, s)
 	data.Criteria, data.EnvironmentSigns = environmentData(a.defender, engine, s, data, indicatorScore)
 	data.Catalogue = a.defender.Directions
 	return data
