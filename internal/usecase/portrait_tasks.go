@@ -48,8 +48,15 @@ func findSubmission(db model.Database, s Source) (model.FormSubmission, bool) {
 // anonymised input of model_input.go. The levels of potential are counted by
 // the program; the answer is only checked against them.
 func (a *Service) autobiographyTask(prompt promptbank.Prompt) portraitTask {
+	// The answer of v4 has other fields and rules; v1–v3 are checked as they
+	// always were. The input is the same, so a portrait of v3 is found by the
+	// fingerprint and shown while the one of v4 is made.
+	check, attempts := checkAutobiographyAnswer, 0
+	if n, _ := promptbank.Number(prompt.Version); n >= 4 {
+		check, attempts = checkAutobiographyAnswerV4, 5
+	}
 	return portraitTask{
-		ID: autobiographyForm, Version: prompt.Version, Prompt: prompt,
+		ID: autobiographyForm, Version: prompt.Version, Prompt: prompt, Attempts: attempts,
 		Accepts: func(db model.Database, s Source) bool {
 			submission, ok := findSubmission(db, s)
 			return ok && submission.FormID == autobiographyForm && submission.Completed
@@ -59,7 +66,7 @@ func (a *Service) autobiographyTask(prompt promptbank.Prompt) portraitTask {
 			payload, _, err := submissionPayload(a.forms[submission.FormID], submission)
 			return payload, err
 		},
-		Check: checkAutobiographyAnswer,
+		Check: check,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			submission, ok := findSubmission(db, s)
 			return ok && teacherOwnsSubmission(db, teacherID, submission)
@@ -231,7 +238,7 @@ func checkAutobiographyAnswer(output map[string]any, payload *object) []string {
 			problems = append(problems, "attention."+key+": пунктов больше пяти")
 		}
 		if key == "consider" && isList && strs {
-			problems = append(problems, considerProblems(list, payload)...)
+			problems = append(problems, considerProblems("attention.consider", list, payload)...)
 		}
 		if key == "use" && isList && strs {
 			for n, point := range list {
@@ -324,21 +331,138 @@ func textList(value any) []string {
 // considerProblems checks the points of «what to consider» against the rules
 // of the instruction. A problem names the point by its number and never quotes
 // its text: the problems go to the journal, the answer must not.
-func considerProblems(points []any, payload *object) []string {
+func considerProblems(where string, points []any, payload *object) []string {
 	problems := []string{}
 	details := false
 	for n, point := range points {
 		text := point.(string)
 		if found := consequence.FindString(text); found != "" {
-			problems = append(problems, fmt.Sprintf("attention.consider, пункт %d: вывод вместо факта («%s»)", n+1, strings.ToLower(found)))
+			problems = append(problems, fmt.Sprintf("%s, пункт %d: вывод вместо факта («%s»)", where, n+1, strings.ToLower(found)))
 		}
 		if byExperience.MatchString(text) {
-			problems = append(problems, fmt.Sprintf("attention.consider, пункт %d: качества «по опыту» вместо факта", n+1))
+			problems = append(problems, fmt.Sprintf("%s, пункт %d: качества «по опыту» вместо факта", where, n+1))
 		}
 		details = details || criminalDetails.MatchString(text)
 	}
 	if record, _ := payload.values["уголовная_ответственность"].(string); record == "привлекался" && !details {
-		problems = append(problems, "attention.consider: нет «подробности — в ответах студента»")
+		problems = append(problems, where+": нет «подробности — в ответах студента»")
+	}
+	return problems
+}
+
+// Since v4 (decided 25 October 2026) the model writes two or three paragraphs
+// and «what to consider»: of what the student has, never of what he has not.
+// The summary and the table are gone: the facts are in the printed
+// autobiography and the levels in the program's own block.
+
+// noActivities is the only paragraph of a student with no activity and no hobby.
+const noActivities = "Занятий, по которым можно назвать качества и навыки, студент не указал"
+
+// areaWords find an area of the potential in the text. An area at the level
+// «не выражен» must not be mentioned: the student has no experience in it.
+// «Спорт» stands alone, so that «киберспорт» and «военно-спортивные сборы» pass;
+// «научно-популярный» passes too.
+var areaWords = map[string]*regexp.Regexp{
+	"спорт":               regexp.MustCompile(`(?i)(^|[^а-яё-])спорт|разряд|(^|[^а-яё])(гто|кмс)([^а-яё]|$)`),
+	"музыка и творчество": regexp.MustCompile(`(?i)музык|творчеств|вокал|танц|театр|хореограф|(^|[^а-яё])квн([^а-яё]|$)`),
+	"военно-патриотическая деятельность": regexp.MustCompile(`(?i)военно-патриот|юнарм|зарниц|кадет`),
+	"наука":             regexp.MustCompile(`(?i)научн([^о]|о[^-]|о?$)|(^|[^а-яё])наук(а|е|у|ой)([^а-яё]|$)|олимпиад|конференц|публикац`),
+	"волонтёрство":      regexp.MustCompile(`(?i)волонт[её]р|донор`),
+	"иностранные языки": regexp.MustCompile(`(?i)иностранн[а-яё]* язык|английск|немецк|французск|испанск|китайск|ielts|toefl|delf|dalf|hsk|goethe|dele|cambridge`),
+}
+
+// absence finds what the student has not: «без медали», «наград не имеет»,
+// «нет опыта», «не служил». The words stand alone.
+var absence = regexp.MustCompile(`(?i)(^|[^а-яё])(нет|без медал[а-яё]*|без разряд[а-яё]*|без наград[а-яё]*|без опыта|не имеет|не имел[а-яё]*|не имею|не выезжал[а-яё]*|не был[а-яё]*|не бывал[а-яё]*|не служил[а-яё]*|не проходил[а-яё]*|не привлекал[а-яё]*|не участвовал[а-яё]*|не занимал[а-яё]*|не указ[а-яё]*|не выражен[а-яё]*|не владеет|не женат|отсутству[а-яё]*)([^а-яё]|$)`)
+
+// emptyAreas returns the areas of the input at the level «не выражен».
+func emptyAreas(payload *object) []string {
+	empty := []string{}
+	if levels, ok := payload.values["уровни"].(*object); ok {
+		for _, key := range levels.keys {
+			if level, _ := levels.values[key].(string); level == "не выражен" {
+				empty = append(empty, key)
+			}
+		}
+	}
+	return empty
+}
+
+// absenceProblems finds an area without experience or the absence of
+// something in a text of v4. It names the area or the word of the rule, never
+// the text around it.
+func absenceProblems(where, text string, empty []string) []string {
+	problems := []string{}
+	for _, area := range empty {
+		if words, ok := areaWords[area]; ok && words.MatchString(text) {
+			problems = append(problems, fmt.Sprintf("%s: направление без опыта («%s»)", where, area))
+		}
+	}
+	if found := absence.FindStringSubmatch(text); found != nil {
+		problems = append(problems, fmt.Sprintf("%s: написано об отсутствии («%s»)", where, strings.ToLower(found[2])))
+	}
+	return problems
+}
+
+// stringList reads a list of strings of the answer.
+func stringList(value any) ([]any, bool) {
+	list, ok := value.([]any)
+	for _, item := range list {
+		if _, isString := item.(string); !isString {
+			return list, false
+		}
+	}
+	return list, ok
+}
+
+// checkAutobiographyAnswerV4 returns what is wrong with an answer to the
+// instruction v4: the number of paragraphs, the qualities by experience, no
+// family or work skills, nothing of the areas without experience, no absence,
+// and «what to consider» as facts.
+func checkAutobiographyAnswerV4(output map[string]any, payload *object) []string {
+	problems := []string{}
+	empty := emptyAreas(payload)
+	hobbies := len(textList(payload.values["увлечения"]))
+	levels, _ := payload.values["уровни"].(*object)
+	active := hobbies > 0 || levels == nil || len(empty) < len(levels.keys)
+	jobs := jobStems(payload)
+	paragraphs, ok := stringList(output["paragraphs"])
+	switch {
+	case !ok:
+		problems = append(problems, "paragraphs не список строк")
+	case !active && (len(paragraphs) != 1 || sentence(paragraphs[0].(string)) != noActivities):
+		problems = append(problems, fmt.Sprintf("paragraphs: занятий нет, а вывод не «%s»", noActivities))
+	case active && (len(paragraphs) < 2 || len(paragraphs) > 3):
+		problems = append(problems, fmt.Sprintf("paragraphs: абзацев %d, а нужно два-три", len(paragraphs)))
+	}
+	if ok && active {
+		marked := false
+		for n, item := range paragraphs {
+			text, where := item.(string), fmt.Sprintf("paragraphs, абзац %d", n+1)
+			if strings.TrimSpace(text) == "" {
+				problems = append(problems, where+": пустой")
+				continue
+			}
+			marked = marked || byExperience.MatchString(text)
+			problems = append(problems, qualityProblems(where, text, jobs)...)
+			problems = append(problems, absenceProblems(where, text, empty)...)
+		}
+		if !marked {
+			problems = append(problems, "paragraphs: нет «по опыту в …»")
+		}
+	}
+	consider, ok := stringList(output["consider"])
+	switch {
+	case !ok:
+		problems = append(problems, "consider не список строк")
+	case len(consider) > attentionLimit:
+		problems = append(problems, "consider: пунктов больше пяти")
+	}
+	if ok {
+		problems = append(problems, considerProblems("consider", consider, payload)...)
+		for n, point := range consider {
+			problems = append(problems, absenceProblems(fmt.Sprintf("consider, пункт %d", n+1), point.(string), empty)...)
+		}
 	}
 	return problems
 }
