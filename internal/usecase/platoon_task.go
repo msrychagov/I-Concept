@@ -36,13 +36,24 @@ func splitPlatoon(s Source) (teacherID, group string, ok bool) {
 }
 
 func (a *Service) platoonTask(prompt promptbank.Prompt) portraitTask {
-	// The conclusion by v1 is shown while the one by v2 is made: the input of
-	// v2 has the climate and the second edition of the catalogue.
+	// The conclusion by an earlier version is shown while the one by a newer
+	// version is made: the input of v2 has the climate and the second edition
+	// of the catalogue, that of v3 the dictionary of the terms.
 	var earlier func(a *Service, db model.Database, s Source) []*object
+	check, clean := checkPlatoonAnswer, cleanRepeatedDirections
+	versions := []string{"v1"}
+	if termsInput(testPlatoonTask, prompt.Version) {
+		check, clean, versions = checkPlatoonAnswerV3, cleanRepeatedCodes, []string{"v2", "v1"}
+	}
 	if climateInput(testPlatoonTask, prompt.Version) {
 		earlier = func(a *Service, db model.Database, s Source) []*object {
 			teacherID, group, _ := splitPlatoon(s)
-			return []*object{a.platoonPayloadFor("v1", a.platoonPortrait(group, a.platoonStudents(db, teacherID, group)))}
+			data := a.platoonPortrait(group, a.platoonStudents(db, teacherID, group))
+			list := []*object{}
+			for _, version := range versions {
+				list = append(list, a.platoonPayloadFor(version, data))
+			}
+			return list
 		}
 	}
 	return portraitTask{
@@ -65,7 +76,7 @@ func (a *Service) platoonTask(prompt promptbank.Prompt) portraitTask {
 			}
 			return group, ids
 		},
-		Clean: cleanRepeatedDirections, Check: checkPlatoonAnswer,
+		Clean: clean, Check: check,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			owner, _, ok := splitPlatoon(s)
 			return ok && owner == teacherID
@@ -168,12 +179,26 @@ const (
 // v1 stays as it was: the conclusions made are found by its fingerprint. From
 // v2 on it has the second edition of the catalogue and, when three students
 // at least answered all the pairs of the method, the climate of the platoon
-// (Д5, Д6).
+// (Д5, Д6); from v3 on, the dictionary of the terms (Инструкция по взводу v3.md).
 func (a *Service) platoonPayloadFor(version string, data PlatoonPortraitData) *object {
 	payload := a.platoonPayload(data)
 	if !climateInput(testPlatoonTask, version) {
 		return payload
 	}
+	a.addPlatoonClimate(payload, data, version)
+	if termsInput(testPlatoonTask, version) {
+		signs := []string{}
+		for _, sign := range data.EnvironmentSigns {
+			signs = append(signs, sign.ID)
+		}
+		addTerms(payload, signs)
+	}
+	return payload
+}
+
+// addPlatoonClimate adds to the input of test-platoon/v2 and newer the second
+// edition of the catalogue and the climate of the platoon, when there is one.
+func (a *Service) addPlatoonClimate(payload *object, data PlatoonPortraitData, version string) {
 	numbers := map[string]int{}
 	for n, g := range a.defender.Groups {
 		numbers[g.ID] = n + 1
@@ -181,7 +206,7 @@ func (a *Service) platoonPayloadFor(version string, data PlatoonPortraitData) *o
 	payload.set("каталог_рекомендаций", a.catalogueList(numbers, catalogueEdition(testPlatoonTask, version)))
 	climate := data.Climate
 	if climate == nil {
-		return payload
+		return
 	}
 	o := newObject()
 	o.set("оценили", len(climate.Rated))
@@ -199,7 +224,6 @@ func (a *Service) platoonPayloadFor(version string, data PlatoonPortraitData) *o
 		}
 	}
 	a.climateCriterion(payload, platoonClimateCoverage, platoonClimateOwnNote, platoonClimateSee)
-	return payload
 }
 
 // platoonPayload is the input of the model by a platoon of test-platoon/v1:
@@ -429,30 +453,7 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 	identity, given := payload.values["профессиональная_идентичность"]
 	problems = append(problems, identityProblems(texts["identity"], given, nil)...)
 	if given && strings.TrimSpace(texts["identity"]) != identityAbsent {
-		lower := normalizedText(texts["identity"])
-		for _, block := range objectList(identity) {
-			counts, _ := block.values["ведущий_статус"].(*object)
-			best, top := 0, []string{}
-			for _, name := range counts.keys {
-				n, _ := counts.values[name].(int)
-				switch {
-				case name == levelText[""] || n == 0 || n < best:
-				case n > best:
-					best, top = n, []string{name}
-				default:
-					top = append(top, name)
-				}
-			}
-			named := len(top) == 0
-			for _, name := range top {
-				named = named || statusNamed(lower, name)
-			}
-			// The run of 25 October: told only the block, the model kept
-			// another name for five attempts; it is told the status itself.
-			if !named {
-				problems = append(problems, fmt.Sprintf("identity: не назван самый частый ведущий статус (%s) — «%s»", lowerFirst(objectText(block, "профессия")), strings.Join(top, "» или «")))
-			}
-		}
+		problems = append(problems, platoonIdentityProblems("identity", texts["identity"], identity)...)
 	}
 
 	problems = append(problems, recommendationProblems(output, payload, recommendationLeast, 5, nil)...)
@@ -480,6 +481,37 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 	problems = append(problems, unfoundStateProblems(texts, payload)...)
 	total, _ := payload.values["студентов"].(int)
 	problems = append(problems, platoonCountProblems(texts, total)...)
+	return problems
+}
+
+// platoonIdentityProblems checks that a text names, by block, the leading
+// status most students of the platoon have.
+func platoonIdentityProblems(field, text string, identity any) []string {
+	problems := []string{}
+	lower := normalizedText(text)
+	for _, block := range objectList(identity) {
+		counts, _ := block.values["ведущий_статус"].(*object)
+		best, top := 0, []string{}
+		for _, name := range counts.keys {
+			n, _ := counts.values[name].(int)
+			switch {
+			case name == levelText[""] || n == 0 || n < best:
+			case n > best:
+				best, top = n, []string{name}
+			default:
+				top = append(top, name)
+			}
+		}
+		named := len(top) == 0
+		for _, name := range top {
+			named = named || statusNamed(lower, name)
+		}
+		// The run of 25 October: told only the block, the model kept
+		// another name for five attempts; it is told the status itself.
+		if !named {
+			problems = append(problems, fmt.Sprintf("%s: не назван самый частый ведущий статус (%s) — «%s»", field, lowerFirst(objectText(block, "профессия")), strings.Join(top, "» или «")))
+		}
+	}
 	return problems
 }
 

@@ -221,6 +221,13 @@ func (a *Service) testPayloadFor(version string, data *TestPortraitData) *object
 	if climateInput(testPortraitTask, version) {
 		a.addDanilovaAndClimate(payload, data)
 	}
+	if termsInput(testPortraitTask, version) {
+		signs := []string{}
+		for _, sign := range data.EnvironmentSigns {
+			signs = append(signs, sign.ID)
+		}
+		addTerms(payload, signs)
+	}
 	return payload
 }
 

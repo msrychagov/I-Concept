@@ -249,28 +249,7 @@ func directionKey(item any) (string, bool) {
 // group 1), as long as three are left; a repeat that would leave fewer stays
 // for the check, and the model is asked again.
 func cleanRepeatedDirections(a *Service, db model.Database, s Source, output map[string]any, payload *object) (map[string]any, int) {
-	items, ok := output["recommendations"].([]any)
-	if !ok {
-		return output, 0
-	}
-	seen := map[string]bool{}
-	kept := []any{}
-	dropped := 0
-	for _, item := range items {
-		key, ok := directionKey(item)
-		if ok && seen[key] && len(items)-dropped-1 >= recommendationLeast {
-			dropped++
-			continue
-		}
-		if ok {
-			seen[key] = true
-		}
-		kept = append(kept, item)
-	}
-	if dropped > 0 {
-		output["recommendations"] = kept
-	}
-	return output, dropped
+	return dropRepeated(output, directionKey, recommendationLeast)
 }
 
 // repeatedDirectionProblems finds a direction given to the same group twice.

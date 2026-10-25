@@ -650,9 +650,9 @@ func TestRetryIsToldTheProblemsOfEveryAttempt(t *testing.T) {
 		answer := goodTestAnswerV2(c.User)
 		switch call {
 		case 1:
-			answer["portrait"] = "Первое предложение. Второе предложение."
+			answer["conclusion"] = "Одно предложение."
 		case 2:
-			answer["ideal"] = "Одно предложение."
+			answer["paragraphs"].(map[string]any)["image"] = "Одно предложение."
 		case 3:
 			third = c.User
 		}
@@ -662,7 +662,7 @@ func TestRetryIsToldTheProblemsOfEveryAttempt(t *testing.T) {
 	if view := f.wait(); view.Status != portraitReady {
 		t.Fatalf("view: %+v", view)
 	}
-	if !strings.Contains(third, "portrait: предложений 2 вместо 1") || !strings.Contains(third, "ideal: предложений 1 вместо 2") {
+	if !strings.Contains(third, "conclusion: предложений 1 вместо 2") || !strings.Contains(third, "paragraphs.image: предложений 1 вместо 2–5") {
 		t.Fatalf("third attempt was told: %s", third[strings.Index(third, retryNote):])
 	}
 }

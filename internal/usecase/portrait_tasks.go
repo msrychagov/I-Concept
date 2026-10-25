@@ -370,9 +370,13 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 		check, clean = checkTestAnswerV2, cleanRepeatedDirections
 		// The portrait by an earlier version is shown while the one by a newer
 		// version is made (decision Д8): the input of v2 and v3 is the same, so
-		// their portraits are found by the fingerprint itself; v4 has its own.
+		// their portraits are found by the fingerprint itself; v4 and v5 have
+		// their own.
 		versions := []string{"v1"}
-		if climateInput(testPortraitTask, prompt.Version) {
+		switch {
+		case termsInput(testPortraitTask, prompt.Version):
+			check, clean, versions = checkTestAnswerV5, cleanRepeatedCodes, []string{"v4", "v3", "v1"}
+		case climateInput(testPortraitTask, prompt.Version):
 			check, versions = checkTestAnswerV4, []string{"v3", "v1"}
 		}
 		earlier = func(a *Service, db model.Database, s Source) []*object {
