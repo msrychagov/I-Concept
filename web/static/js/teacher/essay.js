@@ -281,7 +281,7 @@ ${o.change.length ? `<h3>Что обычно меняется</h3>${o.change.map
     // v2: by positions, inside by the surname as the students wrote it.
     function positionsBlock(groups) {
         if (!groups.length) return '<p class="muted">Преподавателей в эссе не называли.</p>';
-        const line = l => `<li><span class="essay-tag">${esc(l.kind)}</span> <button type="button" class="link" data-essay="${esc(l.submissionId)}">${esc(l.student)}</button> <small class="muted">взвод ${esc(l.platoon)}</small>: ${esc(l.text)}${l.quotes.length ? why(`<div class="quote-list">${l.quotes.map(q => `<span class="quote-chip static"><span>«${esc(q.quote)}»</span></span>`).join('')}</div>`) : ''}</li>`;
+        const line = l => `<li><span class="essay-tag">${esc(l.kind)}</span> <button type="button" class="link" data-essay="${esc(l.submissionId)}">${esc(l.student)}</button> <small class="muted">взвод ${esc(l.platoon)}</small> ${esc(l.text)}${l.quotes.length ? why(`<div class="quote-list">${l.quotes.map(q => `<span class="quote-chip static"><span>«${esc(q.quote)}»</span></span>`).join('')}</div>`) : ''}</li>`;
         return groups.map(g => `<div class="essay-position"><h3>${esc(capital(g.position))}</h3>${g.people.map(p => `<div class="essay-teacher"><b>${p.name ? esc(p.name) : '<span class="muted">Без фамилии</span>'}</b> <small class="muted">благодарностей ${p.thanks}, проблем ${p.problems}, упоминаний ${p.mentions}</small><ul class="essay-points">${p.lines.map(line).join('')}</ul></div>`).join('')}</div>`).join('');
     }
 
