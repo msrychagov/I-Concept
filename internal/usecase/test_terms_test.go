@@ -291,6 +291,11 @@ func TestFewerDirectionsGiveFewerRecommendations(t *testing.T) {
 	if left := output["recommendations"].([]any); changes != 1 || len(left) != 2 || len(repeatedCodeProblems(output)) != 0 {
 		t.Fatalf("%d changes, left %v", changes, left)
 	}
+	// A retry with a direction of another type is told the two that fit.
+	hint := strings.Join(fewDirectionsProblems([]string{"recommendations.3: тип направления не подходит к ситуации группы"}, payload), "; ")
+	if hint != "recommendations: студенту подходят только R15, R16 — дай столько пунктов, сколько этих направлений, каждое один раз; других кодов не бери" {
+		t.Fatalf("hint: %q", hint)
+	}
 	if floor := recommendationFloor(newObject()); floor != recommendationLeast {
 		t.Fatalf("floor of a platoon: %d", floor)
 	}

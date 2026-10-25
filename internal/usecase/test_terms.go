@@ -3,6 +3,7 @@ package usecase
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"vucdiagnostic/internal/domain/model"
 	"vucdiagnostic/internal/promptbank"
@@ -323,10 +324,40 @@ func checkTestAnswerV5(output map[string]any, payload *object) []string {
 		problems = append(problems, climateLevelProblems(key, texts[key])...)
 	}
 	problems = append(problems, unfoundStateProblems(texts, payload)...)
-	problems = append(problems, recommendationProblems(output, payload, recommendationFloor(payload), 4, situationAllowed(payload))...)
+	recommendations := recommendationProblems(output, payload, recommendationFloor(payload), 4, situationAllowed(payload))
+	problems = append(problems, recommendations...)
+	problems = append(problems, fewDirectionsProblems(recommendations, payload)...)
 	problems = append(problems, selfDeterminationProblems(output, payload)...)
 	problems = append(problems, repeatedCodeProblems(output)...)
 	return plainHints(problems)
+}
+
+// fewDirectionsProblems tells a retry, when fewer than three directions fit
+// the student and a recommendation took another one, to give as many points
+// as there are directions: the run of 25 October, Морозов, all of whose groups
+// are «образ принят и во многом достигнут», added a third point of a type that
+// does not fit for five attempts.
+func fewDirectionsProblems(recommendations []string, payload *object) []string {
+	if recommendationFloor(payload) >= recommendationLeast {
+		return nil
+	}
+	wrong := false
+	for _, p := range recommendations {
+		wrong = wrong || strings.Contains(p, "не подходит")
+	}
+	if !wrong {
+		return nil
+	}
+	codes := []string{}
+	for _, g := range objectList(payload.values["образ_защитника"]) {
+		for _, code := range textList(g.values["подходящие_направления"]) {
+			if !slices.Contains(codes, code) {
+				codes = append(codes, code)
+			}
+		}
+	}
+	slices.Sort(codes)
+	return []string{fmt.Sprintf("recommendations: студенту подходят только %s — дай столько пунктов, сколько этих направлений, каждое один раз; других кодов не бери", strings.Join(codes, ", "))}
 }
 
 // checkPlatoonAnswerV3 returns what is wrong with an answer to
