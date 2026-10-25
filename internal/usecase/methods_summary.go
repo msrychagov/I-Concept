@@ -53,7 +53,7 @@ type PlatoonView struct {
 	Defender  []PlatoonDefenderGroup `json:"defender"`
 	Catalogue []model.Direction      `json:"catalogue"`
 	// Climate is the climate of the platoon by the method of Lutoshkin; nil
-	// when no student answered all its pairs.
+	// when fewer than three students answered all its pairs.
 	Climate *PlatoonClimate `json:"climate,omitempty"`
 }
 

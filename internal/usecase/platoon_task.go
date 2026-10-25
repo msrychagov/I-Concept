@@ -166,8 +166,9 @@ const (
 
 // platoonPayloadFor builds the input of an instruction version. The input of
 // v1 stays as it was: the conclusions made are found by its fingerprint. From
-// v2 on it has the second edition of the catalogue and, when a student
-// answered all the pairs of the method, the climate of the platoon (Д5, Д6).
+// v2 on it has the second edition of the catalogue and, when three students
+// at least answered all the pairs of the method, the climate of the platoon
+// (Д5, Д6).
 func (a *Service) platoonPayloadFor(version string, data PlatoonPortraitData) *object {
 	payload := a.platoonPayload(data)
 	if !climateInput(testPlatoonTask, version) {

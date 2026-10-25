@@ -140,8 +140,12 @@ type PlatoonClimate struct {
 // climateSides is how many sides each list takes before the ties at the border.
 const climateSides = 3
 
-// platoonClimate counts the climate of a platoon; nil when no student answered
-// all the pairs.
+// platoonClimateMinimum is the fewest students with all the pairs answered the
+// climate of a platoon is counted of (decided by the user on 25 October 2026).
+const platoonClimateMinimum = 3
+
+// platoonClimate counts the climate of a platoon; nil when fewer than
+// platoonClimateMinimum students answered all the pairs.
 func platoonClimate(portraits []studentPortrait) *PlatoonClimate {
 	var c *PlatoonClimate
 	sums := []float64{}
@@ -163,7 +167,7 @@ func platoonClimate(portraits []studentPortrait) *PlatoonClimate {
 			ratings[pair.ID] = append(ratings[pair.ID], float64(*pair.Score))
 		}
 	}
-	if c == nil {
+	if c == nil || len(c.Rated) < platoonClimateMinimum {
 		return nil
 	}
 	c.Sum = meanPointer(sums, 10)

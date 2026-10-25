@@ -94,11 +94,13 @@ func TestTestPayloadV4AddsDanilovaAndClimate(t *testing.T) {
 // edition of the catalogue; a platoon without the method has no climate.
 func TestPlatoonPayloadV2HasTheClimate(t *testing.T) {
 	a := testApp(t)
-	data := a.platoonPortrait("101", []studentPortrait{
+	students := []studentPortrait{
 		climateSession(a, "А", 3, 3, 2, 2, 1, 1, 1, 0, 0, 0, -1, -1, -2, -3),
 		climateSession(a, "Б", 3, 1, 2, 2, 1, 1, 1, 0, 0, 0, -1, -1, -2, -3),
-		climateSession(a, "В", 3, 2, 1),
-	})
+		climateSession(a, "В", 3, 1, 2, 2, 1, 1, 1, 0, 0, 0, -1, -1, -2, -3),
+		climateSession(a, "Г", 3, 2, 1),
+	}
+	data := a.platoonPortrait("101", students)
 	old, payload := a.platoonPayloadFor("v1", data), a.platoonPayloadFor("v2", data)
 	want := slices.Clone(old.keys)
 	want = slices.Insert(want, slices.Index(want, "признаки_среды")+1, "климат_взвода")
@@ -106,8 +108,8 @@ func TestPlatoonPayloadV2HasTheClimate(t *testing.T) {
 		t.Fatalf("keys of v2: %v", payload.keys)
 	}
 	climate, _ := json.Marshal(payload.values["климат_взвода"])
-	expected, _ := json.Marshal(map[string]any{"оценили": 2, "сильнее_всего": sides(a, 1, 2, 3, 4), "слабее_всего": sides(a, 14, 13, 11, 12), "пометка": platoonClimateNote})
-	if !strings.HasPrefix(string(climate), `{"оценили":2,"сильнее_всего"`) || len(climate) != len(expected) {
+	expected, _ := json.Marshal(map[string]any{"оценили": 3, "сильнее_всего": sides(a, 1, 3, 4), "слабее_всего": sides(a, 14, 13, 11, 12), "пометка": platoonClimateNote})
+	if !strings.HasPrefix(string(climate), `{"оценили":3,"сильнее_всего"`) || len(climate) != len(expected) {
 		t.Fatalf("climate: %s", climate)
 	}
 	if got := string(canonicalJSON(climateCriterionOf(payload))); got != `{"критерий":"Психологический климат, сплочённость взвода","покрытие":"по взводу","пометка":"по оценкам самих студентов","данные":[{"см":"климат взвода — в «климат_взвода»"}]}` {
@@ -119,9 +121,13 @@ func TestPlatoonPayloadV2HasTheClimate(t *testing.T) {
 	if len(objectList(payload.values["каталог_рекомендаций"])) != 24 || len(objectList(old.values["каталог_рекомендаций"])) != 21 {
 		t.Fatal("catalogues")
 	}
-	without := a.platoonPortrait("101", fixedPlatoon(a, "pilot-2.5"))
-	if input := a.platoonPayloadFor("v2", without); slices.Contains(input.keys, "климат_взвода") || objectText(climateCriterionOf(input), "данные") != noData {
-		t.Fatalf("a platoon without the method: %v", input.keys)
+	// Without the method, or with two students who answered all the pairs,
+	// the platoon has no climate in the input, and the criterion no data.
+	for _, other := range []PlatoonPortraitData{a.platoonPortrait("101", fixedPlatoon(a, "pilot-2.5")), a.platoonPortrait("101", students[1:])} {
+		input := a.platoonPayloadFor("v2", other)
+		if slices.Contains(input.keys, "климат_взвода") || objectText(climateCriterionOf(input), "данные") != noData || objectText(signByName(input, "Сотрудничество и сплочённость"), "пометка") != "о климате взвода данных нет" {
+			t.Fatalf("a platoon without the climate: %v", input.keys)
+		}
 	}
 }
 

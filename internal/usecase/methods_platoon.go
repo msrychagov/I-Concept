@@ -77,7 +77,7 @@ type PlatoonPortraitData struct {
 	// Told is how many students wrote about their activity at all.
 	Told int `json:"told"`
 	// Climate is the climate of the platoon by the students who answered all
-	// the pairs of the method (climate.go); nil without them.
+	// the pairs of the method (climate.go); nil with fewer than three of them.
 	Climate *PlatoonClimate `json:"climate,omitempty"`
 }
 
