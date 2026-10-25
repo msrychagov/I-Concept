@@ -227,3 +227,13 @@ func TestStatusNamed(t *testing.T) {
 		t.Error("сформированная")
 	}
 }
+
+// A group named by its number is told to be named in words.
+func TestGroupNumberHint(t *testing.T) {
+	if got := strings.Join(fieldProblems("activity", "Это отдаляет его от образа в группе 3."), "; "); !strings.Contains(got, "activity: цифры в тексте — группу образа называй словами") {
+		t.Errorf("group: %s", got)
+	}
+	if got := strings.Join(fieldProblems("activity", "Оценка 7 из 10."), "; "); got != "activity: цифры в тексте" {
+		t.Errorf("figure: %s", got)
+	}
+}

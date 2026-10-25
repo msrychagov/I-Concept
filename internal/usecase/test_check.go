@@ -99,6 +99,9 @@ func sentenceCount(text string) int {
 
 var digit = regexp.MustCompile(`[0-9]`)
 
+// groupNumber is a group of the image named by its number: «в группе 3».
+var groupNumber = regexp.MustCompile(`(?i)групп[а-яё]*\s*№?\s*[0-9]`)
+
 // activityLeast is the fewest sentences of the section about activity and the
 // environment the check takes, in the portrait and in the conclusion by a
 // platoon: the model joins two thoughts by «;» (decided by the user on 24
@@ -116,7 +119,12 @@ func fieldProblems(field, text string) []string {
 		return []string{"нет поля " + field}
 	}
 	if digit.MatchString(text) {
-		problems = append(problems, field+": цифры в тексте")
+		// The run of 25 October: the model wrote «в группе 3» for three attempts.
+		hint := ""
+		if groupNumber.MatchString(text) {
+			hint = " — группу образа называй словами, например «в коммуникативных и коллективистских качествах», а не номером"
+		}
+		problems = append(problems, field+": цифры в тексте"+hint)
 	}
 	if found := diagnosis.FindString(text); found != "" {
 		problems = append(problems, fmt.Sprintf("%s: недопустимое слово («%s»)", field, strings.ToLower(found)))
