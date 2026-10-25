@@ -604,8 +604,13 @@ func TestTasksWithoutCleanAreChecked(t *testing.T) {
 	}
 	f.service.RegisterPrompts(prompts...)
 	for _, task := range f.service.portraits.tasks {
-		if (task.ID == autobiographyForm || task.ID == testPortraitTask) && task.Clean != nil {
+		if task.ID == autobiographyForm && task.Clean != nil {
 			t.Fatalf("%s must only be checked", task.ID)
+		}
+		// Since 25 October 2026 a repeated direction is dropped from the
+		// portrait by the test and from the conclusion by a platoon.
+		if (task.ID == testPortraitTask || task.ID == testPlatoonTask) && task.Clean == nil {
+			t.Fatalf("%s has no Clean", task.ID)
 		}
 	}
 }

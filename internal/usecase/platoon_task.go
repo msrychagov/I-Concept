@@ -55,7 +55,7 @@ func (a *Service) platoonTask(prompt promptbank.Prompt) portraitTask {
 			}
 			return group, ids
 		},
-		Check: checkPlatoonAnswer,
+		Clean: cleanRepeatedDirections, Check: checkPlatoonAnswer,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			owner, _, ok := splitPlatoon(s)
 			return ok && owner == teacherID
@@ -366,7 +366,8 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 		}
 	}
 
-	problems = append(problems, recommendationProblems(output, payload, 3, 5, nil)...)
+	problems = append(problems, recommendationProblems(output, payload, recommendationLeast, 5, nil)...)
+	problems = append(problems, repeatedDirectionProblems(output)...)
 	recommendationTexts(output, texts)
 	individual, ok := output["individual"].([]any)
 	if !ok || len(individual) > 3 {

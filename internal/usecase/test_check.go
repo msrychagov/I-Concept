@@ -433,9 +433,10 @@ func checkTestAnswerV2(output map[string]any, payload *object) []string {
 		number, _ := g.values["номер"].(int)
 		types[number] = objectText(g, "тип_рекомендации")
 	}
-	problems = append(problems, recommendationProblems(output, payload, 3, 4, func(group int, kind string) bool {
+	problems = append(problems, recommendationProblems(output, payload, recommendationLeast, 4, func(group int, kind string) bool {
 		return types[group] == "" || kind == types[group] || kind == "психологическая" && lowEV
 	})...)
 	problems = append(problems, selfDeterminationProblems(output, payload)...)
+	problems = append(problems, repeatedDirectionProblems(output)...)
 	return problems
 }

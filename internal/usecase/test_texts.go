@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"vucdiagnostic/internal/domain/model"
 )
 
 // The checks of the texts of the portrait by the test and of the conclusion by
@@ -165,4 +166,69 @@ func selfDeterminationProblems(output map[string]any, payload *object) []string 
 		return []string{fmt.Sprintf("recommendations: по военной специальности ведущий статус «%s» — нужен пункт к группе 2 о самоопределении как военного специалиста, со словом «самоопределение»", leading)}
 	}
 	return []string{fmt.Sprintf("recommendations: по военной специальности ведущий статус «%s» — нужен пункт к группе 2 о личном смысле выбора, со словами «смысл» и «выбор»", leading)}
+}
+
+// recommendationLeast is the fewest recommendations both instructions ask for.
+const recommendationLeast = 3
+
+// directionKey is the group and the direction of a recommendation.
+func directionKey(item any) (string, bool) {
+	record, ok := item.(map[string]any)
+	if !ok {
+		return "", false
+	}
+	number, isNumber := numberOf(record["group"])
+	code, _ := record["code"].(string)
+	if !isNumber || strings.TrimSpace(code) == "" {
+		return "", false
+	}
+	return fmt.Sprintf("%g/%s", number, strings.TrimSpace(code)), true
+}
+
+// cleanRepeatedDirections drops a recommendation that gives a group the
+// direction an earlier one already gave it (Морозов on 25 October: R16 twice to
+// group 1), as long as three are left; a repeat that would leave fewer stays
+// for the check, and the model is asked again.
+func cleanRepeatedDirections(a *Service, db model.Database, s Source, output map[string]any, payload *object) (map[string]any, int) {
+	items, ok := output["recommendations"].([]any)
+	if !ok {
+		return output, 0
+	}
+	seen := map[string]bool{}
+	kept := []any{}
+	dropped := 0
+	for _, item := range items {
+		key, ok := directionKey(item)
+		if ok && seen[key] && len(items)-dropped-1 >= recommendationLeast {
+			dropped++
+			continue
+		}
+		if ok {
+			seen[key] = true
+		}
+		kept = append(kept, item)
+	}
+	if dropped > 0 {
+		output["recommendations"] = kept
+	}
+	return output, dropped
+}
+
+// repeatedDirectionProblems finds a direction given to the same group twice.
+func repeatedDirectionProblems(output map[string]any) []string {
+	items, _ := output["recommendations"].([]any)
+	seen := map[string]bool{}
+	problems := []string{}
+	for n, item := range items {
+		key, ok := directionKey(item)
+		if !ok {
+			continue
+		}
+		if seen[key] {
+			group, code, _ := strings.Cut(key, "/")
+			problems = append(problems, fmt.Sprintf("recommendations.%d: направление %s к группе %s уже есть — возьми другое направление или другую группу", n+1, code, group))
+		}
+		seen[key] = true
+	}
+	return problems
 }

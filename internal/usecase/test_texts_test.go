@@ -1,8 +1,10 @@
 package usecase
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
+	"vucdiagnostic/internal/domain/model"
 )
 
 // The phrases of the answers accepted on 24–25 October that broke rule 2, and
@@ -143,5 +145,65 @@ func TestSelfDeterminationPoint(t *testing.T) {
 		if want == "" && strings.Contains(problems, "к группе 2") || want != "" && !strings.Contains(problems, "ведущий статус «"+leading+"» — нужен пункт к группе 2 "+want) {
 			t.Errorf("%s: %q", leading, problems)
 		}
+	}
+}
+
+func recommendationList(pairs ...any) []any {
+	list := []any{}
+	for n := 0; n < len(pairs); n += 2 {
+		list = append(list, map[string]any{"group": pairs[n], "code": pairs[n+1], "text": "Пункт."})
+	}
+	return list
+}
+
+// A direction given to a group twice is dropped while three are left, as at
+// Морозов on 25 October; otherwise the model is asked again.
+func TestRepeatedDirections(t *testing.T) {
+	for name, c := range map[string]struct {
+		given   []any
+		left    string
+		changes int
+		problem string
+	}{
+		"Морозов":         {recommendationList(1.0, "R16", 3.0, "R15", 5.0, "R16", 1.0, "R16"), "1/R16 3/R15 5/R16", 1, ""},
+		"two repeats":     {recommendationList(1.0, "R16", 1.0, "R16", 2.0, "R11", 1.0, "R16", 3.0, "R15"), "1/R16 2/R11 3/R15", 2, ""},
+		"three only":      {recommendationList(1.0, "R16", 3.0, "R15", 1.0, " R16"), "1/R16 3/R15 1/R16", 0, "recommendations.3: направление R16 к группе 1 уже есть — возьми другое направление или другую группу"},
+		"other groups":    {recommendationList(1.0, "R16", 3.0, "R16", 5.0, "R16"), "1/R16 3/R16 5/R16", 0, ""},
+		"one repeat of 4": {recommendationList(2.0, "R11", 2.0, "R13", 4.0, "R14", 2.0, "R11"), "2/R11 2/R13 4/R14", 1, ""},
+	} {
+		output, changes := cleanRepeatedDirections(nil, model.Database{}, Source{}, map[string]any{"recommendations": c.given}, nil)
+		left := []string{}
+		for _, item := range output["recommendations"].([]any) {
+			key, _ := directionKey(item)
+			left = append(left, key)
+		}
+		problems := strings.Join(repeatedDirectionProblems(output), "; ")
+		if strings.Join(left, " ") != c.left || changes != c.changes || problems != c.problem {
+			t.Errorf("%s: %v, %d changes, %q", name, left, changes, problems)
+		}
+	}
+}
+
+// The portrait is stored without the repeat, and the model is not asked again.
+func TestRepeatedDirectionIsCleanedFromThePortrait(t *testing.T) {
+	f := newTestPortraitFixture(t, true)
+	m := &fakeModel{name: "fake", reply: func(_ int, c Completion) (string, error) {
+		answer := goodTestAnswerV2(c.User)
+		list := answer["recommendations"].([]any)
+		answer["recommendations"] = append(list, list[0])
+		data, _ := json.Marshal(answer)
+		return string(data), nil
+	}}
+	f.service.UseModel(m)
+	f.service.queuePortraits(Source{"session", f.session})
+	view := f.wait()
+	if view.Status != portraitReady || view.Portrait == nil || m.count() != 1 {
+		t.Fatalf("%d calls, view: %+v", m.count(), view)
+	}
+	var stored struct {
+		Recommendations []any `json:"recommendations"`
+	}
+	if err := json.Unmarshal(view.Portrait.Output, &stored); err != nil || len(stored.Recommendations) != 3 {
+		t.Fatalf("stored: %s", view.Portrait.Output)
 	}
 }
