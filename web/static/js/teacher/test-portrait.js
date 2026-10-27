@@ -34,10 +34,11 @@ window.portraitRenderers.test = {
 // at by the next testing: the situation of the group and its scales of the
 // methods on the low level.
 function testRecommendations(items, esc, data) {
+    const lowerFirst = t => t ? t[0].toLowerCase() + t.slice(1) : t;
     const directions = Object.fromEntries((data.catalogue || []).map(d => [d.id, d.name]));
     const groups = Object.fromEntries((data.defender || []).map((g, n) => [n + 1, g]));
     const look = r => {
-        const low = ((groups[r.group] || {}).methods || []).filter(m => m.level === 'low').map(m => m.name.toLowerCase());
+        const low = ((groups[r.group] || {}).methods || []).filter(m => m.level === 'low').map(m => lowerFirst(m.name));
         return ['ситуацию в этой группе качеств', ...low].join('; ');
     };
     return (items || []).length ? `<h4>Рекомендации</h4><ul class="test-portrait-recommendations">${items.map(r => `<li><b>${esc(directions[r.code] || r.code)}</b>${groups[r.group] ? ` <span class="muted">(${esc(groups[r.group].name.toLowerCase())})</span>` : ''}. ${esc(r.text)}${testAction(r, esc, look(r))}</li>`).join('')}</ul>` : '';
@@ -56,6 +57,7 @@ function testAction(r, esc, look) {
 // the action of the model and what to look at; the groups past the first five
 // have no action and go under «Ещё нужна отдельная работа».
 function testWork(items, esc, data) {
+    const lowerFirst = t => t ? t[0].toLowerCase() + t.slice(1) : t;
     const groups = data.workGroups || [];
     const byLabel = Object.fromEntries(groups.map(g => [g.label, g]));
     const directions = Object.fromEntries((data.catalogue || []).map(d => [d.id, d.name]));
@@ -65,7 +67,7 @@ function testWork(items, esc, data) {
         const g = byLabel[r.label];
         const head = g ? `<b>${names(g)}</b><br>${bases(g)}<br>` : '';
         const direction = directions[r.code] ? ` <span class="muted">(${esc(directions[r.code].toLowerCase())})</span>` : '';
-        return `<li>${head}<span class="muted">Что сделать:</span> ${esc(r.text)}${direction}${testAction(r, esc, g ? g.look.map(x => x.toLowerCase()).join('; ') : '')}</li>`;
+        return `<li>${head}<span class="muted">Что сделать:</span> ${esc(r.text)}${direction}${testAction(r, esc, g ? g.look.map(lowerFirst).join('; ') : '')}</li>`;
     }).join('');
     const rest = groups.filter(g => !g.model).map(g => `<li><b>${names(g)}</b><br>${bases(g)}</li>`).join('');
     return (shown ? `<h4>Кому нужна отдельная работа</h4><ul class="test-portrait-work">${shown}</ul>` : '')

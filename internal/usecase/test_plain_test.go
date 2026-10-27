@@ -238,3 +238,13 @@ func TestFarIsSeparateWorkForFewerThanHalf(t *testing.T) {
 		t.Fatalf("all far: %+v", groups)
 	}
 }
+
+func TestLooksOfOneKindGoTogether(t *testing.T) {
+	looks := addLook(nil, "ситуация по качествам «дисциплина и собранность»")
+	looks = addLook(looks, "Самообладание")
+	looks = addLook(looks, "ситуация по качествам «товарищество и культура отношений»")
+	looks = addLook(looks, "Самообладание")
+	if want := []string{"ситуация по качествам «дисциплина и собранность», «товарищество и культура отношений»", "Самообладание"}; !slices.Equal(looks, want) {
+		t.Fatalf("looks: %q", looks)
+	}
+}

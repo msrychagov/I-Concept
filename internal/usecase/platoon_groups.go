@@ -203,9 +203,7 @@ func (a *Service) workGroups(portraits []studentPortrait) []PlatoonWorkGroup {
 		}
 		g := &groups[n]
 		g.Bases = append(g.Bases, c.basis)
-		if !slices.Contains(g.Look, c.look) {
-			g.Look = append(g.Look, c.look)
-		}
+		g.Look = addLook(g.Look, c.look)
 		for _, id := range c.groups {
 			if !slices.Contains(g.groups, id) {
 				g.groups = append(g.groups, id)
@@ -355,4 +353,20 @@ func lowestConditions(portraits []studentPortrait, of []MethodsStudent, conditio
 	}
 	lowest := sortedByLowest(rated, means)
 	return lowest[:min(workLowest, len(lowest))]
+}
+
+// addLook adds what to look at by the next testing; looks of the same kind
+// about different qualities go in one: «ситуация по качествам «A», «B»».
+func addLook(looks []string, look string) []string {
+	prefix, quoted, found := strings.Cut(look, "«")
+	for n, l := range looks {
+		if l == look {
+			return looks
+		}
+		if found && strings.HasPrefix(l, prefix+"«") {
+			looks[n] = l + ", «" + quoted
+			return looks
+		}
+	}
+	return append(looks, look)
 }
