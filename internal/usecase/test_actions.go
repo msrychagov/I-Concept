@@ -114,8 +114,12 @@ func actionProblems(field string, record map[string]any, directions map[string]s
 		problems = append(problems, field+".text: повторяет пример из инструкции — придумай действие по данным этого студента или этой группы")
 	}
 	code, _ := record["code"].(string)
+	// The run of 27 October: told only «повторяет название», the models kept
+	// «провести тренинг саморегуляции…» for five attempts; they are told the
+	// words not to write in a row.
 	if name := directions[strings.TrimSpace(code)]; name != "" && repeatsDirection(text, name) {
-		problems = append(problems, field+".text: повторяет название направления — это направление, а не действие; напиши, что именно сделать: на каком занятии, сборах, в наряде или в беседе, что студент там делает и зачем")
+		head := strings.TrimSpace(directionHead.Split(name, 2)[0])
+		problems = append(problems, fmt.Sprintf("%s.text: повторяет название направления «%s» — так называется направление, а не действие; не пиши эти слова подряд ни в какой форме, опиши само дело: на каком занятии, сборах, в наряде или в беседе, что студент там делает и зачем", field, lowerFirst(head)))
 	}
 	return problems
 }

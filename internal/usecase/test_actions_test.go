@@ -127,7 +127,7 @@ func TestTestAnswerV6Check(t *testing.T) {
 		"direction name": {func(a map[string]any) {
 			first(a)["code"] = "R19"
 			first(a)["text"] = "Провести для студента тренинг саморегуляции и стрессоустойчивости, чтобы он научился лучше справляться с нагрузкой на занятиях."
-		}, "recommendations.1.text: повторяет название направления"},
+		}, "recommendations.1.text: повторяет название направления «тренинг саморегуляции и стрессоустойчивости»"},
 		"latin": {func(a map[string]any) {
 			a["conclusion"] = "Студент ответственный и устойчивый. Главное в работе с ним — feedback."
 		}, "conclusion: буквы не русского алфавита"},
