@@ -17,8 +17,10 @@ import (
 )
 
 type Client struct {
-	URL      string
-	Model    string
+	URL   string
+	Model string
+	// Context is the context window in tokens; zero keeps 8192.
+	Context  int
 	http     *http.Client
 	mu       sync.RWMutex
 	prepared map[string]string
@@ -33,6 +35,13 @@ func New(url, model string) (*Client, error) {
 }
 
 func (c *Client) Name() string { return "ollama/" + c.Model }
+
+// SetTimeout limits one request to the model; zero or less keeps the default.
+func (c *Client) SetTimeout(d time.Duration) {
+	if d > 0 {
+		c.http.Timeout = d
+	}
+}
 
 // Prepare stores a system instruction in a derived Ollama model. It reuses the
 // base weights and stores no participant messages or conversation history.
@@ -78,12 +87,19 @@ func (c *Client) Complete(ctx context.Context, prompt usecase.Completion) (useca
 		model = prepared
 		messages = []map[string]string{{"role": "user", "content": prompt.User}}
 	}
+	window, limit := 8192, 5000
+	if c.Context > 0 {
+		window = c.Context
+	}
+	if prompt.MaxTokens > 0 {
+		limit = prompt.MaxTokens
+	}
 	reqBody := map[string]any{
 		"model":    model,
 		"stream":   false,
 		"think":    false,
 		"messages": messages,
-		"options":  map[string]any{"temperature": 0.15, "num_ctx": 8192, "num_predict": 5000},
+		"options":  map[string]any{"temperature": 0.15, "num_ctx": window, "num_predict": limit},
 	}
 	if len(prompt.Schema) > 0 {
 		reqBody["format"] = json.RawMessage(prompt.Schema)
