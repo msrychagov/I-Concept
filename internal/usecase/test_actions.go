@@ -59,8 +59,41 @@ func copiedExample(text string) bool {
 	return false
 }
 
-// actionProblems checks the who, the kind and the text of an action.
-func actionProblems(field string, record map[string]any) []string {
+// directionHeadLeast is the fewest words of the head of the name of a
+// direction the check of a repeated name takes: «Волонтёрская деятельность»
+// is an ordinary phrase, «Тренинг саморегуляции и стрессоустойчивости» is the
+// name the supervisor called «вода» on 27 October.
+const directionHeadLeast = 3
+
+// directionHead ends the head of the name of a direction.
+var directionHead = regexp.MustCompile(`[:(,]`)
+
+// stemWords are the words of a text cut to their first five letters, so that
+// «беседы-диалоги» and «беседа-диалог» are the same.
+func stemWords(text string) []string {
+	words := wordsOf(text)
+	for n, word := range words {
+		letters := []rune(word)
+		words[n] = string(letters[:min(len(letters), 5)])
+	}
+	return words
+}
+
+// repeatsDirection says whether a text has the head of the name of a
+// direction — before a colon, a bracket or a comma — word after word.
+func repeatsDirection(text, name string) bool {
+	head := directionHead.Split(name, 2)[0]
+	want := stemWords(head)
+	if len(wordsOf(head)) < directionHeadLeast {
+		return false
+	}
+	words := " " + strings.Join(stemWords(text), " ") + " "
+	return strings.Contains(words, " "+strings.Join(want, " ")+" ")
+}
+
+// actionProblems checks the who, the kind and the text of an action;
+// directions are the names of the catalogue by code.
+func actionProblems(field string, record map[string]any, directions map[string]string) []string {
 	problems := []string{}
 	who, _ := record["who"].(string)
 	if !slices.Contains(actionWho, strings.TrimSpace(who)) {
@@ -80,16 +113,30 @@ func actionProblems(field string, record map[string]any) []string {
 	if copiedExample(text) {
 		problems = append(problems, field+".text: повторяет пример из инструкции — придумай действие по данным этого студента или этой группы")
 	}
+	code, _ := record["code"].(string)
+	if name := directions[strings.TrimSpace(code)]; name != "" && repeatsDirection(text, name) {
+		problems = append(problems, field+".text: повторяет название направления — это направление, а не действие; напиши, что именно сделать: на каком занятии, сборах, в наряде или в беседе, что студент там делает и зачем")
+	}
 	return problems
 }
 
+// catalogueNames are the names of the directions of the input by code.
+func catalogueNames(payload *object) map[string]string {
+	names := map[string]string{}
+	for _, d := range objectList(payload.values["каталог_рекомендаций"]) {
+		names[objectText(d, "код")] = objectText(d, "направление")
+	}
+	return names
+}
+
 // recommendationActionProblems checks the action of every recommendation.
-func recommendationActionProblems(output map[string]any) []string {
+func recommendationActionProblems(output map[string]any, payload *object) []string {
 	items, _ := output["recommendations"].([]any)
+	directions := catalogueNames(payload)
 	problems := []string{}
 	for n, item := range items {
 		record, _ := item.(map[string]any)
-		problems = append(problems, actionProblems(fmt.Sprintf("recommendations.%d", n+1), record)...)
+		problems = append(problems, actionProblems(fmt.Sprintf("recommendations.%d", n+1), record, directions)...)
 	}
 	return problems
 }
@@ -186,7 +233,7 @@ func checkTestAnswerV6(output map[string]any, payload *object) []string {
 	problems = append(problems, fewDirectionsProblems(recommendations, payload)...)
 	problems = append(problems, selfDeterminationProblems(output, payload)...)
 	problems = append(problems, repeatedCodeProblems(output)...)
-	problems = append(problems, recommendationActionProblems(output)...)
+	problems = append(problems, recommendationActionProblems(output, payload)...)
 	return plainHints(problems)
 }
 
@@ -204,7 +251,7 @@ func checkPlatoonAnswerV4(output map[string]any, payload *object) []string {
 	}
 	problems = append(problems, recommendationProblems(output, payload, recommendationLeast, 5, nil)...)
 	problems = append(problems, repeatedCodeProblems(output)...)
-	problems = append(problems, recommendationActionProblems(output)...)
+	problems = append(problems, recommendationActionProblems(output, payload)...)
 	recommendationTexts(output, texts)
 	problems = append(problems, individualProblems(output, payload, texts)...)
 	_, measured := payload.values["климат_взвода"]
@@ -266,7 +313,7 @@ func individualProblems(output map[string]any, payload *object, texts map[string
 		text, _ := record["text"].(string)
 		texts[field+".text"] = text
 		problems = append(problems, fieldProblems(field+".text", text)...)
-		problems = append(problems, actionProblems(field, record)...)
+		problems = append(problems, actionProblems(field, record, catalogueNames(payload))...)
 	}
 	return problems
 }

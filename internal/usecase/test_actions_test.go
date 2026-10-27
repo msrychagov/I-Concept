@@ -124,6 +124,10 @@ func TestTestAnswerV6Check(t *testing.T) {
 		"copied example": {func(a map[string]any) {
 			first(a)["text"] = "Перед нормативами разобрать со студентом, в каких ситуациях на занятиях и в наряде он теряет выдержку."
 		}, "recommendations.1.text: повторяет пример из инструкции"},
+		"direction name": {func(a map[string]any) {
+			first(a)["code"] = "R19"
+			first(a)["text"] = "Провести для студента тренинг саморегуляции и стрессоустойчивости, чтобы он научился лучше справляться с нагрузкой на занятиях."
+		}, "recommendations.1.text: повторяет название направления"},
 		"latin": {func(a map[string]any) {
 			a["conclusion"] = "Студент ответственный и устойчивый. Главное в работе с ним — feedback."
 		}, "conclusion: буквы не русского алфавита"},
@@ -290,5 +294,28 @@ func TestPortraitV5IsShownWhileV6IsMade(t *testing.T) {
 	f.service.UseModel(&fakeModel{name: "fake", reply: answer})
 	if view := f.wait(); view.Status != portraitReady || view.Portrait.Version != "v6" || !strings.Contains(string(view.Portrait.Output), `"who"`) {
 		t.Fatalf("v6: %+v", view)
+	}
+}
+
+// The head of the name of a direction, word after word in any form, is a
+// repeated name; a head of two words is an ordinary phrase.
+func TestRepeatsDirection(t *testing.T) {
+	for text, want := range map[string]bool{
+		"Провести индивидуальные беседы-диалоги о ценностях и смыслах службы с теми, кто не принял образ.": true,
+		"Провести тренинг саморегуляции и стрессоустойчивости для тех, у кого эмоциональная устойчивость низкая.": true,
+		"Перед нормативами научить студента паре приёмов, которые помогают сохранять выдержку.":                 false,
+		"Привлечь студента к волонтёрской деятельности взвода на ближайшей акции памяти.":                       false,
+	} {
+		code := "R19"
+		if strings.Contains(text, "беседы") {
+			code = "R06"
+		}
+		if strings.Contains(text, "волонт") {
+			code = "R09"
+		}
+		names := map[string]string{"R06": "Индивидуальная беседа-диалог о ценностях и смыслах службы", "R09": "Волонтёрская деятельность", "R19": "Тренинг саморегуляции и стрессоустойчивости"}
+		if got := repeatsDirection(text, names[code]); got != want {
+			t.Errorf("%s: %v", text, got)
+		}
 	}
 }
