@@ -124,6 +124,40 @@ func statusNamedPlain(lower, name string) bool {
 	return ok && words.MatchString(lower)
 }
 
+// leadingStatusProblems finds, by profession, the leading statuses a
+// lower-case text does not name by their name or meaning. The run of 27
+// October on Qwen 3.5 9B: told the status alone, the model wrote of one
+// profession an attempt and left out the other; it is told the profession
+// and, when two statuses are equal, both.
+func leadingStatusProblems(payload *object, lower string) []string {
+	problems := []string{}
+	_, leading := leadingStatuses(payload)
+	for n, block := range objectList(payload.values["профессиональная_идентичность"]) {
+		if n >= len(leading) {
+			break
+		}
+		missing := []string{}
+		for _, name := range leading[n] {
+			if !statusNamedPlain(lower, name) {
+				missing = append(missing, name)
+			}
+		}
+		if len(missing) == 0 {
+			continue
+		}
+		profession := "по гражданской профессии"
+		if strings.HasPrefix(lowerText(objectText(block, "профессия")), "военн") {
+			profession = "по военной специальности"
+		}
+		statuses := "«" + strings.Join(leading[n], "» и «") + "»"
+		if len(leading[n]) > 1 {
+			statuses += " (выражены одинаково — назови оба)"
+		}
+		problems = append(problems, fmt.Sprintf("paragraphs.will: не назван ведущий статус %s — %s; во втором абзаце напиши о самоопределении и по военной специальности, и по гражданской профессии, назови статус этим словом или его смыслом из «что_значит»", profession, statuses))
+	}
+	return problems
+}
+
 // checkTestAnswerV6 returns what is wrong with an answer to test/v6: the
 // rules of v5, a status by its name or meaning, the actions and no letters of
 // another alphabet.
@@ -135,16 +169,7 @@ func checkTestAnswerV6(output map[string]any, payload *object) []string {
 		problems = append(problems, namedLevelProblems(key, texts[key], names)...)
 		problems = append(problems, kindsListProblems(key, texts[key])...)
 	}
-	if given, leading := leadingStatuses(payload); given {
-		lower := normalizedText(joinedParagraphs(texts))
-		for _, list := range leading {
-			for _, name := range list {
-				if !statusNamedPlain(lower, name) {
-					problems = append(problems, "paragraphs.will: не назван ведущий статус «"+name+"» — назови его этим словом или его смыслом из «что_значит»")
-				}
-			}
-		}
-	}
+	problems = append(problems, leadingStatusProblems(payload, normalizedText(joinedParagraphs(texts)))...)
 	recommendationTexts(output, texts)
 	for _, key := range sortedTextKeys(texts) {
 		problems = append(problems, termProblems(key, texts[key])...)

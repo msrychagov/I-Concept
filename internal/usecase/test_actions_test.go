@@ -130,6 +130,9 @@ func TestTestAnswerV6Check(t *testing.T) {
 		"chinese": {func(a map[string]any) {
 			a["paragraphs"].(map[string]any)["values"] = "Студент превращает трудности в动力 для роста. Ценности службы для него значимы. Товарищество выражено слабее."
 		}, "paragraphs.values: буквы не русского алфавита"},
+		"no status": {func(a map[string]any) {
+			a["paragraphs"].(map[string]any)["will"] = "Студент владеет собой и настойчив. Опыт он использует и осмысливает."
+		}, "paragraphs.will: не назван ведущий статус по военной специальности — «"},
 		"term": {func(a map[string]any) {
 			a["paragraphs"].(map[string]any)["image"] = "Я-идеальное студента согласовано. Ближе всего к образу он в верности долгу."
 		}, "paragraphs.image: термин «Я-идеал…»"},
