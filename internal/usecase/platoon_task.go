@@ -42,7 +42,10 @@ func (a *Service) platoonTask(prompt promptbank.Prompt) portraitTask {
 	var earlier func(a *Service, db model.Database, s Source) []*object
 	check, clean := checkPlatoonAnswer, cleanRepeatedDirections
 	versions := []string{"v1"}
-	if termsInput(testPlatoonTask, prompt.Version) {
+	switch {
+	case plainInput(testPlatoonTask, prompt.Version):
+		check, clean, versions = checkPlatoonAnswerV4, cleanUnfitCodes, []string{"v3", "v2", "v1"}
+	case termsInput(testPlatoonTask, prompt.Version):
 		check, clean, versions = checkPlatoonAnswerV3, cleanRepeatedCodes, []string{"v2", "v1"}
 	}
 	if climateInput(testPlatoonTask, prompt.Version) {

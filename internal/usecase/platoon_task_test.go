@@ -14,6 +14,9 @@ import (
 // goodPlatoonAnswer answers test-platoon/v1 the way it asks, for the input.
 func goodPlatoonAnswer(user string) map[string]any {
 	user, _, _ = strings.Cut(user, "\n\n"+retryNote)
+	if strings.Contains(user, `"среда_по_главе_1"`) {
+		return goodPlatoonAnswerV4(user)
+	}
 	if strings.Contains(user, `"словарь"`) {
 		return goodPlatoonAnswerV3(user)
 	}
@@ -161,7 +164,7 @@ func TestPlatoonConclusionIsMadeByTheButtonOfThreeStudents(t *testing.T) {
 	if view, _ = f.service.PortraitFor(f.teacherID, testPlatoonTask, "101"); view.Status != portraitReady {
 		t.Fatalf("after: %+v", view)
 	}
-	if platoonCalls != 1 || m.count() != 4 || !strings.Contains(user, `"студентов": 3`) || !strings.Contains(user, `"образ_защитника"`) || !strings.Contains(user, `"признаки_среды"`) {
+	if platoonCalls != 1 || m.count() != 4 || !strings.Contains(user, `"студентов": 3`) || !strings.Contains(user, `"образ_защитника"`) || !strings.Contains(user, `"среда_по_главе_1"`) {
 		t.Fatalf("%d calls, input: %.400s", m.count(), user)
 	}
 	for _, name := range f.names {

@@ -568,6 +568,8 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 		// their own.
 		versions := []string{"v1"}
 		switch {
+		case plainInput(testPortraitTask, prompt.Version):
+			check, clean, versions = checkTestAnswerV6, cleanUnfitCodes, []string{"v5", "v4", "v3", "v1"}
 		case termsInput(testPortraitTask, prompt.Version):
 			check, clean, versions = checkTestAnswerV5, cleanRepeatedCodes, []string{"v4", "v3", "v1"}
 		case climateInput(testPortraitTask, prompt.Version):

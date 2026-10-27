@@ -197,9 +197,11 @@ func TestPortraitV3IsShownWhileV4IsMade(t *testing.T) {
 		t.Fatal(err)
 	}
 	older := slices.DeleteFunc(slices.Clone(prompts), func(p promptbank.Prompt) bool {
-		return p.Task == testPortraitTask && (p.Version == "v4" || p.Version == "v5")
+		return p.Task == testPortraitTask && (p.Version == "v4" || p.Version == "v5" || p.Version == "v6")
 	})
-	prompts = slices.DeleteFunc(slices.Clone(prompts), func(p promptbank.Prompt) bool { return p.Task == testPortraitTask && p.Version == "v5" })
+	prompts = slices.DeleteFunc(slices.Clone(prompts), func(p promptbank.Prompt) bool {
+		return p.Task == testPortraitTask && (p.Version == "v5" || p.Version == "v6")
+	})
 	f.service.portraits.tasks = nil
 	f.service.RegisterPrompts(older...)
 	f.service.UseModel(&fakeModel{name: "fake", reply: func(_ int, c Completion) (string, error) {

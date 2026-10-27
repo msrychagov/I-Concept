@@ -11,6 +11,9 @@ import (
 // given; an input with the dictionary of the terms is answered as test/v5 asks.
 func goodTestAnswerV2(user string) map[string]any {
 	user, _, _ = strings.Cut(user, "\n\n"+retryNote)
+	if strings.Contains(user, `"среда_по_главе_1"`) {
+		return goodTestAnswerV6(user)
+	}
 	if strings.Contains(user, `"словарь"`) {
 		return goodTestAnswerV5(user)
 	}
