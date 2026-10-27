@@ -29,11 +29,47 @@ window.portraitRenderers.test = {
 };
 
 // recommendationList names the direction of the catalogue and the group of the
-// image of every recommendation.
+// image of every recommendation; an action of test/v6 or test-platoon/v4 also
+// says who does it, in which activity, and what the program suggests to look
+// at by the next testing: the situation of the group and its scales of the
+// methods on the low level.
 function testRecommendations(items, esc, data) {
     const directions = Object.fromEntries((data.catalogue || []).map(d => [d.id, d.name]));
-    const groups = Object.fromEntries((data.defender || []).map((g, n) => [n + 1, g.name]));
-    return (items || []).length ? `<h4>Рекомендации</h4><ul class="test-portrait-recommendations">${items.map(r => `<li><b>${esc(directions[r.code] || r.code)}</b>${groups[r.group] ? ` <span class="muted">(${esc(groups[r.group].toLowerCase())})</span>` : ''}. ${esc(r.text)}</li>`).join('')}</ul>` : '';
+    const groups = Object.fromEntries((data.defender || []).map((g, n) => [n + 1, g]));
+    const look = r => {
+        const low = ((groups[r.group] || {}).methods || []).filter(m => m.level === 'low').map(m => m.name.toLowerCase());
+        return ['ситуацию в этой группе качеств', ...low].join('; ');
+    };
+    return (items || []).length ? `<h4>Рекомендации</h4><ul class="test-portrait-recommendations">${items.map(r => `<li><b>${esc(directions[r.code] || r.code)}</b>${groups[r.group] ? ` <span class="muted">(${esc(groups[r.group].name.toLowerCase())})</span>` : ''}. ${esc(r.text)}${testAction(r, esc, look(r))}</li>`).join('')}</ul>` : '';
+}
+
+// testAction is the line under an action: who does it, in which activity and
+// what to look at by the next testing.
+function testAction(r, esc, look) {
+    if (!r.who) return '';
+    const parts = [`Кто: ${r.who}`, r.kind ? `${r.kind} деятельность` : '', look ? `при следующем тестировании посмотреть: ${look}` : ''].filter(Boolean);
+    return `<small class="test-portrait-action muted">${esc(parts.join(' · '))}</small>`;
+}
+
+// testWork is «Кому нужна отдельная работа» of test-platoon/v4: the groups the
+// program put together, by the label of the answer, with the names, the bases,
+// the action of the model and what to look at; the groups past the first five
+// have no action and go under «Ещё нужна отдельная работа».
+function testWork(items, esc, data) {
+    const groups = data.workGroups || [];
+    const byLabel = Object.fromEntries(groups.map(g => [g.label, g]));
+    const directions = Object.fromEntries((data.catalogue || []).map(d => [d.id, d.name]));
+    const names = g => g.students.map(s => `<button type="button" class="text-button" data-session="${esc(s.sessionId)}">${esc(s.name)}</button>`).join(', ');
+    const bases = g => `<span class="muted">По тесту:</span> ${esc(g.bases.join('; '))}.`;
+    const shown = (items || []).map(r => {
+        const g = byLabel[r.label];
+        const head = g ? `<b>${names(g)}</b><br>${bases(g)}<br>` : '';
+        const direction = directions[r.code] ? ` <span class="muted">(${esc(directions[r.code].toLowerCase())})</span>` : '';
+        return `<li>${head}<span class="muted">Что сделать:</span> ${esc(r.text)}${direction}${testAction(r, esc, g ? g.look.map(x => x.toLowerCase()).join('; ') : '')}</li>`;
+    }).join('');
+    const rest = groups.filter(g => !g.model).map(g => `<li><b>${names(g)}</b><br>${bases(g)}</li>`).join('');
+    return (shown ? `<h4>Кому нужна отдельная работа</h4><ul class="test-portrait-work">${shown}</ul>` : '')
+        + (rest ? `<h4>Ещё нужна отдельная работа</h4><ul class="test-portrait-work">${rest}</ul>` : '');
 }
 
 // paragraphs are the four paragraphs of the portrait of v5 or of the
@@ -70,7 +106,9 @@ function v2(output, esc, data) {
 window.portraitRenderers['test-platoon'] = {
     text(output, esc, data) {
         const paragraph = (title, text) => text ? `<h4>${esc(title)}</h4><p>${esc(text)}</p>` : '';
-        const individual = (output.individual || []).length ? `<h4>Кому нужна отдельная работа</h4><ul>${output.individual.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+        const work = output.individual || [];
+        const individual = work.length && typeof work[0] === 'object' ? testWork(work, esc, data || {})
+            : work.length ? `<h4>Кому нужна отдельная работа</h4><ul>${work.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
         if (output.paragraphs) {
             return `<div class="test-portrait-text">
    ${testParagraphs(output, esc)}
@@ -273,6 +311,7 @@ window.testPortrait = (() => {
                     }
                     box.querySelector('[data-platoon-make]')?.addEventListener('click', () => run('POST'));
                     box.querySelector('[data-portrait-retry]')?.addEventListener('click', () => run('POST'));
+                    box.querySelectorAll('[data-session]').forEach(b => b.onclick = () => open(b.dataset.session));
                 }
             }, first);
         };

@@ -596,6 +596,17 @@
     margin-bottom: .3rem
 }
 
+/* Who does an action and what to look at by the next testing: under it. */
+.test-portrait-action {
+    display: block;
+    margin-top: .15rem
+}
+
+/* A group of students for separate work: the names, the bases, the action. */
+.test-portrait-work li {
+    margin-bottom: .6rem
+}
+
 #platoon-conclusion:not(:empty) {
     margin-bottom: 1.2rem
 }
