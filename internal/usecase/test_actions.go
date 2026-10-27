@@ -149,9 +149,13 @@ func leadingStatusProblems(payload *object, lower string) []string {
 		if strings.HasPrefix(lowerText(objectText(block, "профессия")), "военн") {
 			profession = "по военной специальности"
 		}
-		statuses := "«" + strings.Join(leading[n], "» и «") + "»"
-		if len(leading[n]) > 1 {
+		statuses := "«" + strings.Join(leading[n], "», «") + "»"
+		switch len(leading[n]) {
+		case 1:
+		case 2:
 			statuses += " (выражены одинаково — назови оба)"
+		default:
+			statuses += " (выражены одинаково — назови все)"
 		}
 		problems = append(problems, fmt.Sprintf("paragraphs.will: не назван ведущий статус %s — %s; во втором абзаце напиши о самоопределении и по военной специальности, и по гражданской профессии, назови статус этим словом или его смыслом из «что_значит»", profession, statuses))
 	}
