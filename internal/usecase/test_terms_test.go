@@ -393,3 +393,11 @@ func TestPayloadsV4AndPlatoonV2AreKept(t *testing.T) {
 	keptInput(t, "v4.json", indentedJSON(a.testPayloadFor("v4", a.TestPortrait(fixedTestSession(a, a.bank.Version)))))
 	keptInput(t, "platoon-v2.json", indentedJSON(a.platoonPayloadFor("v2", a.platoonPortrait("101", fixedPlatoon(a, a.bank.Version)))))
 }
+
+// The inputs of test/v5 and test-platoon/v3 must not change either: the
+// portraits made by them are shown while those by v6 and v4 are made.
+func TestPayloadsV5AndPlatoonV3AreKept(t *testing.T) {
+	a := testApp(t)
+	keptInput(t, "v5.json", indentedJSON(a.testPayloadFor("v5", a.TestPortrait(fixedTestSession(a, a.bank.Version)))))
+	keptInput(t, "platoon-v3.json", indentedJSON(a.platoonPayloadFor("v3", a.platoonPortrait("101", fixedPlatoon(a, a.bank.Version)))))
+}
