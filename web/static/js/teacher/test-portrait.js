@@ -66,7 +66,7 @@ function testWork(items, esc, data) {
     const shown = (items || []).map(r => {
         const g = byLabel[r.label];
         const head = g ? `<b>${names(g)}</b><br>${bases(g)}<br>` : '';
-        const direction = directions[r.code] ? ` <span class="muted">(${esc(directions[r.code].toLowerCase())})</span>` : '';
+        const direction = directions[r.code] ? ` <span class="muted">(${esc(lowerFirst(directions[r.code]))})</span>` : '';
         return `<li>${head}<span class="muted">Что сделать:</span> ${esc(r.text)}${direction}${testAction(r, esc, g ? g.look.map(lowerFirst).join('; ') : '')}</li>`;
     }).join('');
     const rest = groups.filter(g => !g.model).map(g => `<li><b>${names(g)}</b><br>${bases(g)}</li>`).join('');
