@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -129,7 +130,11 @@ func localAnalysisModel() usecase.TextModel {
 }
 
 // languageModel reads the GigaChat settings; without the key or the model it is off.
+// LANGUAGE_MODEL=local gives the conclusions to the local Ollama model instead.
 func languageModel() usecase.TextModel {
+	if env("LANGUAGE_MODEL", "") == "local" {
+		return localLanguageModel()
+	}
 	config := gigachat.Config{
 		AuthKey:  env("GIGACHAT_AUTH_KEY", ""),
 		Model:    env("GIGACHAT_MODEL", ""),
@@ -146,6 +151,28 @@ func languageModel() usecase.TextModel {
 		log.Printf("Language model: %v", err)
 		return nil
 	}
+	return client
+}
+
+// localLanguageModel writes the conclusions with LOCAL_LLM_MODEL. The inputs are
+// long, so the context window is LOCAL_LLM_CONTEXT (32768 by default) and one
+// answer may take LOCAL_LLM_TIMEOUT (20m by default).
+func localLanguageModel() usecase.TextModel {
+	client, err := ollama.New(env("LOCAL_LLM_URL", "http://localhost:11434"), env("LOCAL_LLM_MODEL", ""))
+	if err != nil {
+		log.Print("Language model: set LOCAL_LLM_MODEL for LANGUAGE_MODEL=local")
+		return nil
+	}
+	client.Context = 32768
+	if n, err := strconv.Atoi(env("LOCAL_LLM_CONTEXT", "")); err == nil && n > 0 {
+		client.Context = n
+	}
+	timeout, err := time.ParseDuration(env("LOCAL_LLM_TIMEOUT", "20m"))
+	if err != nil {
+		log.Print("Language model: LOCAL_LLM_TIMEOUT is not a duration, using 20m")
+		timeout = 20 * time.Minute
+	}
+	client.SetTimeout(timeout)
 	return client
 }
 
