@@ -221,7 +221,10 @@ func (a *Service) testPayloadFor(version string, data *TestPortraitData) *object
 	if climateInput(testPortraitTask, version) {
 		a.addDanilovaAndClimate(payload, data)
 	}
-	if termsInput(testPortraitTask, version) {
+	// From v6 on the input is in plain words, without the dictionary.
+	if plainInput(testPortraitTask, version) {
+		a.plainTestPayload(payload, data)
+	} else if termsInput(testPortraitTask, version) {
 		signs := []string{}
 		for _, sign := range data.EnvironmentSigns {
 			signs = append(signs, sign.ID)
