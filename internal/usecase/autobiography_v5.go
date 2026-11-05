@@ -527,7 +527,7 @@ func trainingProblemsV5(points []any, payload *object) []string {
 		text, where := point.(string), fmt.Sprintf("training, пункт %d", n+1)
 		lower := strings.ToLower(text)
 		if kinds := trainingKindsV5(text, work); len(kinds) > 1 {
-			problems = append(problems, fmt.Sprintf("%s: в одном пункте сразу %s — по пункту на каждое обстоятельство", where, strings.Join(kinds, " и ")))
+			problems = append(problems, fmt.Sprintf("%s: в одном пункте сразу %s и %s — по пункту на каждое обстоятельство", where, strings.Join(kinds[:len(kinds)-1], ", "), kinds[len(kinds)-1]))
 		}
 		about := trainingWordV5.MatchString(text)
 		for _, stem := range jobs {
