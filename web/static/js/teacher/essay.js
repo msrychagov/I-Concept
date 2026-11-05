@@ -4,7 +4,7 @@
 window.teacherEssays = async function ({view, api, esc}) {
     const FORM = 'essay';
     const MOMENTS = {beliefs: 'Убеждения', emotions: 'Эмоции', values: 'Ценности', abilities: 'Восприятие своих возможностей'};
-    let data, current = '', summary = null, search = '', platoon = '', status = '', form = null, timer = 0;
+    let data, current = '', summary = null, values = null, search = '', platoon = '', status = '', form = null, timer = 0;
     const fmtDate = v => v ? new Date(v).toLocaleDateString('ru-RU') : '';
     const alive = () => view.isConnected;
     const waiting = s => s === 'queued' || s === 'working';
@@ -18,6 +18,8 @@ window.teacherEssays = async function ({view, api, esc}) {
         data = await api('/essays');
         if (!data.assignments.some(a => a.id === current)) current = data.assignments[0]?.id || '';
         summary = current ? await api('/essays/assignments/' + encodeURIComponent(current) + '/summary') : null;
+        // The values over the essays need no summary of the model (decision Г5).
+        values = current ? await api('/values/assignments/' + encodeURIComponent(current)).catch(() => null) : null;
         if (alive()) draw();
         schedule();
     }
@@ -123,7 +125,7 @@ window.teacherEssays = async function ({view, api, esc}) {
     }
 
     // ---- the analysis of one essay ------------------------------------------
-    let portrait = null, instructors = null;
+    let portrait = null, instructors = null, stopValues = () => {};
     const answerMap = (form, submission) => {
         const result = {};
         form.sections.forEach(s => s.fields.forEach(f => {
@@ -167,9 +169,9 @@ window.teacherEssays = async function ({view, api, esc}) {
     // v2 names a person by the position and the surname the author wrote
     // (decided 25 October 2026); the first answers of v2 had the label of v1.
     const capital = text => text ? text[0].toUpperCase() + text.slice(1) : text;
-    function teacherLines(list, esc) {
+    function teacherLines(list, esc, intro = '') {
         if (!list.length) return '';
-        return `<section class="essay-findings-teachers"><h3>Преподаватели</h3><ul class="essay-points">${list.map(t => {
+        return `<section class="essay-findings-teachers"><h3>Преподаватели</h3>${intro}<ul class="essay-points">${list.map(t => {
             if (t.position !== undefined) return `<li><b>${t.name ? esc(t.name) : '<span class="muted">Без фамилии</span>'}</b> <span class="essay-tag">${esc(t.position)}</span> <span class="essay-tag">${esc(t.kind)}</span> ${esc(t.text)}${quotesWhy(t.quotes, esc)}</li>`;
             const w = who(t.who);
             const fit = (t.candidates || []).map(l => who(l).short).join('; ');
@@ -184,8 +186,22 @@ ${paragraph(o.formation, o.formation.before || [])}${paragraph(o.moments)}${para
 <h3>Рекомендации</h3><ol class="essay-advice">${o.recommendations.map(r => `<li>${esc(r.text)}${quotesWhy(r.quotes, esc)}</li>`).join('')}</ol></section>${teacherLines(o.teachers, esc)}`;
     }
 
+    // v3 (decided 5 November 2026): what the center brought up and what to
+    // strengthen instead of the recommendations; the conclusion about the
+    // teachers above the lines of the people the author names.
+    function analysisV3(o, esc) {
+        const paragraph = (p, before) => `<div class="essay-paragraph"><p>${esc(p.text)}</p>${quotesWhy(p.quotes, esc, before)}</div>`;
+        const list = items => `<ol class="essay-advice">${items.map(r => `<li>${esc(r.text)}${quotesWhy(r.quotes, esc)}</li>`).join('')}</ol>`;
+        const conclusion = o.teachersConclusion?.text ? paragraph(o.teachersConclusion) : '';
+        return `<section class="essay-findings"><h3>Выводы по эссе</h3><p class="muted essay-note">Выводы по тексту эссе. Из чего сделан вывод — по кнопке под абзацем.</p>
+${paragraph(o.formation, o.formation.before || [])}${paragraph(o.moments)}${paragraph(o.environment)}
+<h3>Что воспитал ВУЦ</h3>${o.developed.length ? list(o.developed) : '<p class="muted">Перемен, которые автор связывает с ВУЦ, в эссе нет.</p>'}
+<h3>Что ещё усилить</h3>${list(o.strengthen)}</section>${teacherLines(o.teachers, esc, conclusion)}`;
+    }
+
     window.portraitRenderers.essay = {
         analysis: (o, esc) => {
+            if (o.developed) return analysisV3(o, esc);
             if (o.formation) return analysisV2(o, esc);
             const points = (title, list) => `<div><h3>${title}</h3>${list.length ? `<ul class="essay-points">${list.map(p => `<li>${tags(p, esc)} ${esc(p.text)}${quotes(p.quotes, esc)}</li>`).join('')}</ul>` : '<p class="muted">Нет.</p>'}</div>`;
             const teachers = o.teachers.length ? `<section><h3>Преподаватели</h3><ul class="essay-points">${o.teachers.map(t => {
@@ -203,6 +219,7 @@ ${paragraph(o.formation, o.formation.before || [])}${paragraph(o.moments)}${para
 
     async function openEssay(id) {
         portrait?.stop();
+        stopValues();
         openDialog('<h2>Загрузка эссе…</h2>');
         try {
             const [d, list] = await Promise.all([api('/submissions/' + encodeURIComponent(id)), instructors ? Promise.resolve(null) : api('/teachers/me/instructors').catch(() => null)]);
@@ -212,7 +229,7 @@ ${paragraph(o.formation, o.formation.before || [])}${paragraph(o.moments)}${para
             const questions = questionMap(d.form);
             const dialog = openDialog(`<div class="section-title"><div><h2>${esc(student?.name || 'Студент')}</h2><p>Взвод ${esc(student?.platoon || '')} · ${esc(context.assignmentTitle || d.form.title)}${s.completed ? ' · сдано ' + fmtDate(s.completedAt) : ''}</p></div><button class="secondary" data-close>Закрыть</button></div>
    ${s.completed ? '' : `<p class="draft-note">Не сдано: заполнено разделов ${d.progress.complete.length} из ${d.progress.total}. Показан черновик, разбора пока нет.</p>`}
-   <div id="essay-analysis"></div><div id="quote-view" aria-live="polite"></div>
+   <div id="essay-analysis"></div><section id="essay-values" class="values-block" hidden></section><div id="quote-view" aria-live="polite"></div>
    ${context.previous ? `<details class="essay-previous"><summary>Прежнее эссе (${esc(context.previous.assignmentTitle || 'без названия')}, сдано ${fmtDate(context.previous.completedAt)})</summary>${window.formView.answers(d.form, context.previous, esc)}</details>` : ''}
    <h3 class="answers-heading">Ответы</h3>${window.formView.answers(d.form, s, esc)}`);
             dialog.onclick = e => {
@@ -225,6 +242,7 @@ ${paragraph(o.formation, o.formation.before || [])}${paragraph(o.moments)}${para
                 box.scrollIntoView({block: 'nearest', behavior: 'smooth'});
             };
             if (!s.completed) return;
+            stopValues = window.valuesBlock.mount({element: dialog.querySelector('#essay-values'), api, esc, id, title: 'Ценности в эссе', clickable: true});
             const box = dialog.querySelector('#essay-analysis');
             const run = (first = 'GET') => {
                 portrait?.stop();
@@ -262,9 +280,26 @@ ${['formation', 'moments', 'environment'].map(paragraph).join('')}
 <h3>Рекомендации</h3>${o.recommendations.length ? `<ol class="essay-advice">${o.recommendations.map((r, i) => `<li>${esc(r.text)}${sourcesWhy(c.recommendations[i])}</li>`).join('')}</ol>` : '<p class="muted">Общих рекомендаций не нашлось.</p>'}${left}</section>`;
     }
 
+    // v3: what the center brought up in the cohort and what to strengthen; the
+    // conclusion about the teachers stands above the block of the program.
+    function summaryBodyV3(sm) {
+        const o = sm.output, c = sm.common;
+        const paragraph = key => `<div class="essay-paragraph"><p>${esc(o[key].text)}</p>${sourcesWhy(c[key])}</div>`;
+        const list = (items, groups) => `<ol class="essay-advice">${items.map((r, i) => `<li>${esc(r.text)}${sourcesWhy(groups[i])}</li>`).join('')}</ol>`;
+        const left = c.notIncluded.length ? `<details class="essay-left"><summary>Не вошло в общее «Что усилить»: ${c.notIncluded.length}</summary><p class="muted">Пункты «что ещё усилить» из разборов, на которые не опирается ни один пункт сводки.</p><ul class="essay-source-list">${c.notIncluded.map(s => `<li><button type="button" class="link" data-essay="${esc(s.submissionId)}">${esc(s.student)}</button> <small class="muted">взвод ${esc(s.platoon)}</small> ${esc(s.text)}</li>`).join('')}</ul></details>` : '';
+        return `<section class="essay-findings"><h3>Выводы по выпуску</h3><p class="muted essay-note">Выводы по разборам эссе. Из чего сделан вывод — по кнопке под абзацем.</p>
+${['formation', 'moments', 'environment'].map(paragraph).join('')}
+<h3>Что воспитал ВУЦ у выпуска</h3>${o.developed.length ? list(o.developed, c.developed) : '<p class="muted">Общего, что авторы связывают с ВУЦ, не нашлось.</p>'}
+<h3>Что усилить</h3>${o.strengthen.length ? list(o.strengthen, c.strengthen) : '<p class="muted">Общего не нашлось.</p>'}${left}</section>`;
+    }
+
+    // The pedagogical conclusion of a summary of v3 about the teachers.
+    const teachersConclusion = sm => sm?.output?.teachersConclusion?.text ? `<div class="essay-findings"><div class="essay-paragraph"><p>${esc(sm.output.teachersConclusion.text)}</p>${sourcesWhy(sm.common.teachersConclusion)}</div></div>` : '';
+
     const byAuthors = (items, groups) => items.map((item, i) => ({item, group: groups[i]})).sort((a, b) => (b.group?.authors || 0) - (a.group?.authors || 0));
 
     function summaryBody(sm) {
+        if (sm.output.developed) return summaryBodyV3(sm);
         if (sm.output.formation) return summaryBodyV2(sm);
         const o = sm.output, c = sm.common;
         const list = (title, items, groups) => `<div><h3>${title}</h3>${items.length ? `<ul class="essay-points">${byAuthors(items, groups).map(({item, group}) => `<li><span class="essay-tag">${esc(item.about)}</span> ${esc(item.text)} ${sources(group, esc)}</li>`).join('')}</ul>` : '<p class="muted">Общего не нашлось.</p>'}</div>`;
@@ -309,7 +344,8 @@ ${unlisted.length ? `<div class="essay-teacher"><b>Не сопоставлены
         const label = summary.status === 'failed' ? 'Повторить' : sm ? 'Обновить сводку' : 'Составить сводку';
         box.innerHTML = `<h2>Сводка по выпуску</h2><p class="muted">В сводке эссе с готовым разбором: ${c.analysed}. Сдано ${c.submitted}, не сдано ${c.notSubmitted}, у ${c.withPrevious} есть прежнее эссе${c.withoutAnalysis ? `, без разбора ${c.withoutAnalysis} (в сводку не вошли)` : ''}.</p>
   <div class="toolbar"><button id="compose" ${!summary.canCompose || busy || summary.status === 'off' ? 'disabled' : ''}>${label}</button> ${note}</div><div id="summary-error" role="alert"></div>
-  ${sm ? summaryBody(sm) : ''}<h2 style="margin-top:1.5rem">Преподаватели</h2><p class="muted">${summary.teachers.positions ? 'Что сказали о преподавателях — по должностям и фамилиям, как их написали студенты. Считает программа по разборам; сводка модели для этого не нужна.' : 'Что сказали о преподавателях из списка ВУЦ. Считает программа по разборам; сводка модели для этого не нужна.'}</p>${teachersBlock(summary.teachers)}`;
+  ${sm ? summaryBody(sm) : ''}<h2 style="margin-top:1.5rem">Преподаватели</h2>${teachersConclusion(sm)}<p class="muted">${summary.teachers.positions ? 'Что сказали о преподавателях — по должностям и фамилиям, как их написали студенты. Считает программа по разборам; сводка модели для этого не нужна.' : 'Что сказали о преподавателях из списка ВУЦ. Считает программа по разборам; сводка модели для этого не нужна.'}</p>${teachersBlock(summary.teachers)}
+  <h2 style="margin-top:1.5rem">Ценности по указу № 809</h2>${window.valuesBlock.summary(values, esc, {noun: 'авторов', of: 'сданных эссе'})}`;
         box.querySelector('#compose').onclick = async e => {
             e.target.disabled = true;
             try {
