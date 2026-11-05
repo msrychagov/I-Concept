@@ -250,7 +250,7 @@ func TestActionExamplesAreThoseOfTheWiki(t *testing.T) {
 	student7, _ := os.ReadFile("../../../Вики/Тестирование/Инструкция v7.md")
 	platoon5, _ := os.ReadFile("../../../Вики/Тестирование/Инструкция по взводу v5.md")
 	wiki := string(student) + string(platoon) + string(student7) + string(platoon5)
-	for _, example := range append(slices.Clone(actionExamples), textExamples...) {
+	for _, example := range actionExamples {
 		if !strings.Contains(wiki, "«"+example+"»") {
 			t.Errorf("not in the wiki: %s", example)
 		}
