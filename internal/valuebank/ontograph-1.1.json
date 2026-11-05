@@ -1,0 +1,2179 @@
+{
+  "schema": "slot2_ontograph_coder_nodes_v1",
+  "source": "антибыт.json",
+  "version": "1.1",
+  "built": "2026-10-08",
+  "n": 269,
+  "by_class": {
+    "core": 5,
+    "value": 17,
+    "aspect": 178,
+    "antivalue": 17,
+    "everyday": 8,
+    "everyday_anti": 44
+  },
+  "core_ids": [
+    "pravda",
+    "my",
+    "volya",
+    "vera",
+    "rodina"
+  ],
+  "coder_classes": [
+    "value",
+    "antivalue",
+    "aspect",
+    "everyday",
+    "everyday_anti"
+  ],
+  "note": "threat excluded here; present in full ontograph_antibyt_1.1.json",
+  "nodes": [
+    {
+      "id": "pravda",
+      "class": "core",
+      "label": "Правда",
+      "home": null,
+      "definition": "Идея формулы и ядро ключей «жизнь» и «справедливость»."
+    },
+    {
+      "id": "rodina",
+      "class": "core",
+      "label": "Родина",
+      "home": null,
+      "definition": "Идея формулы и ядро ключей патриотизма, гражданственности, служения, исторической памяти и единства народов."
+    },
+    {
+      "id": "vera",
+      "class": "core",
+      "label": "Вера (идеализм)",
+      "home": null,
+      "definition": "Идея формулы и ядро высоких нравственных идеалов, приоритета духовного и милосердия."
+    },
+    {
+      "id": "my",
+      "class": "core",
+      "label": "Мы (семья)",
+      "home": null,
+      "definition": "Идея формулы и ядро крепкой семьи, гуманизма, коллективизма, взаимопомощи и взаимоуважения."
+    },
+    {
+      "id": "volya",
+      "class": "core",
+      "label": "Воля",
+      "home": null,
+      "definition": "Идея формулы и ядро достоинства, прав и свобод, созидательного труда."
+    },
+    {
+      "id": "v_life",
+      "class": "value",
+      "label": "Жизнь",
+      "home": "pravda",
+      "opposed_to": "av_life",
+      "definition": "Священный, имеющий смысл и предназначение период бытия человека, источник всего созданного волей человека."
+    },
+    {
+      "id": "v_just",
+      "class": "value",
+      "label": "Справедливость",
+      "home": "pravda",
+      "opposed_to": "av_just",
+      "definition": "Идея соответствия деяния и воздаяния."
+    },
+    {
+      "id": "v_pat",
+      "class": "value",
+      "label": "Патриотизм",
+      "home": "rodina",
+      "opposed_to": "av_pat",
+      "definition": "Внутренняя готовность добровольно, осознанно и ответственно действовать во благо Родины."
+    },
+    {
+      "id": "v_cit",
+      "class": "value",
+      "label": "Гражданственность",
+      "home": "rodina",
+      "opposed_to": "av_cit",
+      "definition": "Ответственное отношение к своим правам и обязанностям из глубокой связи с государством и его судьбой."
+    },
+    {
+      "id": "v_srv",
+      "class": "value",
+      "label": "Служение Отечеству",
+      "home": "rodina",
+      "opposed_to": "av_srv",
+      "definition": "Осмысленная, добровольная и ответственная деятельность в интересах будущего страны."
+    },
+    {
+      "id": "v_mem",
+      "class": "value",
+      "label": "Историческая память",
+      "home": "rodina",
+      "opposed_to": "av_mem",
+      "definition": "Коллективные представления о значимости прошлого для общей идентичности и солидарности."
+    },
+    {
+      "id": "v_uni",
+      "class": "value",
+      "label": "Единство народов",
+      "home": "rodina",
+      "opposed_to": "av_uni",
+      "definition": "Нравственный ориентир согласия и взаимопонимания народов, составляющих российскую цивилизацию."
+    },
+    {
+      "id": "v_ide",
+      "class": "value",
+      "label": "Высокие нравственные идеалы",
+      "home": "vera",
+      "opposed_to": "av_ide",
+      "definition": "Общественные представления, задающие высший смысл человеческой деятельности и духовных устремлений."
+    },
+    {
+      "id": "v_spi",
+      "class": "value",
+      "label": "Приоритет духовного",
+      "home": "vera",
+      "opposed_to": "av_spi",
+      "definition": "Идейная обусловленность жизни и нравственное постижение мира при реализации материальных интересов."
+    },
+    {
+      "id": "v_mer",
+      "class": "value",
+      "label": "Милосердие",
+      "home": "vera",
+      "opposed_to": "av_mer",
+      "definition": "Готовность оказать бескорыстную помощь и проявить сострадание к ближним."
+    },
+    {
+      "id": "v_fam",
+      "class": "value",
+      "label": "Крепкая семья",
+      "home": "my",
+      "opposed_to": "av_fam",
+      "definition": "Семья на взаимной любви, заботе, взаимоуважении, воспитании поколений, доверии и честности."
+    },
+    {
+      "id": "v_hum",
+      "class": "value",
+      "label": "Гуманизм",
+      "home": "my",
+      "opposed_to": "av_hum",
+      "definition": "Забота о человеке и человечестве в их единстве и гармонии."
+    },
+    {
+      "id": "v_col",
+      "class": "value",
+      "label": "Коллективизм",
+      "home": "my",
+      "opposed_to": "av_col",
+      "definition": "Стремление к объединению людей на общих целях, общей деятельности и духовной близости."
+    },
+    {
+      "id": "v_aid",
+      "class": "value",
+      "label": "Взаимопомощь и взаимоуважение",
+      "home": "my",
+      "opposed_to": "av_aid",
+      "definition": "Поддержка и содействие, определяемые признанием самобытности и достоинства других людей."
+    },
+    {
+      "id": "v_dig",
+      "class": "value",
+      "label": "Достоинство",
+      "home": "volya",
+      "opposed_to": "av_dig",
+      "definition": "Уважение к самому себе и ответственность перед другими, продиктованные званием человека."
+    },
+    {
+      "id": "v_rig",
+      "class": "value",
+      "label": "Права и свободы",
+      "home": "volya",
+      "opposed_to": "av_rig",
+      "definition": "Способность человека проявлять волю в нормативно определённом диапазоне возможностей."
+    },
+    {
+      "id": "v_lab",
+      "class": "value",
+      "label": "Созидательный труд",
+      "home": "volya",
+      "opposed_to": "av_lab",
+      "definition": "Деятельность человека должна иметь общественную ценность и значимость."
+    },
+    {
+      "id": "life_sense",
+      "class": "aspect",
+      "label": "Смысл бытия",
+      "home": "pravda",
+      "parent_value": "v_life",
+      "definition": "Священный период бытия человека, имеющий смысл. Ключ: Жизнь."
+    },
+    {
+      "id": "life_purpose",
+      "class": "aspect",
+      "label": "Предназначение",
+      "home": "pravda",
+      "parent_value": "v_life",
+      "definition": "Предназначение бытия человека. Ключ: Жизнь."
+    },
+    {
+      "id": "life_will",
+      "class": "aspect",
+      "label": "Воля человека",
+      "home": "pravda",
+      "parent_value": "v_life",
+      "definition": "Жизнь как источник всего, созданного волей человека. Ключ: Жизнь."
+    },
+    {
+      "id": "life_good",
+      "class": "aspect",
+      "label": "Благо",
+      "home": "pravda",
+      "parent_value": "v_life",
+      "definition": "Жизнь человека есть стремление к благу. Ключ: Жизнь."
+    },
+    {
+      "id": "life_deeds",
+      "class": "aspect",
+      "label": "Добрые дела",
+      "home": "pravda",
+      "parent_value": "v_life",
+      "definition": "Жизнь дана на добрые дела. Ключ: Жизнь."
+    },
+    {
+      "id": "life_care",
+      "class": "aspect",
+      "label": "Забота о жизни",
+      "home": "pravda",
+      "parent_value": "v_life",
+      "definition": "Забота о собственной жизни и о жизни других. Ключ: Жизнь."
+    },
+    {
+      "id": "life_equal",
+      "class": "aspect",
+      "label": "Равенство ценности жизни",
+      "home": "pravda",
+      "parent_value": "v_life",
+      "definition": "Равные основания сохранения и защиты жизни граждан. Ключ: Жизнь."
+    },
+    {
+      "id": "life_welfare",
+      "class": "aspect",
+      "label": "Благосостояние",
+      "home": "pravda",
+      "parent_value": "v_life",
+      "definition": "Сохранение и благосостояние граждан. Ключ: Жизнь."
+    },
+    {
+      "id": "life_osmysl",
+      "class": "aspect",
+      "label": "Осмысленность",
+      "home": "pravda",
+      "parent_value": "v_life",
+      "definition": "Стремление к осмысленности жизни, духовный поиск и культурная деятельность. Ключ: Жизнь."
+    },
+    {
+      "id": "just_deed",
+      "class": "aspect",
+      "label": "Деяние и воздаяние",
+      "home": "pravda",
+      "parent_value": "v_just",
+      "definition": "Соответствие деяния и воздаяния. Ключ: Справедливость."
+    },
+    {
+      "id": "just_feel",
+      "class": "aspect",
+      "label": "Чувство справедливости",
+      "home": "pravda",
+      "parent_value": "v_just",
+      "definition": "Чувство справедливости и жажда её как черта народа. Ключ: Справедливость."
+    },
+    {
+      "id": "just_inner",
+      "class": "aspect",
+      "label": "Правда в себе",
+      "home": "pravda",
+      "parent_value": "v_just",
+      "definition": "Правду не ищут в других, если её нет в себе. Ключ: Справедливость."
+    },
+    {
+      "id": "just_rules",
+      "class": "aspect",
+      "label": "Равенство перед правилами",
+      "home": "pravda",
+      "parent_value": "v_just",
+      "definition": "Прозрачные общие правила для влиятельных и обычных людей. Ключ: Справедливость."
+    },
+    {
+      "id": "just_merit",
+      "class": "aspect",
+      "label": "Воздаяние по заслугам",
+      "home": "pravda",
+      "parent_value": "v_just",
+      "definition": "Вклад и вина соразмерны признанию и ответственности. Ключ: Справедливость."
+    },
+    {
+      "id": "just_fair",
+      "class": "aspect",
+      "label": "Беспристрастие",
+      "home": "pravda",
+      "parent_value": "v_just",
+      "definition": "Беспристрастное распределение прав, обязанностей, благ и ответственности. Ключ: Справедливость."
+    },
+    {
+      "id": "just_need",
+      "class": "aspect",
+      "label": "Учёт потребностей",
+      "home": "pravda",
+      "parent_value": "v_just",
+      "definition": "Распределение считается с равенством, заслугами и потребностями. Ключ: Справедливость."
+    },
+    {
+      "id": "pat_ready",
+      "class": "aspect",
+      "label": "Готовность действовать",
+      "home": "rodina",
+      "parent_value": "v_pat",
+      "definition": "Добровольная, осознанная и ответственная готовность действовать. Ключ: Патриотизм."
+    },
+    {
+      "id": "pat_good",
+      "class": "aspect",
+      "label": "Благо Родины",
+      "home": "rodina",
+      "parent_value": "v_pat",
+      "definition": "Действие во благо Родины. Ключ: Патриотизм."
+    },
+    {
+      "id": "pat_love",
+      "class": "aspect",
+      "label": "Любовь к Родине",
+      "home": "rodina",
+      "parent_value": "v_pat",
+      "definition": "Родина одна, и её нужно любить. Ключ: Патриотизм."
+    },
+    {
+      "id": "pat_belong",
+      "class": "aspect",
+      "label": "Принадлежность отечеству",
+      "home": "rodina",
+      "parent_value": "v_pat",
+      "definition": "Кто не принадлежит своему отечеству, тот не принадлежит и человечеству. Ключ: Патриотизм."
+    },
+    {
+      "id": "pat_human",
+      "class": "aspect",
+      "label": "Человечество",
+      "home": "rodina",
+      "parent_value": "v_pat",
+      "definition": "Принадлежность отечеству как условие принадлежности человечеству. Ключ: Патриотизм."
+    },
+    {
+      "id": "pat_side",
+      "class": "aspect",
+      "label": "Своя сторона",
+      "home": "rodina",
+      "parent_value": "v_pat",
+      "definition": "Всякому мила своя сторона. Ключ: Патриотизм."
+    },
+    {
+      "id": "pat_bond",
+      "class": "aspect",
+      "label": "Сопричастность судьбе",
+      "home": "rodina",
+      "parent_value": "v_pat",
+      "definition": "Эмоциональная, гражданская и деятельная связь с Россией и её судьбой. Ключ: Патриотизм."
+    },
+    {
+      "id": "pat_pride",
+      "class": "aspect",
+      "label": "Гордость",
+      "home": "rodina",
+      "parent_value": "v_pat",
+      "definition": "Гордость достижениями страны. Ключ: Патриотизм."
+    },
+    {
+      "id": "pat_contrib",
+      "class": "aspect",
+      "label": "Содействие развитию",
+      "home": "rodina",
+      "parent_value": "v_pat",
+      "definition": "Готовность содействовать развитию России. Ключ: Патриотизм."
+    },
+    {
+      "id": "pat_peace",
+      "class": "aspect",
+      "label": "Без враждебности",
+      "home": "rodina",
+      "parent_value": "v_pat",
+      "definition": "Любовь к своей стране не требует враждебности к другим народам. Ключ: Патриотизм."
+    },
+    {
+      "id": "cit_rights",
+      "class": "aspect",
+      "label": "Права",
+      "home": "rodina",
+      "parent_value": "v_cit",
+      "definition": "Права человека в связи с его государством. Ключ: Гражданственность."
+    },
+    {
+      "id": "cit_duties",
+      "class": "aspect",
+      "label": "Обязанности",
+      "home": "volya",
+      "parent_value": "v_rig",
+      "definition": "Обязанности, неотделимые от прав. Ключ: Гражданственность, Права и свободы."
+    },
+    {
+      "id": "cit_bond",
+      "class": "aspect",
+      "label": "Связь с государством",
+      "home": "rodina",
+      "parent_value": "v_cit",
+      "definition": "Глубокая связь человека со своим государством. Ключ: Гражданственность."
+    },
+    {
+      "id": "cit_fate",
+      "class": "aspect",
+      "label": "Судьба государства",
+      "home": "rodina",
+      "parent_value": "v_cit",
+      "definition": "Ответственность связана с судьбой государства. Ключ: Гражданственность."
+    },
+    {
+      "id": "cit_honor",
+      "class": "aspect",
+      "label": "Честь гражданина",
+      "home": "rodina",
+      "parent_value": "v_cit",
+      "definition": "Быть гражданином — честь. Ключ: Гражданственность."
+    },
+    {
+      "id": "cit_debt",
+      "class": "aspect",
+      "label": "Долг",
+      "home": "rodina",
+      "parent_value": "v_cit",
+      "definition": "Быть гражданином — долг. Ключ: Гражданственность."
+    },
+    {
+      "id": "cit_heart",
+      "class": "aspect",
+      "label": "Страсть сердца",
+      "home": "rodina",
+      "parent_value": "v_cit",
+      "definition": "Гражданственность как страсть человеческого сердца. Ключ: Гражданственность."
+    },
+    {
+      "id": "cit_ident",
+      "class": "aspect",
+      "label": "Гражданская идентичность",
+      "home": "rodina",
+      "parent_value": "v_cit",
+      "definition": "Осознание себя гражданином России. Ключ: Гражданственность."
+    },
+    {
+      "id": "cit_part",
+      "class": "aspect",
+      "label": "Участие",
+      "home": "rodina",
+      "parent_value": "v_cit",
+      "definition": "Ответственное участие в жизни политического сообщества. Ключ: Гражданственность."
+    },
+    {
+      "id": "cit_law",
+      "class": "aspect",
+      "label": "Закон",
+      "home": "rodina",
+      "parent_value": "v_cit",
+      "definition": "Соблюдение закона и понимание, как он устроен. Ключ: Гражданственность."
+    },
+    {
+      "id": "cit_account",
+      "class": "aspect",
+      "label": "Отчётность власти",
+      "home": "rodina",
+      "parent_value": "v_cit",
+      "definition": "Право оценивать решения власти и требовать отчёта в общественном интересе. Ключ: Гражданственность."
+    },
+    {
+      "id": "srv_act",
+      "class": "aspect",
+      "label": "Деятельность ради будущего",
+      "home": "rodina",
+      "parent_value": "v_srv",
+      "definition": "Осмысленная деятельность в интересах будущего страны. Ключ: Служение Отечеству."
+    },
+    {
+      "id": "srv_free",
+      "class": "aspect",
+      "label": "Добровольность",
+      "home": "rodina",
+      "parent_value": "v_srv",
+      "definition": "Служение добровольно. Ключ: Служение Отечеству."
+    },
+    {
+      "id": "srv_resp",
+      "class": "aspect",
+      "label": "Ответственность за судьбу",
+      "home": "rodina",
+      "parent_value": "v_srv",
+      "definition": "Ответственность за будущее страны. Ключ: Служение Отечеству."
+    },
+    {
+      "id": "srv_valor",
+      "class": "aspect",
+      "label": "Доблесть",
+      "home": "rodina",
+      "parent_value": "v_srv",
+      "definition": "Служить Родине — высшая доблесть. Ключ: Служение Отечеству."
+    },
+    {
+      "id": "srv_others",
+      "class": "aspect",
+      "label": "Служение другим",
+      "home": "rodina",
+      "parent_value": "v_srv",
+      "definition": "В человеке заложена потребность служения другим. Ключ: Служение Отечеству."
+    },
+    {
+      "id": "srv_post",
+      "class": "aspect",
+      "label": "Служба",
+      "home": "rodina",
+      "parent_value": "v_srv",
+      "definition": "От службы не отрекаются. Ключ: Служение Отечеству."
+    },
+    {
+      "id": "srv_contrib",
+      "class": "aspect",
+      "label": "Личный вклад",
+      "home": "rodina",
+      "parent_value": "v_srv",
+      "definition": "Деятельный вклад в развитие страны. Ключ: Служение Отечеству."
+    },
+    {
+      "id": "srv_consc",
+      "class": "aspect",
+      "label": "Добросовестность",
+      "home": "rodina",
+      "parent_value": "v_srv",
+      "definition": "Качество, законность и общественный интерес при исполнении обязанностей. Ключ: Служение Отечеству."
+    },
+    {
+      "id": "mem_past",
+      "class": "aspect",
+      "label": "Значимость прошлого",
+      "home": "rodina",
+      "parent_value": "v_mem",
+      "definition": "Коллективные представления о значимости прошлого. Ключ: Историческая память."
+    },
+    {
+      "id": "mem_ident",
+      "class": "aspect",
+      "label": "Общая идентичность",
+      "home": "rodina",
+      "parent_value": "v_mem",
+      "definition": "Прошлое поддерживает общую идентичность. Ключ: Историческая память."
+    },
+    {
+      "id": "solid",
+      "class": "aspect",
+      "label": "Солидарность",
+      "home": "my",
+      "parent_value": "v_aid",
+      "definition": "Объединение людей; прошлое её укрепляет; взаимопомощь на неё опирается. Ключ: Историческая память, Коллективизм, Взаимопомощь и взаимоуважение."
+    },
+    {
+      "id": "conscience",
+      "class": "aspect",
+      "label": "Совесть",
+      "home": "vera",
+      "parent_value": "v_spi",
+      "definition": "Внутренний судья: без памяти нет совести, без совести нет будущего. Ключ: Историческая память, Высокие нравственные идеалы, Приоритет духовного."
+    },
+    {
+      "id": "mem_future",
+      "class": "aspect",
+      "label": "Будущее",
+      "home": "rodina",
+      "parent_value": "v_mem",
+      "definition": "Без совести нет будущего. Ключ: Историческая память."
+    },
+    {
+      "id": "mem_gen",
+      "class": "aspect",
+      "label": "Голос поколений",
+      "home": "rodina",
+      "parent_value": "v_mem",
+      "definition": "В волю народа входят все поколения, не только живущее. Ключ: Историческая память."
+    },
+    {
+      "id": "mem_pred",
+      "class": "aspect",
+      "label": "Предание и традиция",
+      "home": "rodina",
+      "parent_value": "v_mem",
+      "definition": "Историческое предание и традиция входят в общую волю. Ключ: Историческая память."
+    },
+    {
+      "id": "mem_parents",
+      "class": "aspect",
+      "label": "Почитание родителей",
+      "home": "rodina",
+      "parent_value": "v_mem",
+      "definition": "Кто родителей почитает, тот вовек не погибает. Ключ: Историческая память."
+    },
+    {
+      "id": "mem_herit",
+      "class": "aspect",
+      "label": "Сохранение наследия",
+      "home": "rodina",
+      "parent_value": "v_mem",
+      "definition": "Бережное отношение к местам и практикам памяти. Ключ: Историческая память."
+    },
+    {
+      "id": "mem_dialog",
+      "class": "aspect",
+      "label": "Диалог поколений",
+      "home": "rodina",
+      "parent_value": "v_mem",
+      "definition": "Передача знаний и преемственность ценностей между поколениями. Ключ: Историческая память."
+    },
+    {
+      "id": "mem_subj",
+      "class": "aspect",
+      "label": "Историческая субъектность",
+      "home": "rodina",
+      "parent_value": "v_mem",
+      "definition": "Память поддерживает историческую субъектность сообщества. Ключ: Историческая память."
+    },
+    {
+      "id": "uni_consent",
+      "class": "aspect",
+      "label": "Согласие",
+      "home": "rodina",
+      "parent_value": "v_uni",
+      "definition": "Согласие представителей разных групп российской цивилизации. Ключ: Единство народов."
+    },
+    {
+      "id": "uni_under",
+      "class": "aspect",
+      "label": "Взаимопонимание",
+      "home": "rodina",
+      "parent_value": "v_uni",
+      "definition": "Взаимопонимание этнических, культурных и религиозных групп. Ключ: Единство народов."
+    },
+    {
+      "id": "uni_ethnos",
+      "class": "aspect",
+      "label": "Этническое многообразие",
+      "home": "rodina",
+      "parent_value": "v_uni",
+      "definition": "Различные этнические группы при одном Отечестве. Ключ: Единство народов."
+    },
+    {
+      "id": "uni_divcult",
+      "class": "aspect",
+      "label": "Культурное многообразие",
+      "home": "rodina",
+      "parent_value": "v_uni",
+      "definition": "Уважение культурного многообразия народов России. Ключ: Единство народов."
+    },
+    {
+      "id": "uni_faith",
+      "class": "aspect",
+      "label": "Религиозное многообразие",
+      "home": "rodina",
+      "parent_value": "v_uni",
+      "definition": "Уважение религиозного многообразия. Ключ: Единство народов."
+    },
+    {
+      "id": "uni_civ",
+      "class": "aspect",
+      "label": "Российская цивилизация",
+      "home": "rodina",
+      "parent_value": "v_uni",
+      "definition": "Группы, составляющие российскую цивилизацию. Ключ: Единство народов."
+    },
+    {
+      "id": "uni_one",
+      "class": "aspect",
+      "label": "Одно Отечество",
+      "home": "rodina",
+      "parent_value": "v_uni",
+      "definition": "Народов много, Отечество одно. Ключ: Единство народов."
+    },
+    {
+      "id": "uni_cultunity",
+      "class": "aspect",
+      "label": "Единство культуры",
+      "home": "rodina",
+      "parent_value": "v_uni",
+      "definition": "Федерация, в которой сохранены единство культуры и её великие задачи. Ключ: Единство народов."
+    },
+    {
+      "id": "friend",
+      "class": "aspect",
+      "label": "Дружба",
+      "home": "my",
+      "parent_value": "v_hum",
+      "definition": "Дружба и братство; дружба дороже богатства и денег. Ключ: Единство народов, Приоритет духовного, Гуманизм."
+    },
+    {
+      "id": "uni_brother",
+      "class": "aspect",
+      "label": "Братство",
+      "home": "rodina",
+      "parent_value": "v_uni",
+      "definition": "Дружба да братство дороже богатства. Ключ: Единство народов."
+    },
+    {
+      "id": "uni_civic",
+      "class": "aspect",
+      "label": "Общая гражданская принадлежность",
+      "home": "rodina",
+      "parent_value": "v_uni",
+      "definition": "Народы России — одно политическое сообщество. Ключ: Единство народов."
+    },
+    {
+      "id": "uni_fate",
+      "class": "aspect",
+      "label": "Общность исторической судьбы",
+      "home": "rodina",
+      "parent_value": "v_uni",
+      "definition": "Общая история и общее наследие. Ключ: Единство народов."
+    },
+    {
+      "id": "uni_equal",
+      "class": "aspect",
+      "label": "Равноправие народов",
+      "home": "rodina",
+      "parent_value": "v_uni",
+      "definition": "Ни один народ России не менее достоин уважения, чем другой. Ключ: Единство народов."
+    },
+    {
+      "id": "uni_lang",
+      "class": "aspect",
+      "label": "Язык и вера",
+      "home": "rodina",
+      "parent_value": "v_uni",
+      "definition": "Уважение языкового и религиозного многообразия. Ключ: Единство народов."
+    },
+    {
+      "id": "ide_reps",
+      "class": "aspect",
+      "label": "Общественные представления",
+      "home": "vera",
+      "parent_value": "v_ide",
+      "definition": "Совокупность общественных представлений о высшем смысле. Ключ: Высокие нравственные идеалы."
+    },
+    {
+      "id": "ide_meaning",
+      "class": "aspect",
+      "label": "Высший смысл деятельности",
+      "home": "vera",
+      "parent_value": "v_ide",
+      "definition": "Высший смысл человеческой деятельности. Ключ: Высокие нравственные идеалы."
+    },
+    {
+      "id": "ide_spirit",
+      "class": "aspect",
+      "label": "Духовные устремления",
+      "home": "vera",
+      "parent_value": "v_ide",
+      "definition": "Духовные устремления человека. Ключ: Высокие нравственные идеалы."
+    },
+    {
+      "id": "ide_deed",
+      "class": "aspect",
+      "label": "Великие свершения",
+      "home": "vera",
+      "parent_value": "v_ide",
+      "definition": "Высокие идеалы рождают великие свершения. Ключ: Высокие нравственные идеалы."
+    },
+    {
+      "id": "ide_thread",
+      "class": "aspect",
+      "label": "Связь поколений",
+      "home": "vera",
+      "parent_value": "v_ide",
+      "definition": "Нравственные идеалы — связующая нить поколений просветителей и творцов. Ключ: Высокие нравственные идеалы."
+    },
+    {
+      "id": "ide_heart",
+      "class": "aspect",
+      "label": "Большое сердце",
+      "home": "vera",
+      "parent_value": "v_ide",
+      "definition": "В большом сердце и далёкое близко. Ключ: Высокие нравственные идеалы."
+    },
+    {
+      "id": "honest",
+      "class": "aspect",
+      "label": "Честность",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Честность как критерий нравственного поведения; честность в семье. Ключ: Высокие нравственные идеалы, Крепкая семья."
+    },
+    {
+      "id": "ide_princ",
+      "class": "aspect",
+      "label": "Принципиальность",
+      "home": "vera",
+      "parent_value": "v_ide",
+      "definition": "Последовательность нравственной позиции. Ключ: Высокие нравственные идеалы."
+    },
+    {
+      "id": "moral",
+      "class": "aspect",
+      "label": "Нравственность",
+      "home": "volya",
+      "parent_value": "v_lab",
+      "definition": "Мораль и нравственность как критерий поведения; труд её хранит. Ключ: Высокие нравственные идеалы, Созидательный труд."
+    },
+    {
+      "id": "spi_idea",
+      "class": "aspect",
+      "label": "Идейная обусловленность",
+      "home": "vera",
+      "parent_value": "v_spi",
+      "definition": "Жизнь обусловлена идеей, а не только материальным интересом. Ключ: Приоритет духовного."
+    },
+    {
+      "id": "spi_grasp",
+      "class": "aspect",
+      "label": "Нравственное постижение мира",
+      "home": "vera",
+      "parent_value": "v_spi",
+      "definition": "Нравственное постижение мира при материальных интересах. Ключ: Приоритет духовного."
+    },
+    {
+      "id": "spi_interest",
+      "class": "aspect",
+      "label": "Материальные интересы",
+      "home": "vera",
+      "parent_value": "v_spi",
+      "definition": "Материальные устремления не отменяются, но встречают нравственный предел. Ключ: Приоритет духовного."
+    },
+    {
+      "id": "spi_limit",
+      "class": "aspect",
+      "label": "Нравственный предел выгоды",
+      "home": "vera",
+      "parent_value": "v_spi",
+      "definition": "Выгода ограничена смыслом, совестью, отношениями и культурой. Ключ: Приоритет духовного."
+    },
+    {
+      "id": "spirit",
+      "class": "aspect",
+      "label": "Духовность",
+      "home": "vera",
+      "parent_value": "v_spi",
+      "definition": "Преобладание нравственных и интеллектуальных интересов; духовная жизнь на земле. Ключ: Приоритет духовного."
+    },
+    {
+      "id": "spi_life",
+      "class": "aspect",
+      "label": "Духовная жизнь",
+      "home": "vera",
+      "parent_value": "v_spi",
+      "definition": "Творческое раскрытие духовной жизни. Ключ: Приоритет духовного."
+    },
+    {
+      "id": "spi_soul",
+      "class": "aspect",
+      "label": "Душа",
+      "home": "vera",
+      "parent_value": "v_spi",
+      "definition": "Деньгами души не выкупить. Ключ: Приоритет духовного."
+    },
+    {
+      "id": "spi_sense",
+      "class": "aspect",
+      "label": "Смысл выше достатка",
+      "home": "vera",
+      "parent_value": "v_spi",
+      "definition": "Осмысленная жизнь важнее роста благосостояния. Ключ: Приоритет духовного."
+    },
+    {
+      "id": "spi_mod",
+      "class": "aspect",
+      "label": "Умеренность",
+      "home": "vera",
+      "parent_value": "v_spi",
+      "definition": "Умеренность в потреблении и различение нужды и показного достатка. Ключ: Приоритет духовного."
+    },
+    {
+      "id": "spi_rel",
+      "class": "aspect",
+      "label": "Отношения",
+      "home": "vera",
+      "parent_value": "v_spi",
+      "definition": "Нематериальная цель рядом со смыслом и совестью: отношения между людьми. Ключ: Приоритет духовного."
+    },
+    {
+      "id": "mer_help",
+      "class": "aspect",
+      "label": "Бескорыстная помощь",
+      "home": "vera",
+      "parent_value": "v_mer",
+      "definition": "Помощь без ожидания выгоды. Ключ: Милосердие."
+    },
+    {
+      "id": "mer_comp",
+      "class": "aspect",
+      "label": "Сострадание",
+      "home": "vera",
+      "parent_value": "v_mer",
+      "definition": "Сострадание к ближним. Ключ: Милосердие."
+    },
+    {
+      "id": "mer_near",
+      "class": "aspect",
+      "label": "Ближние",
+      "home": "vera",
+      "parent_value": "v_mer",
+      "definition": "Тот, к кому обращено милосердие. Ключ: Милосердие."
+    },
+    {
+      "id": "mer_heart",
+      "class": "aspect",
+      "label": "Чистое сердце",
+      "home": "vera",
+      "parent_value": "v_mer",
+      "definition": "Добро совершается только от чистого сердца. Ключ: Милосердие."
+    },
+    {
+      "id": "pity",
+      "class": "aspect",
+      "label": "Жалость",
+      "home": "my",
+      "parent_value": "v_hum",
+      "definition": "Жалость вместе с милосердием и любовью; на ней держится и русский гуманизм. Ключ: Милосердие, Гуманизм."
+    },
+    {
+      "id": "love",
+      "class": "aspect",
+      "label": "Любовь",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Любовь как дело свободы; начало крепкой семьи. Ключ: Милосердие, Крепкая семья."
+    },
+    {
+      "id": "freedom",
+      "class": "aspect",
+      "label": "Свобода",
+      "home": "volya",
+      "parent_value": "v_lab",
+      "definition": "Милосердие — дело свободы, не закона; свобода выражается в праве, труде и творчестве. Ключ: Милосердие, Права и свободы, Созидательный труд."
+    },
+    {
+      "id": "mer_forgive",
+      "class": "aspect",
+      "label": "Прощение",
+      "home": "vera",
+      "parent_value": "v_mer",
+      "definition": "Готовность простить и содействовать исправлению. Ключ: Милосердие."
+    },
+    {
+      "id": "mer_accept",
+      "class": "aspect",
+      "label": "Принятие",
+      "home": "vera",
+      "parent_value": "v_mer",
+      "definition": "Принятие положения человека, оказавшегося в беде. Ключ: Милосердие."
+    },
+    {
+      "id": "mer_need",
+      "class": "aspect",
+      "label": "Нужда и уязвимость",
+      "home": "vera",
+      "parent_value": "v_mer",
+      "definition": "Помощь тому, кто в нужде, страдании или уязвимости. Ключ: Милосердие."
+    },
+    {
+      "id": "fam_care",
+      "class": "aspect",
+      "label": "Забота",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Забота друг о друге в семье. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_respect",
+      "class": "aspect",
+      "label": "Взаимоуважение",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Взаимоуважение в семье. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_unity",
+      "class": "aspect",
+      "label": "Духовное единство",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Духовное единство семьи. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_child",
+      "class": "aspect",
+      "label": "Воспитание поколений",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Воспитание будущих поколений. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_trust",
+      "class": "aspect",
+      "label": "Доверие",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Доверие друг к другу. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_support",
+      "class": "aspect",
+      "label": "Поддержка",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Поддержка друг друга. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_resp",
+      "class": "aspect",
+      "label": "Взаимная ответственность",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Взаимная ответственность в семье. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_happy",
+      "class": "aspect",
+      "label": "Счастье",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Крепкая семья — основа человеческого счастья. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_home",
+      "class": "aspect",
+      "label": "Духовное отечество",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Семья как духовное отечество человека. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_lad",
+      "class": "aspect",
+      "label": "Лад",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "В семье лад. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_many",
+      "class": "aspect",
+      "label": "Многодетность",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Стремление к рождению детей и их воспитанию. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_consent",
+      "class": "aspect",
+      "label": "Согласие в семье",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Взаимное согласие, отказ от насилия как способа воспитания. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_union",
+      "class": "aspect",
+      "label": "Союз мужчины и женщины",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Семья основана на союзе мужчины и женщины, родстве и родительстве. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_kin",
+      "class": "aspect",
+      "label": "Родство и родительство",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Кровное родство и родительство. Ключ: Крепкая семья."
+    },
+    {
+      "id": "fam_succ",
+      "class": "aspect",
+      "label": "Преемственность",
+      "home": "my",
+      "parent_value": "v_fam",
+      "definition": "Ценностная и хозяйственная преемственность поколений в семье. Ключ: Крепкая семья."
+    },
+    {
+      "id": "hum_care",
+      "class": "aspect",
+      "label": "Забота о человеке",
+      "home": "my",
+      "parent_value": "v_hum",
+      "definition": "Забота о человеке и человечестве. Ключ: Гуманизм."
+    },
+    {
+      "id": "hum_kind",
+      "class": "aspect",
+      "label": "Человек и человечество",
+      "home": "my",
+      "parent_value": "v_hum",
+      "definition": "Забота обращена к человеку и к человечеству вместе. Ключ: Гуманизм."
+    },
+    {
+      "id": "hum_harm",
+      "class": "aspect",
+      "label": "Гармония",
+      "home": "my",
+      "parent_value": "v_hum",
+      "definition": "Неразрывное единство и гармония человека и человечества. Ключ: Гуманизм."
+    },
+    {
+      "id": "hum_measure",
+      "class": "aspect",
+      "label": "Мера всех вещей",
+      "home": "my",
+      "parent_value": "v_hum",
+      "definition": "Человек — мера всех вещей. Ключ: Гуманизм."
+    },
+    {
+      "id": "hum_phil",
+      "class": "aspect",
+      "label": "Человеколюбие",
+      "home": "my",
+      "parent_value": "v_hum",
+      "definition": "Русский гуманизм основан на человеколюбии. Ключ: Гуманизм."
+    },
+    {
+      "id": "hum_emp",
+      "class": "aspect",
+      "label": "Эмпатия",
+      "home": "my",
+      "parent_value": "v_hum",
+      "definition": "Учитывать переживания и положение другого. Ключ: Гуманизм."
+    },
+    {
+      "id": "hum_nonv",
+      "class": "aspect",
+      "label": "Ненасилие",
+      "home": "my",
+      "parent_value": "v_hum",
+      "definition": "Предпочтение мирного урегулирования спора. Ключ: Гуманизм."
+    },
+    {
+      "id": "hum_dev",
+      "class": "aspect",
+      "label": "Развитие человека",
+      "home": "my",
+      "parent_value": "v_hum",
+      "definition": "Условия для развития способностей каждого. Ключ: Гуманизм."
+    },
+    {
+      "id": "hum_incl",
+      "class": "aspect",
+      "label": "Инклюзивность",
+      "home": "my",
+      "parent_value": "v_hum",
+      "definition": "Учёт потребностей разных групп. Ключ: Гуманизм."
+    },
+    {
+      "id": "hum_well",
+      "class": "aspect",
+      "label": "Благополучие",
+      "home": "my",
+      "parent_value": "v_hum",
+      "definition": "Решения ориентированы на развитие и благополучие человека. Ключ: Гуманизм."
+    },
+    {
+      "id": "col_union",
+      "class": "aspect",
+      "label": "Объединение",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "Стремление к объединению людей. Ключ: Коллективизм."
+    },
+    {
+      "id": "col_goals",
+      "class": "aspect",
+      "label": "Общие цели",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "Общие цели как основание объединения. Ключ: Коллективизм."
+    },
+    {
+      "id": "col_act",
+      "class": "aspect",
+      "label": "Общая деятельность",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "Общая деятельность, на которой держится солидарность. Ключ: Коллективизм."
+    },
+    {
+      "id": "col_close",
+      "class": "aspect",
+      "label": "Духовная близость",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "Духовная близость объединяющихся. Ключ: Коллективизм."
+    },
+    {
+      "id": "col_sobor",
+      "class": "aspect",
+      "label": "Соборность",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "Русская соборность: коммунитарность, общинность, хоровое начало. Ключ: Коллективизм."
+    },
+    {
+      "id": "col_comm",
+      "class": "aspect",
+      "label": "Коммунитарность",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "Соборность как русская коммунитарность. Ключ: Коллективизм."
+    },
+    {
+      "id": "col_obsh",
+      "class": "aspect",
+      "label": "Общинность",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "Общинность как вид соборности. Ключ: Коллективизм."
+    },
+    {
+      "id": "col_chorus",
+      "class": "aspect",
+      "label": "Хоровое начало",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "Хоровое начало, единство любви и свободы без внешних гарантий. Ключ: Коллективизм."
+    },
+    {
+      "id": "col_lf",
+      "class": "aspect",
+      "label": "Единство любви и свободы",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "В соборности любовь и свобода не имеют внешних гарантий. Ключ: Коллективизм."
+    },
+    {
+      "id": "col_together",
+      "class": "aspect",
+      "label": "Вместе",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "Вместе можно достичь большего. Ключ: Коллективизм."
+    },
+    {
+      "id": "col_belong",
+      "class": "aspect",
+      "label": "Принадлежность к сообществу",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "Принадлежность к сообществу и общим интересам. Ключ: Коллективизм."
+    },
+    {
+      "id": "col_coop",
+      "class": "aspect",
+      "label": "Сотрудничество",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "Сотрудничество при общих целях. Ключ: Коллективизм."
+    },
+    {
+      "id": "col_shared",
+      "class": "aspect",
+      "label": "Разделённая ответственность",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "Ответственность каждого за общий результат. Ключ: Коллективизм."
+    },
+    {
+      "id": "col_dign",
+      "class": "aspect",
+      "label": "Достоинство личности",
+      "home": "my",
+      "parent_value": "v_col",
+      "definition": "Коллективизм при сохранении достоинства личности. Ключ: Коллективизм."
+    },
+    {
+      "id": "aid_sup",
+      "class": "aspect",
+      "label": "Поддержка другого",
+      "home": "my",
+      "parent_value": "v_aid",
+      "definition": "Поддержка других людей. Ключ: Взаимопомощь и взаимоуважение."
+    },
+    {
+      "id": "aid_ass",
+      "class": "aspect",
+      "label": "Содействие",
+      "home": "my",
+      "parent_value": "v_aid",
+      "definition": "Содействие, определённое признанием другого. Ключ: Взаимопомощь и взаимоуважение."
+    },
+    {
+      "id": "aid_uniq",
+      "class": "aspect",
+      "label": "Самобытность",
+      "home": "my",
+      "parent_value": "v_aid",
+      "definition": "Признание самобытности других людей. Ключ: Взаимопомощь и взаимоуважение."
+    },
+    {
+      "id": "dign_other",
+      "class": "aspect",
+      "label": "Достоинство другого",
+      "home": "volya",
+      "parent_value": "v_dig",
+      "definition": "Признание достоинства другого человека. Ключ: Взаимопомощь и взаимоуважение, Достоинство."
+    },
+    {
+      "id": "aid_help",
+      "class": "aspect",
+      "label": "Помощь друг другу",
+      "home": "my",
+      "parent_value": "v_aid",
+      "definition": "Помогать друг другу — значит уважать друг друга. Ключ: Взаимопомощь и взаимоуважение."
+    },
+    {
+      "id": "aid_respect",
+      "class": "aspect",
+      "label": "Уважение",
+      "home": "my",
+      "parent_value": "v_aid",
+      "definition": "Уважение как оборотная сторона помощи. Ключ: Взаимопомощь и взаимоуважение."
+    },
+    {
+      "id": "aid_vyr",
+      "class": "aspect",
+      "label": "Взаимовыручка",
+      "home": "my",
+      "parent_value": "v_aid",
+      "definition": "Взаимовыручка рядом с солидарностью, опора государственности. Ключ: Взаимопомощь и взаимоуважение."
+    },
+    {
+      "id": "aid_state",
+      "class": "aspect",
+      "label": "Опора государственности",
+      "home": "my",
+      "parent_value": "v_aid",
+      "definition": "Взаимопомощь, взаимовыручка и солидарность как опора государственности. Ключ: Взаимопомощь и взаимоуважение."
+    },
+    {
+      "id": "aid_face",
+      "class": "aspect",
+      "label": "Лицом к людям",
+      "home": "my",
+      "parent_value": "v_aid",
+      "definition": "Кто сам ко всем лицом, к тому и люди не спиной. Ключ: Взаимопомощь и взаимоуважение."
+    },
+    {
+      "id": "aid_bound",
+      "class": "aspect",
+      "label": "Границы другого",
+      "home": "my",
+      "parent_value": "v_aid",
+      "definition": "Взаимодействие с признанием границ каждого. Ключ: Взаимопомощь и взаимоуважение."
+    },
+    {
+      "id": "aid_views",
+      "class": "aspect",
+      "label": "Чужие взгляды",
+      "home": "my",
+      "parent_value": "v_aid",
+      "definition": "Право другого на отличающиеся взгляды в пределах закона. Ключ: Взаимопомощь и взаимоуважение."
+    },
+    {
+      "id": "aid_polite",
+      "class": "aspect",
+      "label": "Вежливость",
+      "home": "my",
+      "parent_value": "v_aid",
+      "definition": "Вежливость и правила общения. Ключ: Взаимопомощь и взаимоуважение."
+    },
+    {
+      "id": "dig_self",
+      "class": "aspect",
+      "label": "Уважение к себе",
+      "home": "volya",
+      "parent_value": "v_dig",
+      "definition": "Уважение к самому себе. Ключ: Достоинство."
+    },
+    {
+      "id": "dig_resp",
+      "class": "aspect",
+      "label": "Ответственность перед другими",
+      "home": "volya",
+      "parent_value": "v_dig",
+      "definition": "Ответственность перед другими людьми. Ключ: Достоинство."
+    },
+    {
+      "id": "dig_title",
+      "class": "aspect",
+      "label": "Звание человека",
+      "home": "volya",
+      "parent_value": "v_dig",
+      "definition": "Достоинство продиктовано званием человека. Ключ: Достоинство."
+    },
+    {
+      "id": "dig_human",
+      "class": "aspect",
+      "label": "Принадлежность к человечеству",
+      "home": "volya",
+      "parent_value": "v_dig",
+      "definition": "Достоинство от принадлежности к человечеству. Ключ: Достоинство."
+    },
+    {
+      "id": "dig_will",
+      "class": "aspect",
+      "label": "Воля уважать",
+      "home": "volya",
+      "parent_value": "v_dig",
+      "definition": "Достоинство — это воля уважать себя и других. Ключ: Достоинство."
+    },
+    {
+      "id": "dig_pers",
+      "class": "aspect",
+      "label": "Личное достоинство",
+      "home": "volya",
+      "parent_value": "v_dig",
+      "definition": "Возрождение личного достоинства граждан. Ключ: Достоинство."
+    },
+    {
+      "id": "dig_nat",
+      "class": "aspect",
+      "label": "Достоинство страны",
+      "home": "volya",
+      "parent_value": "v_dig",
+      "definition": "Личное достоинство во имя национального достоинства страны. Ключ: Достоинство."
+    },
+    {
+      "id": "dig_honor",
+      "class": "aspect",
+      "label": "Честь",
+      "home": "volya",
+      "parent_value": "v_dig",
+      "definition": "По заслугам и честь. Ключ: Достоинство."
+    },
+    {
+      "id": "dig_life",
+      "class": "aspect",
+      "label": "Достойная жизнь",
+      "home": "volya",
+      "parent_value": "v_dig",
+      "definition": "Достойные условия существования, а не только сохранение жизни. Ключ: Достоинство."
+    },
+    {
+      "id": "dig_auto",
+      "class": "aspect",
+      "label": "Самоуважение и автономия",
+      "home": "volya",
+      "parent_value": "v_dig",
+      "definition": "Собственная ценность личности, автономия, неприкосновенность. Ключ: Достоинство."
+    },
+    {
+      "id": "dig_noinst",
+      "class": "aspect",
+      "label": "Неинструментализация",
+      "home": "volya",
+      "parent_value": "v_dig",
+      "definition": "Человека не используют как средство, даже ради общей цели. Ключ: Достоинство."
+    },
+    {
+      "id": "rig_will",
+      "class": "aspect",
+      "label": "Проявление воли",
+      "home": "volya",
+      "parent_value": "v_rig",
+      "definition": "Способность проявлять волю. Ключ: Права и свободы."
+    },
+    {
+      "id": "rig_range",
+      "class": "aspect",
+      "label": "Нормативный диапазон",
+      "home": "volya",
+      "parent_value": "v_rig",
+      "definition": "Воля в нормативно определённом диапазоне возможностей. Ключ: Права и свободы."
+    },
+    {
+      "id": "rig_resp",
+      "class": "aspect",
+      "label": "Личная ответственность",
+      "home": "volya",
+      "parent_value": "v_rig",
+      "definition": "Права и свободы неотделимы от личной ответственности. Ключ: Права и свободы."
+    },
+    {
+      "id": "rig_right",
+      "class": "aspect",
+      "label": "Право",
+      "home": "volya",
+      "parent_value": "v_rig",
+      "definition": "Свобода выражается в праве. Ключ: Права и свободы."
+    },
+    {
+      "id": "rig_all",
+      "class": "aspect",
+      "label": "Всечеловеческий характер",
+      "home": "volya",
+      "parent_value": "v_rig",
+      "definition": "Основные права принадлежат каждому человеку. Ключ: Права и свободы."
+    },
+    {
+      "id": "rig_exercise",
+      "class": "aspect",
+      "label": "Ответственное осуществление",
+      "home": "volya",
+      "parent_value": "v_rig",
+      "definition": "Осуществляя свои права, человек учитывает равные права окружающих. Ключ: Права и свободы."
+    },
+    {
+      "id": "lab_pub",
+      "class": "aspect",
+      "label": "Общественная ценность",
+      "home": "volya",
+      "parent_value": "v_lab",
+      "definition": "Деятельность должна иметь общественную ценность. Ключ: Созидательный труд."
+    },
+    {
+      "id": "lab_sign",
+      "class": "aspect",
+      "label": "Значимость дела",
+      "home": "volya",
+      "parent_value": "v_lab",
+      "definition": "Общественная значимость труда. Ключ: Созидательный труд."
+    },
+    {
+      "id": "lab_create",
+      "class": "aspect",
+      "label": "Творчество",
+      "home": "volya",
+      "parent_value": "v_lab",
+      "definition": "Свобода выражается в труде и творчестве. Ключ: Созидательный труд."
+    },
+    {
+      "id": "lab_happy",
+      "class": "aspect",
+      "label": "Земное счастье",
+      "home": "volya",
+      "parent_value": "v_lab",
+      "definition": "Труд составляет земное счастье человека. Ключ: Созидательный труд."
+    },
+    {
+      "id": "lab_educ",
+      "class": "aspect",
+      "label": "Воспитание трудом",
+      "home": "volya",
+      "parent_value": "v_lab",
+      "definition": "Труд — воспитатель человека. Ключ: Созидательный труд."
+    },
+    {
+      "id": "lab_pat",
+      "class": "aspect",
+      "label": "Терпение",
+      "home": "volya",
+      "parent_value": "v_lab",
+      "definition": "Терпение и труд. Ключ: Созидательный труд."
+    },
+    {
+      "id": "lab_inner",
+      "class": "aspect",
+      "label": "Внутренняя ценность труда",
+      "home": "volya",
+      "parent_value": "v_lab",
+      "definition": "Труд ценен не только доходом, но и смыслом и мастерством. Ключ: Созидательный труд."
+    },
+    {
+      "id": "lab_master",
+      "class": "aspect",
+      "label": "Мастерство",
+      "home": "volya",
+      "parent_value": "v_lab",
+      "definition": "Развитие умений и мастерства. Ключ: Созидательный труд."
+    },
+    {
+      "id": "lab_useful",
+      "class": "aspect",
+      "label": "Общественная полезность",
+      "home": "volya",
+      "parent_value": "v_lab",
+      "definition": "Польза продукта или услуги для других людей. Ключ: Созидательный труд."
+    },
+    {
+      "id": "lab_resp",
+      "class": "aspect",
+      "label": "Уважение к труду других",
+      "home": "volya",
+      "parent_value": "v_lab",
+      "definition": "Добросовестный общественно полезный труд заслуживает уважения. Ключ: Созидательный труд."
+    },
+    {
+      "id": "lab_dev",
+      "class": "aspect",
+      "label": "Развитие человека трудом",
+      "home": "volya",
+      "parent_value": "v_lab",
+      "definition": "Труд создаёт общественно полезный результат и развивает человека. Ключ: Созидательный труд."
+    },
+    {
+      "id": "av_life",
+      "class": "antivalue",
+      "label": "Обесценивание жизни",
+      "home": null,
+      "opposed_to": "v_life",
+      "definition": "Обесценивание жизни: воспевание убийства, призывы к насилию, нормализация суицида, обесценивание материнства."
+    },
+    {
+      "id": "av_dig",
+      "class": "antivalue",
+      "label": "Унижение другого",
+      "home": null,
+      "opposed_to": "v_dig",
+      "definition": "Унижение другого: готовность унижаться и унижать, травля, оправдание подлости."
+    },
+    {
+      "id": "av_rig",
+      "class": "antivalue",
+      "label": "Произвол и бесправие",
+      "home": null,
+      "opposed_to": "v_rig",
+      "definition": "Произвол и бесправие: оправдание произвола и несправедливого суда, подавление личности."
+    },
+    {
+      "id": "av_pat",
+      "class": "antivalue",
+      "label": "Космополитизм",
+      "home": null,
+      "opposed_to": "v_pat",
+      "definition": "Космополитизм в смысле указа: высмеивание России, равнодушие к Родине, героизация чужого государства в ущерб Российской Федерации."
+    },
+    {
+      "id": "av_cit",
+      "class": "antivalue",
+      "label": "Гражданский цинизм",
+      "home": null,
+      "opposed_to": "v_cit",
+      "definition": "Гражданский цинизм: пассивность, уход от ответственности, оправдание нарушений закона, безразличие к судьбе страны."
+    },
+    {
+      "id": "av_srv",
+      "class": "antivalue",
+      "label": "Уклонение от служения",
+      "home": null,
+      "opposed_to": "v_srv",
+      "definition": "Уклонение от служения: высмеивание службы, уход из страны как доблесть."
+    },
+    {
+      "id": "av_ide",
+      "class": "antivalue",
+      "label": "Безнравственность",
+      "home": null,
+      "opposed_to": "v_ide",
+      "definition": "Безнравственность: оправдание лжи, предательства, корысти; гедонизм без рефлексии как норма."
+    },
+    {
+      "id": "av_fam",
+      "class": "antivalue",
+      "label": "Разрушение семьи",
+      "home": null,
+      "opposed_to": "v_fam",
+      "definition": "Разрушение семьи: измена как норма, дом как обуза, пропаганда нетрадиционных отношений."
+    },
+    {
+      "id": "av_lab",
+      "class": "antivalue",
+      "label": "Культ лёгких денег",
+      "home": null,
+      "opposed_to": "v_lab",
+      "definition": "Культ лёгких денег: высмеивание рабочих профессий, халява, мошенничество как способ разбогатеть."
+    },
+    {
+      "id": "av_spi",
+      "class": "antivalue",
+      "label": "Культ потребления",
+      "home": null,
+      "opposed_to": "v_spi",
+      "definition": "Культ потребления: культ богатства и гламура, деньги как главное, ценность вещей выше людей."
+    },
+    {
+      "id": "av_hum",
+      "class": "antivalue",
+      "label": "Дегуманизация",
+      "home": null,
+      "opposed_to": "v_hum",
+      "definition": "Дегуманизация: люди как быдло, равнодушие к страданию, оправдание жестокости."
+    },
+    {
+      "id": "av_mer",
+      "class": "antivalue",
+      "label": "Месть вместо милосердия",
+      "home": null,
+      "opposed_to": "v_mer",
+      "definition": "Месть вместо милосердия: жажда мести, отказ прощать, высмеивание слабых, помощь только ради выгоды."
+    },
+    {
+      "id": "av_just",
+      "class": "antivalue",
+      "label": "Цинизм",
+      "home": null,
+      "opposed_to": "v_just",
+      "definition": "Цинизм: защита виновных, обвинение невиновных, деньги решают всё, подрыв доверия к институтам государства; справедливость объявляется мифом или инструментом."
+    },
+    {
+      "id": "av_col",
+      "class": "antivalue",
+      "label": "Эгоизм",
+      "home": null,
+      "opposed_to": "v_col",
+      "definition": "Эгоизм: каждый сам за себя, индивидуализм в ущерб коллективу."
+    },
+    {
+      "id": "av_aid",
+      "class": "antivalue",
+      "label": "Равнодушие к беде",
+      "home": null,
+      "opposed_to": "v_aid",
+      "definition": "Равнодушие к беде: отказ помочь, никто никому не нужен, предательство друга."
+    },
+    {
+      "id": "av_mem",
+      "class": "antivalue",
+      "label": "Поругание памяти",
+      "home": null,
+      "opposed_to": "v_mem",
+      "definition": "Поругание памяти: насмешка над историей, отрицание значимости прошлого, искажение исторической правды."
+    },
+    {
+      "id": "av_uni",
+      "class": "antivalue",
+      "label": "Межнациональная вражда",
+      "home": null,
+      "opposed_to": "v_uni",
+      "definition": "Межнациональная вражда: противопоставление народов России, утверждение превосходства одного народа над другим, раскол."
+    },
+    {
+      "id": "ev_belong",
+      "class": "everyday",
+      "label": "Принадлежность к своему кругу",
+      "home": "my",
+      "parent_ref": "col_together",
+      "definition": "Быть своим среди своих. Близко к принадлежности и к «вместе» в содержании коллективизма и не равно коллективизму народа России."
+    },
+    {
+      "id": "ev_duty",
+      "class": "everyday",
+      "label": "Ответственность перед сообществом",
+      "home": "rodina",
+      "parent_ref": "cit_debt",
+      "definition": "Честность правил малого мира. Близко к долгу и обязанностям в содержании гражданственности и не равно гражданственности гражданина страны."
+    },
+    {
+      "id": "ev_craft",
+      "class": "everyday",
+      "label": "Профессионализм",
+      "home": "volya",
+      "parent_ref": "lab_master",
+      "definition": "Мастерство и качество дела. Близко к мастерству в содержании созидательного труда и не равно труду на благо Отечества."
+    },
+    {
+      "id": "ev_beauty",
+      "class": "everyday",
+      "label": "Красота",
+      "home": "vera",
+      "parent_ref": "spi_sense",
+      "definition": "Ценность прекрасного в вещи и форме. Близко к духовности и к смыслу выше достатка и не равно приоритету духовного указа в полном объёме."
+    },
+    {
+      "id": "ev_gift",
+      "class": "everyday",
+      "label": "Признание одарённости",
+      "home": "volya",
+      "parent_ref": "dig_honor",
+      "definition": "Уважение к таланту и к сделанному другим. Близко к достоинству другого и к чести. Не крепкая семья и не ключ указа."
+    },
+    {
+      "id": "ev_care",
+      "class": "everyday",
+      "label": "Забота о других",
+      "home": "my",
+      "parent_ref": "aid_help",
+      "definition": "Внимание к нуждам близких и соседей. Близко к состраданию, ближним и помощи друг другу; не милосердие указа в полном объёме."
+    },
+    {
+      "id": "ev_safe",
+      "class": "everyday",
+      "label": "Безопасность жизни",
+      "home": "pravda",
+      "parent_ref": "life_care",
+      "definition": "Бережение жизни и здоровья в повседневности. Близко к заботе о жизни и не тождество с жизнью как сбережением народа."
+    },
+    {
+      "id": "ev_merit",
+      "class": "everyday",
+      "label": "Воздаяние по заслугам",
+      "home": "pravda",
+      "parent_ref": "just_merit",
+      "definition": "Справедливая оценка труда и учёбы. Близко к содержанию «воздаяние по заслугам» и не равно справедливости государства и суда."
+    },
+    {
+      "id": "ev_a_life_joke",
+      "class": "everyday_anti",
+      "label": "Насилие как шутка",
+      "home": null,
+      "parent_ref": "av_life",
+      "definition": "Насильственный или суицидальный юмор, поданный как норма общения."
+    },
+    {
+      "id": "ev_a_life_cheap",
+      "class": "everyday_anti",
+      "label": "Жизнь как расходный материал",
+      "home": null,
+      "parent_ref": "av_life",
+      "definition": "Чужая жизнь воспринимается как позволительная цена для достижения цели или получения выгоды."
+    },
+    {
+      "id": "ev_a_life_mother",
+      "class": "everyday_anti",
+      "label": "Обесценивание материнства",
+      "home": null,
+      "parent_ref": "av_fam",
+      "definition": "Отказ от ценности рождения и материнства как норма в бытовой речи."
+    },
+    {
+      "id": "ev_a_dig_mob",
+      "class": "everyday_anti",
+      "label": "Унижение как норма",
+      "home": null,
+      "parent_ref": "av_dig",
+      "definition": "Публичное унижение участника чата для развлечения или получения «славы» в глазах других; травля как норма общения."
+    },
+    {
+      "id": "ev_a_dig_self",
+      "class": "everyday_anti",
+      "label": "Ритуал самоуничижения",
+      "home": null,
+      "parent_ref": "av_dig",
+      "definition": "Требование к человеку унизиться, чтобы попасть в сообщество или получить одобрение."
+    },
+    {
+      "id": "ev_a_rig_admin",
+      "class": "everyday_anti",
+      "label": "Админский произвол",
+      "home": null,
+      "parent_ref": "av_rig",
+      "definition": "Сила модерации или админки оправдана без общих правил."
+    },
+    {
+      "id": "ev_a_rig_rights_mock",
+      "class": "everyday_anti",
+      "label": "Высмеивание прав",
+      "home": null,
+      "parent_ref": "av_rig",
+      "definition": "Права и свободы читаются как абсурд «для слабых»."
+    },
+    {
+      "id": "ev_a_rig_order_over",
+      "class": "everyday_anti",
+      "label": "Порядок вместо свободы",
+      "home": null,
+      "parent_ref": "av_rig",
+      "definition": "Противопоставление порядка и свободы как обоснование для обесценивания свободы."
+    },
+    {
+      "id": "ev_a_pat_country",
+      "class": "everyday_anti",
+      "label": "«Эта страна»",
+      "home": null,
+      "parent_ref": "av_pat",
+      "definition": "Дистанцирование от России или пренебрежение к России как устойчивый речевой жест."
+    },
+    {
+      "id": "ev_a_pat_exit",
+      "class": "everyday_anti",
+      "label": "Уезд как доблесть",
+      "home": null,
+      "parent_ref": "av_srv",
+      "definition": "Эмиграция или уход от долга перед Родиной поданы как моральная победа и статус в круге."
+    },
+    {
+      "id": "ev_a_pat_mock",
+      "class": "everyday_anti",
+      "label": "Стёб над символикой",
+      "home": null,
+      "parent_ref": "av_pat",
+      "definition": "Высмеивание повседневных проявлений патриотизма, общественных патриотичных ритуалов или государственных символов."
+    },
+    {
+      "id": "ev_a_cit_shrug",
+      "class": "everyday_anti",
+      "label": "Плевать на общее",
+      "home": null,
+      "parent_ref": "av_cit",
+      "definition": "Отказ от ответственности за страну, общество или группы."
+    },
+    {
+      "id": "ev_a_cit_cheat_ok",
+      "class": "everyday_anti",
+      "label": "Мелкое нарушение как норма",
+      "home": null,
+      "parent_ref": "av_cit",
+      "definition": "Обход правил оправдан формулой «все так делают»."
+    },
+    {
+      "id": "ev_a_cit_state_hate",
+      "class": "everyday_anti",
+      "label": "Государство как насилие",
+      "home": null,
+      "parent_ref": "av_cit",
+      "definition": "Цинизм к институтам как единственная рамка отношения к общему."
+    },
+    {
+      "id": "ev_a_srv_mock",
+      "class": "everyday_anti",
+      "label": "Стёб над службой",
+      "home": null,
+      "parent_ref": "av_srv",
+      "definition": "Высмеивание государственной или военной службы или долга перед Родиной как норма общения и популярная позиция."
+    },
+    {
+      "id": "ev_a_ide_lie_ok",
+      "class": "everyday_anti",
+      "label": "Ложь как тактика",
+      "home": null,
+      "parent_ref": "av_ide",
+      "definition": "Обман человека, преподносимый как заслуга и норма поведения."
+    },
+    {
+      "id": "ev_a_ide_hedon",
+      "class": "everyday_anti",
+      "label": "Гедонизм",
+      "home": null,
+      "parent_ref": "av_ide",
+      "definition": "«Бери от жизни все» без нравственных ограничений."
+    },
+    {
+      "id": "ev_a_fam_burden",
+      "class": "everyday_anti",
+      "label": "Семья как обуза",
+      "home": null,
+      "parent_ref": "av_fam",
+      "definition": "Брак, дом или дети заявляются как жизненная ловушка и потеря личных возможностей."
+    },
+    {
+      "id": "ev_a_fam_childfree",
+      "class": "everyday_anti",
+      "label": "Чейлдфри как превосходство",
+      "home": null,
+      "parent_ref": "av_fam",
+      "definition": "Отказ от детей как моральная норма общения."
+    },
+    {
+      "id": "ev_a_fam_divorce_norm",
+      "class": "everyday_anti",
+      "label": "Одобрение измены и развода",
+      "home": null,
+      "parent_ref": "av_fam",
+      "definition": "Развод или измена как обычное дело, без осуждения."
+    },
+    {
+      "id": "ev_a_lab_antilab",
+      "class": "everyday_anti",
+      "label": "Обесценивание труда",
+      "home": null,
+      "parent_ref": "av_lab",
+      "definition": "Осуждение труда как насилия или бессмыслицы; отказ от трудолюбия."
+    },
+    {
+      "id": "ev_a_lab_free",
+      "class": "everyday_anti",
+      "label": "Халява",
+      "home": null,
+      "parent_ref": "av_lab",
+      "definition": "Выгода без труда как умная стратегия."
+    },
+    {
+      "id": "ev_a_lab_paper",
+      "class": "everyday_anti",
+      "label": "Корочка важнее дела",
+      "home": null,
+      "parent_ref": "av_lab",
+      "definition": "Диплом или статус важнее мастерства."
+    },
+    {
+      "id": "ev_a_spi_stuff",
+      "class": "everyday_anti",
+      "label": "Вещь выше человека",
+      "home": null,
+      "parent_ref": "av_spi",
+      "definition": "Оценка человека по его материальному достатку и бренду его вещей."
+    },
+    {
+      "id": "ev_a_spi_money",
+      "class": "everyday_anti",
+      "label": "Деньги как мера всего",
+      "home": null,
+      "parent_ref": "av_spi",
+      "definition": "Деньги как главная шкала успеха людей, значимости сфер деятельности и жизненных стратегий."
+    },
+    {
+      "id": "ev_a_spi_kind_useless",
+      "class": "everyday_anti",
+      "label": "Доброта бесполезна",
+      "home": null,
+      "parent_ref": "av_ide",
+      "definition": "Цинизм к духовным усилиям и бескорыстию."
+    },
+    {
+      "id": "ev_a_hum_cattle",
+      "class": "everyday_anti",
+      "label": "Люди как быдло",
+      "home": null,
+      "parent_ref": "av_hum",
+      "definition": "Презрение к массе или к чужим как норма общения."
+    },
+    {
+      "id": "ev_a_hum_stereo",
+      "class": "everyday_anti",
+      "label": "Этнический стёб",
+      "home": null,
+      "parent_ref": "av_hum",
+      "definition": "Оскорбительный юмор по отношению к людям другой национальности."
+    },
+    {
+      "id": "ev_a_hum_cruel_ok",
+      "class": "everyday_anti",
+      "label": "Жестокость оправдана",
+      "home": null,
+      "parent_ref": "av_hum",
+      "definition": "Жестокость нормализована как «реализм»."
+    },
+    {
+      "id": "ev_a_mer_payback",
+      "class": "everyday_anti",
+      "label": "Ответный удар",
+      "home": null,
+      "parent_ref": "av_mer",
+      "definition": "Непрощение или месть как норма ответа."
+    },
+    {
+      "id": "ev_a_mer_mock_weak",
+      "class": "everyday_anti",
+      "label": "Стёб над слабым",
+      "home": null,
+      "parent_ref": "av_mer",
+      "definition": "Высмеивание нуждающегося."
+    },
+    {
+      "id": "ev_a_mer_help_deal",
+      "class": "everyday_anti",
+      "label": "Помощь за выгоду",
+      "home": null,
+      "parent_ref": "av_spi",
+      "definition": "Помощь только своим или только за обмен."
+    },
+    {
+      "id": "ev_a_just_myth",
+      "class": "everyday_anti",
+      "label": "Справедливости нет",
+      "home": null,
+      "parent_ref": "av_just",
+      "definition": "Справедливость объявлена мифом или инструментом манипуляции."
+    },
+    {
+      "id": "ev_a_just_double",
+      "class": "everyday_anti",
+      "label": "Двойные стандарты сообщества",
+      "home": null,
+      "parent_ref": "av_just",
+      "definition": "Разные правила для своих и чужих как норма, принятая в сообществе."
+    },
+    {
+      "id": "ev_a_just_money",
+      "class": "everyday_anti",
+      "label": "Решают связи и деньги",
+      "home": null,
+      "parent_ref": "av_ide",
+      "definition": "Аксиома: заслуги и нравственные нормы не работают."
+    },
+    {
+      "id": "ev_a_col_alone",
+      "class": "everyday_anti",
+      "label": "Каждый сам за себя",
+      "home": null,
+      "parent_ref": "av_cit",
+      "definition": "Отказ от общего дела группы или курса."
+    },
+    {
+      "id": "ev_a_col_free_ride",
+      "class": "everyday_anti",
+      "label": "Паразит",
+      "home": null,
+      "parent_ref": "av_col",
+      "definition": "Использование коллектива без вклада в общее дело."
+    },
+    {
+      "id": "ev_a_col_indiv",
+      "class": "everyday_anti",
+      "label": "Индивидуализм как жизненная позиция",
+      "home": null,
+      "parent_ref": "av_col",
+      "definition": "Жить без обязательств перед другими и ради собственной выгоды превозносится как мировоззрение."
+    },
+    {
+      "id": "ev_a_aid_notmine",
+      "class": "everyday_anti",
+      "label": "Не моя беда",
+      "home": null,
+      "parent_ref": "av_aid",
+      "definition": "Отказ выручить в конкретной нужде."
+    },
+    {
+      "id": "ev_a_aid_other",
+      "class": "everyday_anti",
+      "label": "Чужим не помогаем",
+      "home": null,
+      "parent_ref": "av_hum",
+      "definition": "Отказ помощи инакомыслящим или чужим."
+    },
+    {
+      "id": "ev_a_mem_joke",
+      "class": "everyday_anti",
+      "label": "Стёб над памятью",
+      "home": null,
+      "parent_ref": "av_mem",
+      "definition": "Шутка или оскорбление значимой для истории страны датой, персоной; высмеивание тех, кто чтит историческую память."
+    },
+    {
+      "id": "ev_a_mem_hero_ban",
+      "class": "everyday_anti",
+      "label": "Антигерои как позитивный мем",
+      "home": null,
+      "parent_ref": "av_mem",
+      "definition": "Героизация недопустимых образов, преступников, запрещенных в России исторических движений и идеологий как мем в сообществе."
+    },
+    {
+      "id": "ev_a_uni_stereo",
+      "class": "everyday_anti",
+      "label": "Дискриминация",
+      "home": null,
+      "parent_ref": "av_uni",
+      "definition": "Вражда или неприязнь к какому-нибудь народу Российской Федерации."
+    },
+    {
+      "id": "ev_a_uni_rank",
+      "class": "everyday_anti",
+      "label": "Этноэгоизм",
+      "home": null,
+      "parent_ref": "av_uni",
+      "definition": "Утверждение превосходства «своего» народа над другими на основании расовых или этнических критериев."
+    }
+  ]
+}
