@@ -134,6 +134,12 @@ func namesIn(text string, names []string) bool {
 	return false
 }
 
+// conclusionRank finds a rank in the conclusion about the teachers of an
+// analysis. «Старшина» is not one here (decided 5 November 2026 after the
+// run): the authors call so the one who leads the drill, «старшина Громов»,
+// and the model kept it for his position; a surname is caught apart.
+var conclusionRank = regexp.MustCompile(`(?i)(^|[^\p{L}])(лейтенант|капитан|майор|подполковник|полковник|генерал|сержант|прапорщик|ефрейтор)`)
+
 // tooLongV3 is the problem of an answer of v3 over the limit of words.
 func tooLongV3(words int) []string {
 	if words > essayWordsMost {
@@ -215,7 +221,7 @@ func checkEssayAnswerV3(output map[string]any, payload *object) []string {
 		if familyWords.MatchString(text) {
 			problems = append(problems, "teachersConclusion: вывод опирается на семью автора — так нельзя (правило 5)")
 		}
-		if militaryRank.MatchString(text) {
+		if conclusionRank.MatchString(text) {
 			problems = append(problems, "teachersConclusion: звание в тексте — называй преподавателя по должности: преподаватель, куратор взвода, начальник цикла")
 		}
 	}

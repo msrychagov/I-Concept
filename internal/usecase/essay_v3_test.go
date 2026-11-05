@@ -319,6 +319,24 @@ func TestCleaningOfV3CutsALongQuoteThatIsWordForWord(t *testing.T) {
 	}
 }
 
+// «Старшина» in the conclusion about the teachers is the position the author
+// gives (decided 5 November 2026 after the run); the other ranks are not.
+func TestConclusionAboutTheTeachersMayNameTheSergeantMajor(t *testing.T) {
+	answers := map[string]string{"1.1": "Я пошёл «в ВУЦ» ради «службы» и отсрочки.", "1.2": "Первые дни было очень страшно.", "2.4": "Хочу поблагодарить полковника Иванова за помощь."}
+	for text, want := range map[string]string{
+		"Старшине и преподавателю удалось показать, что ошибаться не страшно.": "",
+		"Майору удалось показать, что ошибаться не страшно.":                   "teachersConclusion: звание в тексте",
+	} {
+		payload := essayPayloadFor(answers, nil)
+		output := goodEssayV3For(payload)
+		output["teachersConclusion"].(map[string]any)["text"] = text
+		problems := strings.Join(checkEssayAnswerV3(roundTrip(t, output), payload), " | ")
+		if want == "" && problems != "" || want != "" && !strings.Contains(problems, want) {
+			t.Errorf("%q: %s", text, problems)
+		}
+	}
+}
+
 // A summary of a cohort where nobody wrote an essay before must not speak of
 // the earlier essays (decided 5 November 2026 after the run).
 func TestSummaryOfV3OfACohortWithoutEarlierEssays(t *testing.T) {
