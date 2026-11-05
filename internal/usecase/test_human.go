@@ -43,9 +43,9 @@ var (
 		plainSituation: "ставит себе планку ниже, чем оценивает себя сейчас",
 	}
 	humanSelf = map[string]string{
-		"низкая самооценка":  "оценивает себя невысоко",
+		"низкая самооценка":  "в себе пока не уверен",
 		"средняя самооценка": "оценивает себя сдержанно",
-		"высокая самооценка": "оценивает себя высоко",
+		"высокая самооценка": "в себе уверен",
 	}
 	humanPressure  = "чувствует, что от него ждут большего, чем он может сейчас"
 	humanAdequacy  = map[string]string{adequacyTexts["same"]: "считает, что его видят таким, какой он есть"}
@@ -390,14 +390,24 @@ func humanPlatoonPayload(payload *object, data PlatoonPortraitData) {
 }
 
 // humanRule finds a label of the input in a lower-case text and tells what to
-// write instead.
+// write instead; a rule of the paragraphs is not checked in the
+// recommendations.
 type humanRule struct {
-	pattern *regexp.Regexp
-	hint    string
+	pattern    *regexp.Regexp
+	hint       string
+	paragraphs bool
 }
 
 func human(pattern, hint string) humanRule {
-	return humanRule{regexp.MustCompile(pattern), hint}
+	return humanRule{regexp.MustCompile(pattern), hint, false}
+}
+
+// humanParagraphs is a rule of the paragraphs and the conclusion only: the run
+// of 5 November — «Так воспитываются профессионализм и умение принимать
+// решения» in a recommendation is not the list of the groups the supervisor
+// called «статистика».
+func humanParagraphs(pattern, hint string) humanRule {
+	return humanRule{regexp.MustCompile(pattern), hint, true}
 }
 
 const (
@@ -414,18 +424,18 @@ var humanRules = []humanRule{
 	human(`идентичност`, "слово «идентичность» — "+humanSelfHint),
 	human(`мораторий`, "слово «мораторий» — напиши «ещё выбирает, сомневается»"),
 	human(`навязанн`, "слово «навязанный» — напиши «выбрал под влиянием других»"),
-	human(`(?:^|[^а-я])ведущ`, "слово «ведущий» — "+humanSelfHint),
+	human(`(?:^|[^а-я])ведущ[а-я]*\s+(?:статус|позици|идентичност)`, "«ведущая позиция» — "+humanSelfHint),
 	human(`расхожден`, "слово «расхождение» — напиши, видит ли студент, куда расти, и по силам ли ему цель"),
 	human(`оптимальн`, "слово «оптимальный» — напиши, видит ли студент, куда расти, и по силам ли ему цель"),
 	human(`принят[а-я]*\s+как\s+сво`, "«принят как свой» — "+humanImageHint),
 	human(`образ[а-я]*\s+(?:защитника\s+(?:отечества\s+)?)?(?:в\s+целом\s+)?(?:не\s+)?принят`, "«образ принят» — "+humanImageHint),
 	human(`во\s+многом\s+достигнут`, "«во многом достигнут» — "+humanImageHint),
 	human(`ближе\s+всего\s+(?:он\s+|взвод\s+)?к\s+образу|дальше\s+всего\s+(?:он\s+|взвод\s+)?от\s+образа`, "«ближе / дальше всего к образу» — "+humanImageHint),
-	human(`верност[а-я]*\s+долгу\s+и\s+преданност`, "«верность долгу и преданность Отечеству» — "+humanGroupHint),
-	human(`профессионализм[а-я]*\s+и\s+умени[а-я]*\s+принимать`, "«профессионализм и умение принимать решения» — "+humanGroupHint),
-	human(`товариществ[а-я]*\s+и\s+культур[а-я]*\s+отношени`, "«товарищество и культура отношений» — "+humanGroupHint),
-	human(`дисциплин[а-я]*\s+и\s+собранност`, "«дисциплина и собранность» — "+humanGroupHint),
-	human(`физическ[а-я]*\s+подготовк[а-я]*\s+и\s+самообладани`, "«физическая подготовка и самообладание» — "+humanGroupHint),
+	humanParagraphs(`верност[а-я]*\s+долгу\s+и\s+преданност`, "«верность долгу и преданность Отечеству» — "+humanGroupHint),
+	humanParagraphs(`профессионализм[а-я]*\s+и\s+умени[а-я]*\s+принимать`, "«профессионализм и умение принимать решения» — "+humanGroupHint),
+	humanParagraphs(`товариществ[а-я]*\s+и\s+культур[а-я]*\s+отношени`, "«товарищество и культура отношений» — "+humanGroupHint),
+	humanParagraphs(`дисциплин[а-я]*\s+и\s+собранност`, "«дисциплина и собранность» — "+humanGroupHint),
+	humanParagraphs(`физическ[а-я]*\s+подготовк[а-я]*\s+и\s+самообладани`, "«физическая подготовка и самообладание» — "+humanGroupHint),
 	human(`(?:учебн|воспитательн|повседневн|просветительск)[а-я]*\s+деятельност|(?:^|[^а-я])вид[а-я]*\s+деятельност`, "вид деятельности по названию — "+humanSideHint),
 	human(`субъектност`, "слово «субъектность» — напиши «свобода проявить инициативу»"),
 	human(`наставни`, "слово «наставничество» — "+humanTeachHint),
@@ -435,8 +445,9 @@ var humanRules = []humanRule{
 func humanWordProblems(field, text string) []string {
 	lower := lowerText(text)
 	problems := []string{}
+	paragraph := field == "conclusion" || strings.HasPrefix(field, "paragraphs.") || field == "input" || field == "basis"
 	for _, rule := range humanRules {
-		if rule.pattern.MatchString(lower) {
+		if (paragraph || !rule.paragraphs) && rule.pattern.MatchString(lower) {
 			problems = append(problems, field+": "+rule.hint)
 		}
 	}
@@ -586,38 +597,11 @@ func humanSpecialityProblems(output map[string]any, payload *object) []string {
 	return []string{fmt.Sprintf("recommendations: по военной специальности студент «%s» — нужен пункт к группе 2 со словами «военная специальность»: что лично ему даёт выбор военной специальности, например после практического занятия обсудить с ним, что из этого дела ему пригодится как будущему военному специалисту%s", phrase, codes)}
 }
 
-// textExamples are the examples «так» of the paragraphs and the conclusions of
-// test/v7 and test-platoon/v5. The run of 5 November: 22 conclusions of 30
-// attempts began with the example word for word, «Исполнительный и
-// уравновешенный студент: на него можно положиться…». The test checks they
-// are those of the wiki.
-var textExamples = []string{
-	"Он требователен к себе и хочет заметно измениться. Товарищество и выносливость считает своими сильными сторонами, а умение быстро принимать решения — пока своим слабым местом",
-	"Распорядок и требования даются ему непросто, но с трудностями он справляется сам и не жалуется; на занятиях держится уверенно, а в жизни взвода участвует мало",
-	"Исполнительный и уравновешенный студент: на него можно положиться, на замечания он реагирует спокойно и исправляет ошибки. Главное в работе с ним — давать ему дела, где нужна собственная инициатива",
-	"Многие студенты ещё ищут себя и не до конца понимают, какими хотят стать. Поддерживать друг друга они умеют, а вот исполнительность и собранность пока даются взводу труднее",
-	"К распорядку и требованиям взвод привык и тяготы быта переносит ровно; занятия студентам интересны, а вот общих дел, где взвод действует как одна команда, им не хватает",
-	"Взвод дружный и исполнительный, на него можно положиться в обычной службе, но в непривычной обстановке студенты теряются и ждут указаний. Главное в работе с ним — чаще давать задачи, где решение нужно принять самим",
-}
-
-// textExampleRuns are the examples without «Главное в работе с ним —»,
-// which the instruction asks every conclusion to say.
-var textExampleRuns = func() []string {
-	runs := []string{}
-	for _, example := range textExamples {
-		runs = append(runs, strings.Replace(example, "Главное в работе с ним — ", "", 1))
-	}
-	return runs
-}()
-
 // humanTextProblems are the checks of every text of v7 and of test-platoon/v5.
 func humanTextProblems(texts map[string]string) []string {
 	problems := openingProblems(texts)
 	for _, key := range sortedTextKeys(texts) {
 		problems = append(problems, humanWordProblems(key, texts[key])...)
-		if (key == "conclusion" || strings.HasPrefix(key, "paragraphs.")) && copiedFrom(texts[key], textExampleRuns) {
-			problems = append(problems, key+": повторяет пример из инструкции — напиши своими словами, по данным этого студента: пример только показывает, каким языком писать")
-		}
 	}
 	return append(problems, humanConclusionProblems(texts["conclusion"])...)
 }
