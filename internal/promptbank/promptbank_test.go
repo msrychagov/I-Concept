@@ -48,7 +48,8 @@ func TestLatestVersionMatchesTheWikiWhenItIsThere(t *testing.T) {
 		{"essay-cohort", "", "../../../Вики/Эссе выпускника/Инструкция по выпуску v3.md"},
 		{"essay-cohort", "v2", "../../../Вики/Эссе выпускника/Инструкция по выпуску v2.md"},
 		{"essay-cohort", "v1", "../../../Вики/Эссе выпускника/Инструкция по выпуску.md"},
-		{"values", "", "../../../Вики/Онтограф ценностей 1.1/Инструкция разметки.md"},
+		{"values", "", "../../../Вики/Онтограф ценностей 1.1/Инструкция разметки v2.md"},
+		{"values", "v1", "../../../Вики/Онтограф ценностей 1.1/Инструкция разметки.md"},
 	} {
 		t.Run(c.task+c.version, func(t *testing.T) {
 			wiki, err := os.ReadFile(c.path)
@@ -92,7 +93,11 @@ func TestEssayPromptsAreEmbedded(t *testing.T) {
 			t.Errorf("%s: %+v", task, prompt.Version)
 		}
 	}
-	if prompt, ok := Latest(prompts, "values"); !ok || prompt.Version != "v1" || !strings.Contains(string(prompt.Schema), `"required": ["marks"]`) {
+	if prompt, ok := Find(prompts, "values", "v1"); !ok || !strings.Contains(string(prompt.Schema), `"required": ["marks"]`) {
+		t.Errorf("values v1: %+v", prompt.Version)
+	}
+	// v2: the definitions of the notions, «сначала ищи понятие» (Вики/Онтограф ценностей 1.1/Инструкция разметки v2.md).
+	if prompt, ok := Latest(prompts, "values"); !ok || prompt.Version != "v2" || !strings.Contains(prompt.Instruction, "Сначала ищи понятие") {
 		t.Errorf("values: %+v", prompt.Version)
 	}
 }
