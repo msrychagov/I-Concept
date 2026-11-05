@@ -1,0 +1,54 @@
+{
+  "type": "object",
+  "properties": {
+    "formation": {
+      "type": "object",
+      "description": "Как меняются представления автора о себе и что изменилось с прежнего эссе, 2–3 предложения",
+      "properties": {
+        "text": {"type": "string"},
+        "quotes": {"type": "array", "items": {"$ref": "#/$defs/quote"}},
+        "before": {"type": "array", "description": "Цитаты из прежнего эссе, 1–2; пусто, если прежнего нет", "items": {"$ref": "#/$defs/quote"}}
+      },
+      "required": ["text", "quotes", "before"]
+    },
+    "moments": {"$ref": "#/$defs/paragraph", "description": "Качества и установки: убеждения, эмоции, ценности, восприятие своих возможностей, 3–4 предложения"},
+    "environment": {"$ref": "#/$defs/paragraph", "description": "Отношение к ВУЦ, порядкам, занятиям, товарищам, 1–2 предложения"},
+    "developed": {"type": "array", "description": "Что воспитал ВУЦ, 0–3 качества", "items": {"$ref": "#/$defs/paragraph"}},
+    "strengthen": {"type": "array", "description": "Что ещё усилить и как, 2–3 пункта", "items": {"$ref": "#/$defs/paragraph"}},
+    "teachersConclusion": {"$ref": "#/$defs/paragraph", "description": "Вывод о преподавателях: что удалось и что ещё сделать, 2–3 предложения; пусто, если в teachers никого нет"},
+    "teachers": {
+      "type": "array",
+      "description": "Преподаватели и командиры, которых называет автор",
+      "items": {
+        "type": "object",
+        "properties": {
+          "position": {"type": "string", "enum": ["начальник ВУЦ", "заместитель начальника ВУЦ", "начальник кафедры", "начальник цикла", "куратор взвода", "преподаватель", "не указано"]},
+          "name": {"type": "string", "description": "Фамилия, как написал автор; без фамилии — имя и отчество; пусто, если не назван"},
+          "kind": {"type": "string", "enum": ["благодарность", "проблема", "упоминание"]},
+          "text": {"type": "string"},
+          "quotes": {"type": "array", "items": {"$ref": "#/$defs/quote"}}
+        },
+        "required": ["position", "name", "kind", "text", "quotes"]
+      }
+    }
+  },
+  "required": ["formation", "moments", "environment", "developed", "strengthen", "teachersConclusion", "teachers"],
+  "$defs": {
+    "quote": {
+      "type": "object",
+      "properties": {
+        "question": {"type": "string", "description": "Номер вопроса, например 1.2"},
+        "quote": {"type": "string", "description": "Дословный кусок ответа, 3–30 слов"}
+      },
+      "required": ["question", "quote"]
+    },
+    "paragraph": {
+      "type": "object",
+      "properties": {
+        "text": {"type": "string"},
+        "quotes": {"type": "array", "items": {"$ref": "#/$defs/quote"}}
+      },
+      "required": ["text", "quotes"]
+    }
+  }
+}
