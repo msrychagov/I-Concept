@@ -104,7 +104,8 @@ func (a *Service) cohortShape() int {
 }
 
 // cohortAuthorsOf are the essays of the assignment with an analysis of the
-// shape (1 for v1, 2 for v2 and later, 0 for any), in the order of the numbers.
+// shape (1 for v1, 2 for v2, 3 for v3 and later, 0 for any), in the order of
+// the numbers.
 func (a *Service) cohortAuthorsOf(db model.Database, assignmentID string, shape int) []essayAuthor {
 	authors := []essayAuthor{}
 	for _, submission := range authorOrder(assignmentID, assignmentSubmissions(db, assignmentID)) {
@@ -224,11 +225,15 @@ func (a *Service) cohortTask(prompt promptbank.Prompt) portraitTask {
 		assignment, ok := findAssignment(db, s.ID)
 		return s.Kind == "assignment" && ok && assignment.FormID == essayForm && inTeacherScope(assignment.OwnerID, teacherID)
 	}
-	// The summary of v2 is made of the analyses of v2 (essay_v2.go).
+	// The summary of v2 is made of the analyses of v2 (essay_v2.go), the one
+	// of v3 of the analyses of v3 (essay_v3.go).
 	shape := essayShape(prompt.Version)
 	payload, clean, check := (*Service).cohortPayload, cleanCohortAnswer, checkCohortAnswer
-	if shape == 2 {
+	switch shape {
+	case 2:
 		payload, clean, check = (*Service).cohortPayloadV2, cleanCohortAnswerV2, checkCohortAnswerV2
+	case 3:
+		payload, clean, check = (*Service).cohortPayloadV3, cleanCohortAnswerV3, checkCohortAnswerV3
 	}
 	return portraitTask{
 		ID: essayCohortTask, Version: prompt.Version, Prompt: prompt,
@@ -252,7 +257,8 @@ func (a *Service) cohortTask(prompt promptbank.Prompt) portraitTask {
 // «3.conclusion» into the number of the author and the kind of the point:
 // pos, neg, att, path, conclusion, moment.beliefs, change.beliefs; and the
 // numbers of v2: «3.formation», «3.moments», «3.environment», «3.rec.2» into
-// formation, moments, environment, rec.
+// formation, moments, environment, rec; and those of v3: «3.dev.1», «3.str.2»,
+// «3.teachers» into dev, str, teachers.
 func parseRef(ref string) (author int, kind string, ok bool) {
 	parts := strings.Split(ref, ".")
 	number, err := strconv.Atoi(parts[0])
@@ -263,9 +269,9 @@ func parseRef(ref string) (author int, kind string, ok bool) {
 	switch {
 	case len(parts) == 2 && moment:
 		return number, "moment." + parts[1], true
-	case len(parts) == 2 && (parts[1] == "path" || parts[1] == "conclusion" || slices.Contains(essayParagraphs, parts[1])):
+	case len(parts) == 2 && (parts[1] == "path" || parts[1] == "conclusion" || parts[1] == "teachers" || slices.Contains(essayParagraphs, parts[1])):
 		return number, parts[1], true
-	case len(parts) == 3 && (parts[1] == "pos" || parts[1] == "neg" || parts[1] == "att" || parts[1] == "rec"):
+	case len(parts) == 3 && (parts[1] == "pos" || parts[1] == "neg" || parts[1] == "att" || parts[1] == "rec" || parts[1] == "dev" || parts[1] == "str"):
 		index, err := strconv.Atoi(parts[2])
 		return number, parts[1], err == nil && index >= 1 && strconv.Itoa(index) == parts[2]
 	case len(parts) == 3 && parts[1] == "change":

@@ -94,17 +94,63 @@ func goodCohortV2(string) map[string]any {
 	}
 }
 
-// bothTasksModel answers the analysis of an essay and the summary by what it is asked.
+// goodCohortV3 answers the way the instruction essay-cohort/v3 asks: every
+// paragraph and the first point of developed and strengthen stand on the first
+// two authors; the second point of strengthen on a paragraph of one and a
+// point of the other; the conclusion about the teachers on the authors who
+// have one, when they are two or more.
+func goodCohortV3(user string) map[string]any {
+	both := func(kind string) []any { return []any{"1." + kind, "2." + kind} }
+	paragraph := func(key string) map[string]any {
+		return map[string]any{"text": "Авторы отмечают это в эссе.", "refs": both(key)}
+	}
+	var input struct {
+		Reviews []struct {
+			Teachers *struct {
+				Number string `json:"номер"`
+			} `json:"о_преподавателях"`
+		} `json:"разборы"`
+	}
+	_ = json.Unmarshal([]byte(user), &input)
+	teachers := []any{}
+	for _, review := range input.Reviews {
+		if review.Teachers != nil {
+			teachers = append(teachers, review.Teachers.Number)
+		}
+	}
+	conclusion := map[string]any{"text": "", "refs": []any{}}
+	if len(teachers) >= 2 {
+		conclusion = map[string]any{"text": "Преподавателям удалось создать доверие; стоит давать больше самостоятельных задач.", "refs": teachers}
+	}
+	return map[string]any{
+		"formation": paragraph("formation"), "moments": paragraph("moments"), "environment": paragraph("environment"),
+		"developed": []any{map[string]any{"text": "Дисциплинированность и принятие порядков.", "refs": both("dev.1")}},
+		"strengthen": []any{
+			map[string]any{"text": "Уверенность в своих силах — давать самостоятельные задачи.", "refs": both("str.1")},
+			map[string]any{"text": "Товарищество — чаще работать в паре.", "refs": []any{"1.moments", "2.str.2"}},
+		},
+		"teachersConclusion": conclusion,
+	}
+}
+
+// bothTasksModel answers the analysis of an essay and the summary by what it is
+// asked, in the version of the instruction it is given.
 func bothTasksModel(mutate func(map[string]any)) *fakeModel {
 	return &fakeModel{name: "fake", reply: func(_ int, c Completion) (string, error) {
 		var answer map[string]any
-		if strings.Contains(c.System, "Тебе передаются только эти") {
+		switch {
+		case strings.Contains(c.System, "Тебе передаются только эти") && strings.Contains(c.System, "teachersConclusion"):
+			answer = goodCohortV3(c.User)
+			if mutate != nil {
+				mutate(answer)
+			}
+		case strings.Contains(c.System, "Тебе передаются только эти"):
 			answer = goodCohortV2(c.User)
 			if mutate != nil {
 				mutate(answer)
 			}
-		} else {
-			answer = goodEssay(c.User)
+		default:
+			answer = essayAnswerFor(c)
 		}
 		data, _ := json.Marshal(answer)
 		return string(data), nil
@@ -129,7 +175,7 @@ func (f *essayFixture) three() {
 }
 
 func TestSummaryIsComposedOnTheButtonAndCountedByTheProgram(t *testing.T) {
-	f := newEssayPortraitFixture(t)
+	f := newEssayPortraitFixtureAt(t, "v2")
 	if _, err := f.service.SaveInstructor(f.owner, "", InstructorInput{Surname: "Иванов", Name: "Игорь", Patronymic: "Петрович", Rank: "полковник"}); err != nil {
 		t.Fatal(err)
 	}
@@ -262,7 +308,7 @@ func TestSummaryWithoutAModelStillHasTheBlockOfInstructors(t *testing.T) {
 }
 
 func TestCohortPayloadIsStableAndHoldsNoQuotesAndNoTeachers(t *testing.T) {
-	f := newEssayPortraitFixture(t)
+	f := newEssayPortraitFixtureAt(t, "v2")
 	f.service.UseModel(bothTasksModel(nil))
 	f.three()
 	f.idle()
@@ -644,7 +690,7 @@ func TestAnswerIsRefusedWhenAMomentTheConclusionOrChangeIsLeftWithoutAuthors(t *
 
 // A model that repeats refs is not refused any more: the summary is stored cleaned.
 func TestSummaryIsStoredCleanedWhenTheModelRepeatsReferences(t *testing.T) {
-	f := newEssayPortraitFixture(t)
+	f := newEssayPortraitFixtureAt(t, "v2")
 	journalOut := captureJournal(t)
 	m := bothTasksModel(func(answer map[string]any) {
 		answer["recommendations"] = []any{
