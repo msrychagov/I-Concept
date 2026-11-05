@@ -100,9 +100,11 @@ var trainingWordV5 = regexp.MustCompile(`(?i)служ|арми|войск|зва
 // upbringingWordV5 is the upbringing: it belongs to the psychologist.
 var upbringingWordV5 = regexp.MustCompile(`(?i)воспитывал(ся|и|а)|воспитан|родител|детск[а-яё]* дом|интернат|опекун`)
 
-// planningWordV5 is how to plan the load or what to recommend in a point for
-// the military training: the point tells what he knows and is used to.
-var planningWordV5 = regexp.MustCompile(`(?i)при планировани|при распределени|нагрузк|допуск|влия|рекоменд|следует|необходимо|пригоден|непригод|пригодност`)
+// planningWordV5 is how to plan the time or what to recommend in a point for
+// the military training: the point tells what he knows and is used to. «Нагрузка»
+// itself passes: «привык к физическим нагрузкам» (decided by the user after the
+// run of 5 November 2026).
+var planningWordV5 = regexp.MustCompile(`(?i)при планировани|при распределени|допуск|влия|рекоменд|следует|необходимо|пригоден|непригод|пригодност`)
 
 // activeV5 tells whether the student has an activity or a hobby: without them
 // the only paragraph is noActivities.
@@ -294,9 +296,11 @@ func foundV5(text string) string {
 }
 
 // commonProblemsV5 are the rules of every text of the answer: no machine
-// phrase, no appointment (prohibition 4), no copy of an example. A problem
-// names the word of the rule and how to write instead, never the text.
-func commonProblemsV5(where, text string) []string {
+// phrase, no appointment (prohibition 4), no copy of an example where examples
+// is set. The points for the psychologist and the military training may repeat
+// their examples (decided by the user after the run of 5 November 2026). A
+// problem names the word of the rule and how to write instead, never the text.
+func commonProblemsV5(where, text string, examples bool) []string {
 	problems := []string{}
 	if found := machinePhraseV5.FindString(text); found != "" {
 		problems = append(problems, fmt.Sprintf("%s: машинный оборот («%s») — назови качество сразу: «вынослив, быстро реагирует», без «по опыту в …» и «это показывает»", where, foundV5(found)))
@@ -304,16 +308,23 @@ func commonProblemsV5(where, text string) []string {
 	if found := postAppointment.FindString(troopsPurpose.ReplaceAllString(strings.ToLower(text), "")); found != "" {
 		problems = append(problems, fmt.Sprintf("%s: назначение, зачисление или отчисление («%s») — запрет 4, о должностях и допуске не пиши", where, found))
 	}
-	if copiesExampleV5(text) {
+	if examples && copiesExampleV5(text) {
 		problems = append(problems, where+": повторяет пример из инструкции — напиши по сведениям этого студента")
 	}
 	return problems
 }
 
+// workSkillV5 is a skill or a quality next to a position before the
+// university: «освоил работу в потоке» as well as «навыки общения».
+var workSkillV5 = regexp.MustCompile(`(?i)освоил|научил|привык|приобр[её]л|развил|знает|владеет`)
+
 // qualityProblemsV5 are the rules of the paragraphs and the lines of the
 // areas, where the qualities are: from the activities only, nothing of where
-// they will be of use, nothing of the work before the university.
-func qualityProblemsV5(where, text string, jobs []string) []string {
+// they will be of use. The work before the university is in a paragraph only
+// as a fact, «До вуза работал …», with no skill or quality in the sentence
+// (decided by the user after the run of 5 November 2026); a line of an area
+// has no work at all (work is false).
+func qualityProblemsV5(where, text string, jobs []string, work bool) []string {
 	problems := []string{}
 	lower := strings.ToLower(text)
 	if found := lifeCircumstance.FindStringSubmatch(text); found != nil {
@@ -332,11 +343,19 @@ func qualityProblemsV5(where, text string, jobs []string) []string {
 			break
 		}
 	}
-	for _, stem := range jobs {
-		if strings.Contains(lower, stem) {
-			problems = append(problems, where+": работа до вуза — о ней пиши в training: чем она полезна в военной подготовке")
-			break
+	for _, part := range strings.FieldsFunc(lower, func(r rune) bool { return strings.ContainsRune(".;!?", r) }) {
+		if !slices.ContainsFunc(jobs, func(stem string) bool { return strings.Contains(part, stem) }) {
+			continue
 		}
+		switch {
+		case !work:
+			problems = append(problems, where+": работа до вуза — о ней пиши в training: чем она полезна в военной подготовке")
+		case !workFact.MatchString(part) || skillWord.MatchString(part) || workSkillV5.MatchString(part):
+			problems = append(problems, where+": работа до вуза не фактом — в абзаце только «До вуза работал …», без навыков и качеств; что из неё полезно — в training")
+		default:
+			continue
+		}
+		break
 	}
 	return problems
 }
@@ -380,8 +399,8 @@ func areasProblemsV5(value any, payload *object, empty, jobs []string) []string 
 		} else if found := levelWordV5.FindString(text); found != "" && area != "иностранные языки" {
 			problems = append(problems, fmt.Sprintf("%s: уровень потенциала («%s») — уровень не называй, его показывает программа", where, strings.ToLower(found)))
 		}
-		problems = append(problems, commonProblemsV5(where, text)...)
-		problems = append(problems, qualityProblemsV5(where, text, jobs)...)
+		problems = append(problems, commonProblemsV5(where, text, true)...)
+		problems = append(problems, qualityProblemsV5(where, text, jobs, false)...)
 		problems = append(problems, absenceProblemsV5(where, text, empty)...)
 		if area == "иностранные языки" {
 			names, results := languagesV5(payload)
@@ -434,7 +453,7 @@ func psychologistProblemsV5(points []any, payload *object) []string {
 		if found := labelWordV5.FindString(text); found != "" {
 			problems = append(problems, fmt.Sprintf("%s: ярлык или прогноз («%s») — без ярлыков и прогнозов: напиши, на что обратить внимание и что уточнить", where, strings.ToLower(found)))
 		}
-		problems = append(problems, commonProblemsV5(where, text)...)
+		problems = append(problems, commonProblemsV5(where, text, false)...)
 		problems = append(problems, absenceProblemsV5(where, text, nil)...)
 	}
 	return problems
@@ -470,9 +489,9 @@ func trainingProblemsV5(points []any, payload *object) []string {
 			problems = append(problems, fmt.Sprintf("%s: судимость или гражданство («%s») — это фактом в consider", where, strings.ToLower(found)))
 		}
 		if found := planningWordV5.FindString(text); found != "" {
-			problems = append(problems, fmt.Sprintf("%s: нагрузка, допуск или рекомендация («%s») — напиши, что он знает и умеет и к чему привык, без нагрузки, допусков и должностей", where, strings.ToLower(found)))
+			problems = append(problems, fmt.Sprintf("%s: планирование, допуск или рекомендация («%s») — напиши, что он знает и умеет и к чему привык, без планирования времени, допусков и должностей", where, strings.ToLower(found)))
 		}
-		problems = append(problems, commonProblemsV5(where, text)...)
+		problems = append(problems, commonProblemsV5(where, text, false)...)
 		problems = append(problems, absenceProblemsV5(where, text, nil)...)
 	}
 	return problems
@@ -499,7 +518,7 @@ func considerProblemsV5(points []any, payload *object, empty []string) []string 
 		}
 		hasConviction = hasConviction || strings.Contains(lower, "судим")
 		hasCitizenship = hasCitizenship || strings.Contains(lower, "гражданств") || strings.Contains(lower, "подданств")
-		problems = append(problems, commonProblemsV5(where, text)...)
+		problems = append(problems, commonProblemsV5(where, text, true)...)
 		problems = append(problems, absenceProblemsV5(where, text, empty)...)
 	}
 	if convicted && !hasConviction {
@@ -534,8 +553,8 @@ func checkAutobiographyAnswerV5(output map[string]any, payload *object) []string
 				problems = append(problems, where+": пустой")
 				continue
 			}
-			problems = append(problems, commonProblemsV5(where, text)...)
-			problems = append(problems, qualityProblemsV5(where, text, jobs)...)
+			problems = append(problems, commonProblemsV5(where, text, true)...)
+			problems = append(problems, qualityProblemsV5(where, text, jobs, true)...)
 			problems = append(problems, absenceProblemsV5(where, text, empty)...)
 		}
 	}

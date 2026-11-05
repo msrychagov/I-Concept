@@ -138,7 +138,9 @@ func TestV5FindsTheBrokenRules(t *testing.T) {
 		"useful in vuc":       {"03 Наука и языки.json", paragraph(1, "Умение считать пригодится на занятиях ВУЦ."), "где пригодится («пригодится»)"},
 		"vuc alone":           {"03 Наука и языки.json", area(1, "Сможет выступать на смотрах ВУЦ."), "где пригодится («вуц»)"},
 		"family in paragraph": {"03 Наука и языки.json", paragraph(1, "Рос с матерью и привык к самостоятельности."), "семья, брак, гражданство или судимость («матерью»)"},
-		"work in paragraph":   {"04 Служил, работал, женат.json", paragraph(1, "Как слесарь-ремонтник хорошо знает технику."), "работа до вуза — о ней пиши в training"},
+		"work in paragraph":   {"04 Служил, работал, женат.json", paragraph(1, "Как слесарь-ремонтник хорошо знает технику."), "работа до вуза не фактом"},
+		"work skill":          {"04 Служил, работал, женат.json", paragraph(0, "До вуза работал автослесарем, освоил ремонт машин."), "работа до вуза не фактом"},
+		"work in area":        {"04 Служил, работал, женат.json", area(0, "Работа слесарем-ремонтником развила силу."), "работа до вуза — о ней пиши в training"},
 		"appointment":         {"02 Спорт и военно-патриотическое.json", paragraph(1, "Его можно назначить командиром отделения."), "запрет 4"},
 		"copy of an example":  {"01 Минимальная.json", paragraph(1, "Быстро ориентируется в игре, умеет действовать заодно с командой."), "повторяет пример из инструкции"},
 		"absence":             {"02 Спорт и военно-патриотическое.json", paragraph(0, "Окончил кадетскую школу без медали."), "об отсутствии («без медали»)"},
@@ -161,7 +163,7 @@ func TestV5FindsTheBrokenRules(t *testing.T) {
 		"four points":             {"05 Ловушка.json", func(a map[string]any) {}, "psychologist: пунктов больше трёх"},
 		"training not needed":     {"02 Спорт и военно-патриотическое.json", set("training", "Холост: может уделять учёбе всё время."), "training: студент не служил"},
 		"training missing":        {"04 Служил, работал, женат.json", set("training"), "training: пусто"},
-		"training load":           {"04 Служил, работал, женат.json", set("training", "Женат, есть ребёнок — учитывать при планировании нагрузки."), "нагрузка, допуск или рекомендация"},
+		"training load":           {"04 Служил, работал, женат.json", set("training", "Женат, есть ребёнок — учитывать при планировании нагрузки."), "планирование, допуск или рекомендация"},
 		"training upbringing":     {"04 Служил, работал, женат.json", set("training", "Служил в армии; воспитывался обоими родителями."), "воспитание («воспитывался»)"},
 		"training not about":      {"04 Служил, работал, женат.json", set("training", "Любит охоту и рыбалку."), "в training — только служба"},
 		"consider not needed":     {"04 Служил, работал, женат.json", set("consider", "Служил в Вооружённых силах."), "судимостей и иностранного гражданства нет"},
@@ -231,6 +233,31 @@ func TestV5TrapAnswerPasses(t *testing.T) {
 		if problems := checkAutobiographyAnswerV5(answer, payload); len(problems) == 0 {
 			t.Errorf("%s: passes", name)
 		}
+	}
+}
+
+// Decided by the user after the run of 5 November 2026: the work before the
+// university may be a fact of the first paragraph, the points for the
+// psychologist and the military training may repeat their examples, and
+// «нагрузка» is no conclusion there.
+func TestV5DecisionsAfterTheRun(t *testing.T) {
+	payload := comparisonPayload(t, "04 Служил, работал, женат.json")
+	answer := sampleV5("04 Служил, работал, женат.json")
+	answer["paragraphs"].([]any)[0] = answer["paragraphs"].([]any)[0].(string) + " До вуза работал автослесарем и слесарем-ремонтником."
+	answer["training"].([]any)[2] = "Женат, растит двоих детей: привык отвечать не только за себя, но и за близких."
+	answer["training"] = append(answer["training"].([]any)[1:], "Служил механиком-водителем: привык к физическим нагрузкам и полевым условиям.")
+	if problems := checkAutobiographyAnswerV5(answer, payload); len(problems) != 0 {
+		t.Fatalf("%q", problems)
+	}
+	trap := trapAnswerV5("")
+	trap["psychologist"] = []any{"Воспитывался в детском доме. В беседе уточнить, на кого из взрослых он привык опираться, и обратить внимание, как он входит в новый коллектив."}
+	if problems := checkAutobiographyAnswerV5(trap, comparisonPayload(t, "05 Ловушка.json")); len(problems) != 0 {
+		t.Fatalf("%q", problems)
+	}
+	// The paragraphs still may not copy an example.
+	answer["paragraphs"].([]any)[1] = "Быстро ориентируется в игре, умеет действовать заодно с командой."
+	if problems := checkAutobiographyAnswerV5(answer, payload); len(problems) != 1 || !strings.Contains(problems[0], "повторяет пример") {
+		t.Fatalf("%q", problems)
 	}
 }
 
