@@ -197,10 +197,10 @@ func TestPortraitV3IsShownWhileV4IsMade(t *testing.T) {
 		t.Fatal(err)
 	}
 	older := slices.DeleteFunc(slices.Clone(prompts), func(p promptbank.Prompt) bool {
-		return p.Task == testPortraitTask && (p.Version == "v4" || p.Version == "v5" || p.Version == "v6")
+		return p.Task == testPortraitTask && (p.Version == "v4" || p.Version == "v5" || p.Version == "v6" || p.Version == "v7")
 	})
 	prompts = slices.DeleteFunc(slices.Clone(prompts), func(p promptbank.Prompt) bool {
-		return p.Task == testPortraitTask && (p.Version == "v5" || p.Version == "v6")
+		return p.Task == testPortraitTask && (p.Version == "v5" || p.Version == "v6" || p.Version == "v7")
 	})
 	f.service.portraits.tasks = nil
 	f.service.RegisterPrompts(older...)

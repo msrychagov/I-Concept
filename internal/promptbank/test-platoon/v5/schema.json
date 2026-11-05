@@ -1,0 +1,44 @@
+{
+  "type": "object",
+  "properties": {
+    "paragraphs": {
+      "type": "object",
+      "description": "Заключение по взводу: четыре связных абзаца без заголовков",
+      "properties": {
+        "values": {"type": "string", "description": "Что главное в службе; каковы студенты с людьми, друг с другом и в отношении к Отечеству"},
+        "will": {"type": "string", "description": "Как владеют собой, как используют опыт, выбрали ли сами специальность и профессию"},
+        "image": {"type": "string", "description": "Как оценивают себя и какими хотят стать, какие качества защитника Отечества считают своими"},
+        "environment": {"type": "string", "description": "Как взвод живёт в ВУЦ: быт и трудности, военное дело, жизнь взвода, отношение к себе"}
+      },
+      "required": ["values", "will", "image", "environment"]
+    },
+    "recommendations": {
+      "type": "array",
+      "description": "Общие рекомендации для взвода, 3–5, без повторов и без должностей",
+      "items": {
+        "type": "object",
+        "properties": {
+          "group": {"type": "integer"},
+          "code": {"type": "string"},
+          "text": {"type": "string", "description": "Два предложения: что сделать со взводом и какое качество это воспитывает"}
+        },
+        "required": ["group", "code", "text"]
+      }
+    },
+    "individual": {
+      "type": "array",
+      "description": "По пункту на каждую группу из «отдельная_работа», в том же порядке",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {"type": "string"},
+          "code": {"type": "string"},
+          "text": {"type": "string", "description": "Что сделать с этими студентами и какое качество это воспитывает"}
+        },
+        "required": ["label", "code", "text"]
+      }
+    },
+    "conclusion": {"type": "string", "description": "Общий вывод по взводу, два предложения"}
+  },
+  "required": ["paragraphs", "recommendations", "individual", "conclusion"]
+}

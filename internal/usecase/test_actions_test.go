@@ -247,7 +247,9 @@ func TestActionExamplesAreThoseOfTheWiki(t *testing.T) {
 		t.Skip("the wiki folder is not next to the repository")
 	}
 	platoon, _ := os.ReadFile("../../../Вики/Тестирование/Инструкция по взводу v4.md")
-	wiki := string(student) + string(platoon)
+	student7, _ := os.ReadFile("../../../Вики/Тестирование/Инструкция v7.md")
+	platoon5, _ := os.ReadFile("../../../Вики/Тестирование/Инструкция по взводу v5.md")
+	wiki := string(student) + string(platoon) + string(student7) + string(platoon5)
 	for _, example := range actionExamples {
 		if !strings.Contains(wiki, "«"+example+"»") {
 			t.Errorf("not in the wiki: %s", example)
@@ -272,6 +274,8 @@ func TestPortraitV5IsShownWhileV6IsMade(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Without v7, the newest version: this test is about v6.
+	prompts = slices.DeleteFunc(prompts, func(p promptbank.Prompt) bool { return p.Task == testPortraitTask && p.Version == "v7" })
 	older := slices.DeleteFunc(slices.Clone(prompts), func(p promptbank.Prompt) bool { return p.Task == testPortraitTask && p.Version == "v6" })
 	f.service.portraits.tasks = nil
 	f.service.RegisterPrompts(older...)
