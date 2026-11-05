@@ -43,6 +43,8 @@ func (a *Service) platoonTask(prompt promptbank.Prompt) portraitTask {
 	check, clean := checkPlatoonAnswer, cleanRepeatedDirections
 	versions := []string{"v1"}
 	switch {
+	case humanInput(testPlatoonTask, prompt.Version):
+		check, clean, versions = checkPlatoonAnswerV5, cleanUnfitCodes, []string{"v4", "v3", "v2", "v1"}
 	case plainInput(testPlatoonTask, prompt.Version):
 		check, clean, versions = checkPlatoonAnswerV4, cleanUnfitCodes, []string{"v3", "v2", "v1"}
 	case termsInput(testPlatoonTask, prompt.Version):
@@ -193,6 +195,9 @@ func (a *Service) platoonPayloadFor(version string, data PlatoonPortraitData) *o
 	// groups of students for separate work.
 	if plainInput(testPlatoonTask, version) {
 		a.plainPlatoonPayload(payload, data)
+		if humanInput(testPlatoonTask, version) {
+			humanPlatoonPayload(payload, data)
+		}
 	} else if termsInput(testPlatoonTask, version) {
 		signs := []string{}
 		for _, sign := range data.EnvironmentSigns {

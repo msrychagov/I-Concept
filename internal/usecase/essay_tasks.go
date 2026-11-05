@@ -27,6 +27,11 @@ func (a *Service) essayTask(prompt promptbank.Prompt) portraitTask {
 	var earlier func(a *Service, db model.Database, s Source) []*object
 	if shape >= 2 {
 		check, clean, tokens = checkEssayAnswerV2, cleanEssayAnswerV2, 6000
+		// v3 has developed, strengthen and the conclusion about the teachers
+		// instead of the recommendations (essay_v3.go); the input is that of v2.
+		if shape >= 3 {
+			check, clean = checkEssayAnswerV3, cleanEssayAnswerV3
+		}
 		// The input of v2 has no list of instructors: the analysis of v1, made
 		// with the list, is shown while the one of v2 is made.
 		earlier = func(a *Service, db model.Database, s Source) []*object {

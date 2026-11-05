@@ -32,9 +32,12 @@ const (
 )
 
 // essayShape is the number of the version of an essay instruction whose answer
-// a stored output follows: 1 for v1, 2 for v2 and later.
+// a stored output follows: 1 for v1, 2 for v2, 3 for v3 and later.
 func essayShape(version string) int {
-	if n, _ := promptbank.Number(version); n >= 2 {
+	switch n, _ := promptbank.Number(version); {
+	case n >= 3:
+		return 3
+	case n == 2:
 		return 2
 	}
 	return 1

@@ -76,9 +76,38 @@ func goodEssay(user string) map[string]any {
 	}
 }
 
+// goodEssayV3 answers the way the instruction essay/v3 asks: what the center
+// brought up, what to strengthen and, when the author names a teacher, the
+// conclusion about the teachers, instead of the recommendations.
+func goodEssayV3(user string) map[string]any {
+	answer := goodEssay(user)
+	quote := answer["formation"].(map[string]any)["quotes"]
+	delete(answer, "recommendations")
+	answer["developed"] = []any{map[string]any{"text": "Дисциплинированность: порядки ВУЦ стали для него нормой.", "quotes": quote}}
+	answer["strengthen"] = []any{
+		map[string]any{"text": "Уверенность в своих силах — давать ему самостоятельные задачи.", "quotes": quote},
+		map[string]any{"text": "Товарищество — чаще поручать дело вместе с отделением.", "quotes": quote},
+	}
+	conclusion := map[string]any{"text": "", "quotes": []any{}}
+	if teachers := answer["teachers"].([]any); len(teachers) > 0 {
+		conclusion = map[string]any{"text": "Преподавателю удалось поддержать автора; стоит и дальше давать ему самостоятельные задачи.", "quotes": teachers[0].(map[string]any)["quotes"]}
+	}
+	answer["teachersConclusion"] = conclusion
+	return answer
+}
+
+// essayAnswerFor answers the essay instruction it is given: v3 by its fields,
+// earlier versions as v2.
+func essayAnswerFor(c Completion) map[string]any {
+	if strings.Contains(c.System, "teachersConclusion") {
+		return goodEssayV3(c.User)
+	}
+	return goodEssay(c.User)
+}
+
 func essayModel(mutate func(map[string]any, essayInput)) *fakeModel {
 	return &fakeModel{name: "fake", reply: func(_ int, c Completion) (string, error) {
-		answer := goodEssay(c.User)
+		answer := essayAnswerFor(c)
 		if mutate != nil {
 			mutate(answer, readEssayInput(&testing.T{}, c.User))
 		}
@@ -91,7 +120,8 @@ func newEssayPortraitFixture(t *testing.T) *essayFixture {
 	return newEssayPortraitFixtureAt(t, "")
 }
 
-// newEssayPortraitFixtureAt registers the essay tasks of a version, "" for the newest.
+// newEssayPortraitFixtureAt registers the essay tasks of a version, "" for the
+// newest; the other tasks (the values of the essay among them) are not on.
 func newEssayPortraitFixtureAt(t *testing.T, version string) *essayFixture {
 	t.Helper()
 	f := newEssayFixture(t)
@@ -99,15 +129,15 @@ func newEssayPortraitFixtureAt(t *testing.T, version string) *essayFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if version != "" {
-		chosen := []promptbank.Prompt{}
-		for _, task := range []string{essayForm, essayCohortTask} {
-			prompt, _ := promptbank.Find(prompts, task, version)
-			chosen = append(chosen, prompt)
+	chosen := []promptbank.Prompt{}
+	for _, task := range []string{essayForm, essayCohortTask} {
+		prompt, _ := promptbank.Latest(prompts, task)
+		if version != "" {
+			prompt, _ = promptbank.Find(prompts, task, version)
 		}
-		prompts = chosen
+		chosen = append(chosen, prompt)
 	}
-	f.service.RegisterPrompts(prompts...)
+	f.service.RegisterPrompts(chosen...)
 	f.service.portraits.pause = 0
 	t.Cleanup(f.service.Close)
 	return f
@@ -216,7 +246,7 @@ func TestEarlierEssayOfTheSameAuthorGoesWithTheNewOne(t *testing.T) {
 		} `json:"formation"`
 	}
 	_ = json.Unmarshal(view.Portrait.Output, &output)
-	if len(output.Formation.Before) != 1 || output.Formation.Before[0].Question != "1.1" || view.Portrait.Version != "v2" {
+	if len(output.Formation.Before) != 1 || output.Formation.Before[0].Question != "1.1" || view.Portrait.Version != "v3" {
 		t.Fatalf("quotes of the earlier essay: %+v", output.Formation)
 	}
 }

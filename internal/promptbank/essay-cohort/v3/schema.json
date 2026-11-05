@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "formation": {"$ref": "#/$defs/paragraph", "description": "Как у выпуска меняются представления о себе, 2–3 предложения"},
+    "moments": {"$ref": "#/$defs/paragraph", "description": "Ценностные установки и качества выпуска, 3–4 предложения"},
+    "environment": {"$ref": "#/$defs/paragraph", "description": "Отношение к ВУЦ, порядкам, товарищам, 1–2 предложения"},
+    "developed": {"type": "array", "description": "Что воспитал ВУЦ у выпуска, 0–3", "items": {"$ref": "#/$defs/paragraph"}},
+    "strengthen": {"type": "array", "description": "Что усилить в работе с выпуском, 1–3", "items": {"$ref": "#/$defs/paragraph"}},
+    "teachersConclusion": {"$ref": "#/$defs/paragraph", "description": "Вывод о преподавателях по всем разборам, 2–3 предложения; пусто, если такой вывод меньше чем у двух авторов"}
+  },
+  "required": ["formation", "moments", "environment", "developed", "strengthen", "teachersConclusion"],
+  "$defs": {
+    "paragraph": {
+      "type": "object",
+      "properties": {
+        "text": {"type": "string"},
+        "refs": {"type": "array", "items": {"type": "string"}}
+      },
+      "required": ["text", "refs"]
+    }
+  }
+}

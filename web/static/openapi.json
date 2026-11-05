@@ -5020,6 +5020,276 @@
         ]
       }
     },
+    "/values/{sourceId}": {
+      "get": {
+        "operationId": "getValues",
+        "tags": [
+          "Ценности"
+        ],
+        "summary": "Ценности по Онтографу в тексте",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuesView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "sourceId — id сданного эссе или завершённого тестирования с ответами «Мои действия и опыт». Разметка составляется сама; если её нет и она не в очереди, ставится в очередь. Чужой источник или источник без текста — 404.",
+        "parameters": [
+          {
+            "name": "sourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "retryValues",
+        "tags": [
+          "Ценности"
+        ],
+        "summary": "Повторить разметку",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuesView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав, назначение закрыто или недопустимый Origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Снимает ошибку и ставит разметку в очередь заново; готовая возвращается как есть. Тело не требуется.",
+        "parameters": [
+          {
+            "name": "sourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/values/assignments/{id}": {
+      "get": {
+        "operationId": "getEssayValues",
+        "tags": [
+          "Ценности"
+        ],
+        "summary": "Ценности по выдаче эссе",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuesSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "По сданным эссе выдачи с готовой разметкой; модель не вызывается.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/values/platoons/{group}": {
+      "get": {
+        "operationId": "getPlatoonValues",
+        "tags": [
+          "Ценности"
+        ],
+        "summary": "Ценности по взводу (тест)",
+        "security": [
+          {
+            "teacherCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuesSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка сохранения данных.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "По последнему завершённому тестированию каждого студента взвода, где есть рассказанные ответы «Мои действия и опыт»; модель не вызывается.",
+        "parameters": [
+          {
+            "name": "group",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
     "/students/me/submissions/{id}/answers": {
       "get": {
         "operationId": "getOwnFormAnswers",
@@ -9714,6 +9984,339 @@
           "status"
         ],
         "description": "Вывод языковой модели по обезличенным сведениям. Одинаковые сведения дают один и тот же вывод."
+      },
+      "ValueQuote": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "string",
+            "description": "id узла Онтографа."
+          },
+          "label": {
+            "type": "string"
+          },
+          "class": {
+            "type": "string",
+            "enum": [
+              "value",
+              "aspect",
+              "antivalue",
+              "everyday",
+              "everyday_anti"
+            ]
+          },
+          "sign": {
+            "type": "string",
+            "enum": [
+              "принимает",
+              "отвергает"
+            ]
+          },
+          "whose": {
+            "type": "string",
+            "enum": [
+              "своё",
+              "одобряет у других",
+              "другое"
+            ]
+          },
+          "question": {
+            "type": "string",
+            "description": "Номер ответа: 1.1 у эссе, код вопроса у теста."
+          },
+          "asked": {
+            "type": "string",
+            "description": "Текст вопроса."
+          },
+          "quote": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "node",
+          "label",
+          "class",
+          "sign",
+          "whose",
+          "question",
+          "asked",
+          "quote"
+        ]
+      },
+      "ValueCount": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "idea": {
+            "type": "string"
+          },
+          "ideaLabel": {
+            "type": "string"
+          },
+          "accept": {
+            "type": "integer"
+          },
+          "reject": {
+            "type": "integer"
+          },
+          "everydayAccept": {
+            "type": "integer",
+            "description": "Добавка «в повседневной жизни», в основной счёт не входит."
+          },
+          "everydayReject": {
+            "type": "integer"
+          },
+          "quotes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValueQuote"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "idea",
+          "ideaLabel",
+          "accept",
+          "reject",
+          "everydayAccept",
+          "everydayReject",
+          "quotes"
+        ]
+      },
+      "IdeaCount": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "accept": {
+            "type": "integer",
+            "description": "Сумма основных счётов её ценностей."
+          },
+          "reject": {
+            "type": "integer"
+          },
+          "everydayAccept": {
+            "type": "integer"
+          },
+          "everydayReject": {
+            "type": "integer"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValueCount"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "accept",
+          "reject",
+          "everydayAccept",
+          "everydayReject",
+          "values"
+        ]
+      },
+      "ValuesCount": {
+        "type": "object",
+        "properties": {
+          "marks": {
+            "type": "integer"
+          },
+          "ideas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdeaCount"
+            }
+          },
+          "antivalues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValueCount"
+            }
+          },
+          "other": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValueQuote"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "marks",
+          "ideas",
+          "antivalues",
+          "other"
+        ]
+      },
+      "ValuesView": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "working",
+              "failed",
+              "ready",
+              "off"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "count": {
+            "$ref": "#/components/schemas/ValuesCount"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "description": "Разметка текста по «Онтографу ценностей 1.1» (указ № 809): отметки модели с дословными цитатами, счёт — программа по правилам кодирования. Считаются только «своё» и «одобряет у других»; уровней и общего балла нет."
+      },
+      "ValueAuthor": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "platoon": {
+            "type": "string"
+          },
+          "submissionId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "platoon"
+        ]
+      },
+      "ValueAuthors": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "ideaLabel": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValueAuthor"
+            }
+          },
+          "everyday": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValueAuthor"
+            }
+          },
+          "rejecting": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValueAuthor"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "ideaLabel",
+          "authors",
+          "everyday",
+          "rejecting"
+        ]
+      },
+      "IdeaAuthors": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "integer"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValueAuthors"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "authors",
+          "values"
+        ]
+      },
+      "ValuesSummary": {
+        "type": "object",
+        "properties": {
+          "texts": {
+            "type": "integer",
+            "description": "Текстов: сданных эссе выдачи или студентов взвода с рассказанными ответами."
+          },
+          "marked": {
+            "type": "integer",
+            "description": "Из них с готовой разметкой."
+          },
+          "ideas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdeaAuthors"
+            }
+          },
+          "antivalues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValueAuthors"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "texts",
+          "marked",
+          "ideas",
+          "antivalues"
+        ],
+        "description": "У скольких авторов встречается каждая ценность: authors — в основном счёте со знаком «принимает», everyday — только в повседневной жизни, rejecting — отвергают. У антиценности authors принимают её как норму, rejecting осуждают."
       },
       "AutobiographyText": {
         "type": "object",

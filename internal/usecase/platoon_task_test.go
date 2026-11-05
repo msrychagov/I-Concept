@@ -14,6 +14,9 @@ import (
 // goodPlatoonAnswer answers test-platoon/v1 the way it asks, for the input.
 func goodPlatoonAnswer(user string) map[string]any {
 	user, _, _ = strings.Cut(user, "\n\n"+retryNote)
+	if strings.Contains(user, `"жизнь_в_ВУЦ"`) {
+		return goodPlatoonAnswerV5(user)
+	}
 	if strings.Contains(user, `"среда_по_главе_1"`) {
 		return goodPlatoonAnswerV4(user)
 	}
@@ -80,7 +83,8 @@ func newPlatoonFixture(t *testing.T, n int) *platoonFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.RegisterPrompts(prompts...)
+	// The values of the open answers are another task (values_test.go).
+	s.RegisterPrompts(promptsWithout(prompts, valuesTask)...)
 	s.portraits.pause = 0
 	t.Cleanup(s.Close)
 	f := &platoonFixture{service: s}

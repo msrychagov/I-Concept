@@ -29,6 +29,11 @@ func (a *Service) RegisterPrompts(prompts ...promptbank.Prompt) {
 	if prompt, ok := promptbank.Latest(prompts, essayCohortTask); ok {
 		a.registerPortraitTask(a.cohortTask(prompt))
 	}
+	if prompt, ok := promptbank.Latest(prompts, valuesTask); ok {
+		if o, err := loadOntograph(); err == nil {
+			a.registerPortraitTask(a.valuesTask(prompt, o))
+		}
+	}
 }
 
 // findSubmission returns the submitted autobiography a source points to.
@@ -572,6 +577,8 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 		// their own.
 		versions := []string{"v1"}
 		switch {
+		case humanInput(testPortraitTask, prompt.Version):
+			check, clean, versions = checkTestAnswerV7, cleanUnfitCodes, []string{"v6", "v5", "v4", "v3", "v1"}
 		case plainInput(testPortraitTask, prompt.Version):
 			check, clean, versions = checkTestAnswerV6, cleanUnfitCodes, []string{"v5", "v4", "v3", "v1"}
 		case termsInput(testPortraitTask, prompt.Version):

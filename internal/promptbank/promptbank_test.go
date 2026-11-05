@@ -34,20 +34,26 @@ func TestLatestVersionMatchesTheWikiWhenItIsThere(t *testing.T) {
 		{"autobiography", "v5", "../../../Вики/Автобиография/Инструкция v5 — черновик.md"},
 		{"autobiography", "v4", "../../../Вики/Автобиография/Инструкция v4 — черновик.md"},
 		{"autobiography", "v3", "../../../Вики/Автобиография/Инструкция v3 — черновик.md"},
-		{"test", "", "../../../Вики/Тестирование/Инструкция v6.md"},
+		{"test", "", "../../../Вики/Тестирование/Инструкция v7.md"},
+		{"test", "v6", "../../../Вики/Тестирование/Инструкция v6.md"},
 		{"test", "v5", "../../../Вики/Тестирование/Инструкция v5.md"},
 		{"test", "v4", "../../../Вики/Тестирование/Инструкция v4.md"},
 		{"test", "v3", "../../../Вики/Тестирование/Инструкция v3.md"},
 		{"test", "v2", "../../../Вики/Тестирование/Инструкция v2.md"},
 		{"test", "v1", "../../../Вики/Тестирование/Инструкция.md"},
-		{"test-platoon", "", "../../../Вики/Тестирование/Инструкция по взводу v4.md"},
+		{"test-platoon", "", "../../../Вики/Тестирование/Инструкция по взводу v5.md"},
+		{"test-platoon", "v4", "../../../Вики/Тестирование/Инструкция по взводу v4.md"},
 		{"test-platoon", "v3", "../../../Вики/Тестирование/Инструкция по взводу v3.md"},
 		{"test-platoon", "v2", "../../../Вики/Тестирование/Инструкция по взводу v2.md"},
 		{"test-platoon", "v1", "../../../Вики/Тестирование/Инструкция по взводу.md"},
-		{"essay", "", "../../../Вики/Эссе выпускника/Инструкция v2.md"},
+		{"essay", "", "../../../Вики/Эссе выпускника/Инструкция v3.md"},
+		{"essay", "v2", "../../../Вики/Эссе выпускника/Инструкция v2.md"},
 		{"essay", "v1", "../../../Вики/Эссе выпускника/Инструкция.md"},
-		{"essay-cohort", "", "../../../Вики/Эссе выпускника/Инструкция по выпуску v2.md"},
+		{"essay-cohort", "", "../../../Вики/Эссе выпускника/Инструкция по выпуску v3.md"},
+		{"essay-cohort", "v2", "../../../Вики/Эссе выпускника/Инструкция по выпуску v2.md"},
 		{"essay-cohort", "v1", "../../../Вики/Эссе выпускника/Инструкция по выпуску.md"},
+		{"values", "", "../../../Вики/Онтограф ценностей 1.1/Инструкция разметки v2.md"},
+		{"values", "v1", "../../../Вики/Онтограф ценностей 1.1/Инструкция разметки.md"},
 	} {
 		t.Run(c.task+c.version, func(t *testing.T) {
 			wiki, err := os.ReadFile(c.path)
@@ -78,10 +84,25 @@ func TestEssayPromptsAreEmbedded(t *testing.T) {
 	}
 	// v2: paragraphs and recommendations (Вики/Эссе выпускника/Инструкция v2.md).
 	for task, want := range map[string]string{"essay": `"required": ["formation", "moments", "environment", "recommendations", "teachers"]`, "essay-cohort": `"required": ["formation", "moments", "environment", "recommendations"]`} {
-		prompt, ok := Latest(prompts, task)
-		if !ok || prompt.Version != "v2" || !strings.Contains(prompt.Instruction, "не больше 250 слов") || !strings.Contains(string(prompt.Schema), want) {
+		prompt, ok := Find(prompts, task, "v2")
+		if !ok || !strings.Contains(prompt.Instruction, "не больше 250 слов") || !strings.Contains(string(prompt.Schema), want) {
 			t.Errorf("%s: %+v", task, prompt.Version)
 		}
+	}
+	// v3: what the center brought up, what to strengthen, the conclusion about
+	// the teachers (Вики/Эссе выпускника/Инструкция v3.md).
+	for task, want := range map[string]string{"essay": `"required": ["formation", "moments", "environment", "developed", "strengthen", "teachersConclusion", "teachers"]`, "essay-cohort": `"required": ["formation", "moments", "environment", "developed", "strengthen", "teachersConclusion"]`} {
+		prompt, ok := Latest(prompts, task)
+		if !ok || prompt.Version != "v3" || !strings.Contains(prompt.Instruction, "военный психолог") || !strings.Contains(string(prompt.Schema), want) {
+			t.Errorf("%s: %+v", task, prompt.Version)
+		}
+	}
+	if prompt, ok := Find(prompts, "values", "v1"); !ok || !strings.Contains(string(prompt.Schema), `"required": ["marks"]`) {
+		t.Errorf("values v1: %+v", prompt.Version)
+	}
+	// v2: the definitions of the notions, «сначала ищи понятие» (Вики/Онтограф ценностей 1.1/Инструкция разметки v2.md).
+	if prompt, ok := Latest(prompts, "values"); !ok || prompt.Version != "v2" || !strings.Contains(prompt.Instruction, "Сначала ищи понятие") {
+		t.Errorf("values: %+v", prompt.Version)
 	}
 }
 
