@@ -22,9 +22,12 @@ type PlatoonWorkGroup struct {
 	Label    string           `json:"label"`
 	Students []MethodsStudent `json:"students"`
 	Bases    []string         `json:"bases"`
-	Look     []string         `json:"look"`
-	Codes    []string         `json:"codes"`
-	Model    bool             `json:"model"`
+	// Plain are the bases in plain words (test-platoon/v5, Инструкция по
+	// взводу v5.md): the input of v5 and the screen.
+	Plain []string `json:"plain"`
+	Look  []string `json:"look"`
+	Codes []string `json:"codes"`
+	Model bool     `json:"model"`
 	// groups are the groups of the image the bases are about: their kinds of
 	// activity and conditions are what the group is linked to in the
 	// environment; lowest are the conditions of them its students rated lowest.
@@ -45,6 +48,7 @@ type workCandidate struct {
 	seq      int
 	students []MethodsStudent
 	basis    string
+	plain    humanBasis
 	look     string
 	groups   []string
 	codes    []string
@@ -120,7 +124,8 @@ func (a *Service) workGroups(portraits []studentPortrait) []PlatoonWorkGroup {
 				continue
 			}
 			add(workCandidate{rule: rule, students: students, basis: short(def.Name) + ": " + s.text,
-				look: "ситуация по качествам «" + short(def.Name) + "»", groups: []string{def.ID}, codes: a.directionsOf([]string{def.ID}, s.kind)})
+				plain: humanBasis{qualities(def.Name), forCount(len(students), humanWork[s.situation])},
+				look:  "как оценивает себя в качествах «" + short(def.Name) + "»", groups: []string{def.ID}, codes: a.directionsOf([]string{def.ID}, s.kind)})
 		}
 	}
 	methods, order := map[string]MethodLevel{}, []string{}
@@ -148,7 +153,8 @@ func (a *Service) workGroups(portraits []studentPortrait) []PlatoonWorkGroup {
 		}
 		name := methods[id].Name
 		add(workCandidate{rule: ruleMethod, students: students, basis: lowerFirst(name) + " — на низком уровне",
-			look: name, groups: groups, codes: a.directionsOf(groups, "psychological", "activity")})
+			plain: humanBasis{"", cmpOr(humanLowScales[name], lowerFirst(name)+" — пока слабо")},
+			look:  name, groups: groups, codes: a.directionsOf(groups, "psychological", "activity")})
 	}
 	if method := a.bank.Identity; method != nil {
 		names := map[string]string{}
@@ -165,7 +171,8 @@ func (a *Service) workGroups(portraits []studentPortrait) []PlatoonWorkGroup {
 				}
 			}
 			add(workCandidate{rule: ruleIdentity, students: students, basis: "по военной специальности — " + names[id] + ": " + statusMeanings[names[id]],
-				look: "статус по военной специальности", groups: []string{"G2"}, codes: a.directionsOf([]string{"G2"}, "value")})
+				plain: humanBasis{"", forCount(len(students), humanWorkIdentity[id])},
+				look:  "выбор военной специальности", groups: []string{"G2"}, codes: a.directionsOf([]string{"G2"}, "value")})
 		}
 	}
 	for _, def := range a.defender.Groups {
@@ -182,13 +189,14 @@ func (a *Service) workGroups(portraits []studentPortrait) []PlatoonWorkGroup {
 			basis = short(def.Name) + ": по мнению студента, окружение ждёт от него заметно большего, чем он видит в себе"
 		}
 		add(workCandidate{rule: rulePressure, students: students, basis: basis,
-			look: "внешнее давление в качествах «" + short(def.Name) + "»", groups: []string{def.ID}, codes: a.directionsOf([]string{def.ID}, "reflexive")})
+			plain: humanBasis{qualities(def.Name), forCount(len(students), humanWorkPressure)},
+			look:  "ждут ли от него большего в качествах «" + short(def.Name) + "»", groups: []string{def.ID}, codes: a.directionsOf([]string{def.ID}, "reflexive")})
 	}
 
 	slices.SortStableFunc(candidates, func(x, y workCandidate) int {
 		return cmp.Or(cmp.Compare(x.rule, y.rule), cmp.Compare(len(y.students), len(x.students)), cmp.Compare(x.seq, y.seq))
 	})
-	groups, at := []PlatoonWorkGroup{}, map[string]int{}
+	groups, at, plains := []PlatoonWorkGroup{}, map[string]int{}, [][]humanBasis{}
 	for _, c := range candidates {
 		ids := []string{}
 		for _, s := range c.students {
@@ -199,10 +207,12 @@ func (a *Service) workGroups(portraits []studentPortrait) []PlatoonWorkGroup {
 		if !seen {
 			n = len(groups)
 			at[key] = n
-			groups = append(groups, PlatoonWorkGroup{Students: c.students, Bases: []string{}, Look: []string{}, Codes: []string{}})
+			groups = append(groups, PlatoonWorkGroup{Students: c.students, Bases: []string{}, Plain: []string{}, Look: []string{}, Codes: []string{}})
+			plains = append(plains, nil)
 		}
 		g := &groups[n]
 		g.Bases = append(g.Bases, c.basis)
+		plains[n] = append(plains[n], c.plain)
 		g.Look = addLook(g.Look, c.look)
 		for _, id := range c.groups {
 			if !slices.Contains(g.groups, id) {
@@ -220,6 +230,7 @@ func (a *Service) workGroups(portraits []studentPortrait) []PlatoonWorkGroup {
 		defs[g.ID] = g
 	}
 	for n := range groups {
+		groups[n].Plain = joinedBases(plains[n], len(a.defender.Groups))
 		conditions := []string{}
 		for _, id := range groups[n].groups {
 			for _, c := range defs[id].Conditions {
@@ -369,4 +380,82 @@ func addLook(looks []string, look string) []string {
 		}
 	}
 	return append(looks, look)
+}
+
+// humanBasis is a basis of a group for separate work in plain words: the
+// qualities of the image it is about, if any, and what is the matter.
+type humanBasis struct{ qualities, phrase string }
+
+// forCount is the phrase for one student or for several: «one|many».
+func forCount(n int, phrases string) string {
+	one, many, _ := strings.Cut(phrases, "|")
+	if n == 1 || many == "" {
+		return one
+	}
+	return many
+}
+
+// qualities are the first qualities of a group of the image, as its short name
+// says them: «верность долгу, преданность Отечеству».
+func qualities(name string) string {
+	if g, ok := plainGroups[name]; ok {
+		return strings.Replace(g.Short, " и ", ", ", 1)
+	}
+	return lowerFirst(name)
+}
+
+// The plain bases of the situations, the leading statuses of the military
+// speciality, the pressure and the scales on the low level.
+var (
+	humanWork = map[string]string{
+		situationNotAccepted: "пока не считает это для себя важным|пока не считают это для себя важным",
+		situationBelow:       "ставит себе планку ниже, чем оценивает себя сейчас|ставят себе планку ниже, чем оценивают себя сейчас",
+		situationFar:         "это для него важно, но до этого пока далеко|это для них важно, но до этого пока далеко",
+	}
+	humanWorkIdentity = map[string]string{
+		"NP": "о выборе военной специальности пока всерьёз не задумывается|о выборе военной специальности пока всерьёз не задумываются",
+		"NV": "военную специальность выбрал под влиянием других|военную специальность выбрали под влиянием других",
+		"M":  "с военной специальностью ещё выбирает и сомневается|с военной специальностью ещё выбирают и сомневаются",
+	}
+	humanWorkPressure = "чувствует, что от него ждут большего, чем он может сейчас|чувствуют, что от них ждут большего, чем они могут сейчас"
+	humanLowScales    = map[string]string{
+		"Военно-профессиональная мотивация": "желание служить пока слабое",
+		"Выраженность волевых качеств":      "волевые качества пока развиты слабо",
+		"Общая волевая саморегуляция":       "владеть собой пока трудно",
+		"Настойчивость":                     "не хватает настойчивости",
+		"Самообладание":                     "не хватает самообладания",
+		"Эмоциональная устойчивость":        "трудно справляться с волнением",
+		"Активность расширения и обогащения профессиональных и общекультурных знаний, умений, навыков": "стремление узнавать и уметь больше пока слабое",
+		"Критическая, справедливая оценка накопленного опыта":                                          "трезво оценивать свой опыт пока трудно",
+		"Реальное и потенциальное использование приобретаемого опыта, знаний, умений, навыков":         "применять опыт в новых делах пока трудно",
+	}
+)
+
+// joinedBases puts the bases of a group with the same phrase in one, their
+// qualities together; all the groups of the image are «все качества
+// защитника Отечества».
+func joinedBases(bases []humanBasis, groups int) []string {
+	order, by := []string{}, map[string][]string{}
+	for _, b := range bases {
+		if _, seen := by[b.phrase]; !seen {
+			order = append(order, b.phrase)
+		}
+		if b.qualities != "" {
+			by[b.phrase] = append(by[b.phrase], b.qualities)
+		} else if by[b.phrase] == nil {
+			by[b.phrase] = []string{}
+		}
+	}
+	joined := []string{}
+	for _, phrase := range order {
+		switch q := by[phrase]; {
+		case len(q) == 0:
+			joined = append(joined, phrase)
+		case len(q) == groups:
+			joined = append(joined, "все качества защитника Отечества: "+phrase)
+		default:
+			joined = append(joined, strings.Join(q, "; ")+": "+phrase)
+		}
+	}
+	return joined
 }

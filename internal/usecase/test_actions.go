@@ -35,6 +35,10 @@ var actionExamples = []string{
 	"Перед нормативами разобрать со студентом, в каких ситуациях на занятиях и в наряде он теряет выдержку, и отработать с ним паузу перед действием; после нормативов вместе обсудить, помогла ли она",
 	"К ближайшей памятной дате поручить взводу подготовить рассказ о выпускниках ВУЦ, которые служили в армии, и после него обсудить, что из их опыта студенты взяли бы себе",
 	"После ближайшего наряда разобрать с каждым из этих студентов, что получилось и что нет, и поставить одну личную цель по собранности на следующий наряд; на следующем разборе сверить, достигнута ли она",
+	// test/v7 and test-platoon/v5
+	"Перед контрольным занятием по огневой подготовке поручить ему помочь товарищам, у которых не получается неполная разборка автомата: показать, потом проверить, как каждый справляется сам. Так воспитывается ответственность за товарищей",
+	"К памятной дате поручить взводу собрать рассказы о земляках, которые служили в армии, и выбрать из них один, о котором расскажут на построении всему ВУЦ. Так преданность Родине связывается с живыми примерами",
+	"После строевого занятия разобрать с каждым из этих студентов, что у него получилось, и вместе выбрать одно, что он сделает лучше на следующем занятии; потом сверить, получилось ли. Так воспитывается требовательность к себе",
 }
 
 // exampleRun is how many words in a row of an example make a copy.
@@ -103,6 +107,13 @@ func actionProblems(field string, record map[string]any, directions map[string]s
 	if !slices.Contains(actionKinds, strings.TrimSpace(kind)) {
 		problems = append(problems, field+": kind — одно из: «"+strings.Join(actionKinds, "», «")+"»")
 	}
+	return append(problems, actionTextProblems(field, record, directions)...)
+}
+
+// actionTextProblems checks the text of an action: no dates, long enough, no
+// copy of an example, not the name of its direction.
+func actionTextProblems(field string, record map[string]any, directions map[string]string) []string {
+	problems := []string{}
 	text, _ := record["text"].(string)
 	if m := actionDate.FindStringSubmatch(lowerText(text)); m != nil {
 		problems = append(problems, fmt.Sprintf("%s.text: без дат, сроков и частоты («%s…») — назови повод: занятие, сборы, наряд, мероприятие, беседа", field, strings.TrimSpace(m[1])))
@@ -257,7 +268,7 @@ func checkPlatoonAnswerV4(output map[string]any, payload *object) []string {
 	problems = append(problems, repeatedCodeProblems(output)...)
 	problems = append(problems, recommendationActionProblems(output, payload)...)
 	recommendationTexts(output, texts)
-	problems = append(problems, individualProblems(output, payload, texts)...)
+	problems = append(problems, individualProblems(output, payload, texts, actionProblems)...)
 	_, measured := payload.values["климат_взвода"]
 	for _, key := range sortedTextKeys(texts) {
 		if !measured {
@@ -273,10 +284,11 @@ func checkPlatoonAnswerV4(output map[string]any, payload *object) []string {
 	return plainHints(problems)
 }
 
-// individualProblems checks «Кому нужна отдельная работа» of v4: an action for
-// every group of the input, each label once, a code that fits the group; the
-// texts are added under individual.N.text.
-func individualProblems(output map[string]any, payload *object, texts map[string]string) []string {
+// individualProblems checks «Кому нужна отдельная работа» of v4 and v5: an
+// action for every group of the input, each label once, a code that fits the
+// group, the action itself by the rules of the version; the texts are added
+// under individual.N.text.
+func individualProblems(output map[string]any, payload *object, texts map[string]string, action func(string, map[string]any, map[string]string) []string) []string {
 	groups := map[string][]string{}
 	labels := []string{}
 	for _, g := range objectList(payload.values["отдельная_работа"]) {
@@ -317,7 +329,7 @@ func individualProblems(output map[string]any, payload *object, texts map[string
 		text, _ := record["text"].(string)
 		texts[field+".text"] = text
 		problems = append(problems, fieldProblems(field+".text", text)...)
-		problems = append(problems, actionProblems(field, record, catalogueNames(payload))...)
+		problems = append(problems, action(field, record, catalogueNames(payload))...)
 	}
 	return problems
 }

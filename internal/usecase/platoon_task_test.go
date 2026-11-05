@@ -14,6 +14,9 @@ import (
 // goodPlatoonAnswer answers test-platoon/v1 the way it asks, for the input.
 func goodPlatoonAnswer(user string) map[string]any {
 	user, _, _ = strings.Cut(user, "\n\n"+retryNote)
+	if strings.Contains(user, `"жизнь_в_ВУЦ"`) {
+		return goodPlatoonAnswerV5(user)
+	}
 	if strings.Contains(user, `"среда_по_главе_1"`) {
 		return goodPlatoonAnswerV4(user)
 	}
