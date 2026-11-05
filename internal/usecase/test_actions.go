@@ -51,8 +51,13 @@ func wordsOf(text string) []string {
 
 // copiedExample says whether a text has exampleRun words in a row of an example.
 func copiedExample(text string) bool {
+	return copiedFrom(text, actionExamples)
+}
+
+// copiedFrom says whether a text has exampleRun words in a row of one of the examples.
+func copiedFrom(text string, examples []string) bool {
 	words := " " + strings.Join(wordsOf(text), " ") + " "
-	for _, example := range actionExamples {
+	for _, example := range examples {
 		list := wordsOf(example)
 		for at := 0; at+exampleRun <= len(list); at++ {
 			if strings.Contains(words, " "+strings.Join(list[at:at+exampleRun], " ")+" ") {

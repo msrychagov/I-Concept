@@ -463,7 +463,7 @@ var conclusionWords = regexp.MustCompile(`(?:^|[^а-я])(?:чтобы|резер
 
 func humanConclusionProblems(text string) []string {
 	if m := conclusionWords.FindStringSubmatch(lowerText(text)); m != nil {
-		return []string{"conclusion: общий вывод — обычными словами, как сказал бы командир: можно ли на него положиться, как реагирует на замечания, проявляет ли разумную инициативу, и что главное в работе с ним; без «чтобы», «резерв», «точка роста», «ключ»"}
+		return []string{"conclusion: общий вывод — обычными словами, как сказал бы командир: можно ли на него положиться, как реагирует на замечания, проявляет ли разумную инициативу, и что главное в работе с ним; без «чтобы», «резерв», «точка роста», «ключ» — второе предложение закончи на самом деле, без «чтобы…» в конце"}
 	}
 	return nil
 }
@@ -495,7 +495,7 @@ func humanSelfProblems(payload *object, will string) []string {
 	for _, block := range objectList(payload.values["самоопределение"]) {
 		phrase := objectText(block, "что_значит")
 		if c, ok := selfCaseOf(phrase); ok && !c.words.MatchString(lower) {
-			problems = append(problems, fmt.Sprintf("paragraphs.will: не сказано, как студент выбрал %s, — во входных данных: «%s»; напиши это своими словами, без слов «статус» и «идентичность»", lowerText(objectText(block, "профессия")), phrase))
+			problems = append(problems, fmt.Sprintf("paragraphs.will: не сказано, как студент выбрал %s, — во входных данных: «%s»; напиши это своими словами, без слов «статус» и «идентичность»", professionAccusative(objectText(block, "профессия")), phrase))
 		}
 	}
 	return problems
@@ -530,10 +530,23 @@ func humanPlatoonSelfProblems(payload *object, will string) []string {
 			phrases = append(phrases, c.phrase)
 		}
 		if !told {
-			problems = append(problems, fmt.Sprintf("paragraphs.will: не сказано, как студенты выбрали %s, — чаще всего во входных данных: «%s»; напиши это своими словами, без слов «статус» и «идентичность»", lowerText(objectText(block, "профессия")), strings.Join(phrases, "» или «")))
+			problems = append(problems, fmt.Sprintf("paragraphs.will: не сказано, как студенты выбрали %s, — чаще всего во входных данных: «%s»; напиши это своими словами, без слов «статус» и «идентичность»", professionAccusative(objectText(block, "профессия")), strings.Join(phrases, "» или «")))
 		}
 	}
 	return problems
+}
+
+// professionAccusative is a profession of the input as the hint says it:
+// «выбрал военную специальность».
+func professionAccusative(profession string) string {
+	switch lower := lowerText(profession); {
+	case strings.HasPrefix(lower, "военн"):
+		return "военную специальность"
+	case strings.HasPrefix(lower, "гражданск"):
+		return "гражданскую профессию"
+	default:
+		return lower
+	}
 }
 
 // militarySpecialityPoint is what the point about the military speciality of
@@ -570,14 +583,41 @@ func humanSpecialityProblems(output map[string]any, payload *object) []string {
 	if codes != "" {
 		codes = "; код — из подходящих группе 2: " + codes
 	}
-	return []string{fmt.Sprintf("recommendations: по военной специальности студент «%s» — нужен пункт к группе 2 о выборе военной специальности: что лично ему она даёт%s", phrase, codes)}
+	return []string{fmt.Sprintf("recommendations: по военной специальности студент «%s» — нужен пункт к группе 2 со словами «военная специальность»: что лично ему даёт выбор военной специальности, например после практического занятия обсудить с ним, что из этого дела ему пригодится как будущему военному специалисту%s", phrase, codes)}
 }
+
+// textExamples are the examples «так» of the paragraphs and the conclusions of
+// test/v7 and test-platoon/v5. The run of 5 November: 22 conclusions of 30
+// attempts began with the example word for word, «Исполнительный и
+// уравновешенный студент: на него можно положиться…». The test checks they
+// are those of the wiki.
+var textExamples = []string{
+	"Он требователен к себе и хочет заметно измениться. Товарищество и выносливость считает своими сильными сторонами, а умение быстро принимать решения — пока своим слабым местом",
+	"Распорядок и требования даются ему непросто, но с трудностями он справляется сам и не жалуется; на занятиях держится уверенно, а в жизни взвода участвует мало",
+	"Исполнительный и уравновешенный студент: на него можно положиться, на замечания он реагирует спокойно и исправляет ошибки. Главное в работе с ним — давать ему дела, где нужна собственная инициатива",
+	"Многие студенты ещё ищут себя и не до конца понимают, какими хотят стать. Поддерживать друг друга они умеют, а вот исполнительность и собранность пока даются взводу труднее",
+	"К распорядку и требованиям взвод привык и тяготы быта переносит ровно; занятия студентам интересны, а вот общих дел, где взвод действует как одна команда, им не хватает",
+	"Взвод дружный и исполнительный, на него можно положиться в обычной службе, но в непривычной обстановке студенты теряются и ждут указаний. Главное в работе с ним — чаще давать задачи, где решение нужно принять самим",
+}
+
+// textExampleRuns are the examples without «Главное в работе с ним —»,
+// which the instruction asks every conclusion to say.
+var textExampleRuns = func() []string {
+	runs := []string{}
+	for _, example := range textExamples {
+		runs = append(runs, strings.Replace(example, "Главное в работе с ним — ", "", 1))
+	}
+	return runs
+}()
 
 // humanTextProblems are the checks of every text of v7 and of test-platoon/v5.
 func humanTextProblems(texts map[string]string) []string {
 	problems := openingProblems(texts)
 	for _, key := range sortedTextKeys(texts) {
 		problems = append(problems, humanWordProblems(key, texts[key])...)
+		if (key == "conclusion" || strings.HasPrefix(key, "paragraphs.")) && copiedFrom(texts[key], textExampleRuns) {
+			problems = append(problems, key+": повторяет пример из инструкции — напиши своими словами, по данным этого студента: пример только показывает, каким языком писать")
+		}
 	}
 	return append(problems, humanConclusionProblems(texts["conclusion"])...)
 }
