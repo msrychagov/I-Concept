@@ -293,3 +293,28 @@ func TestSummaryOfV3IsComposedOnTheButtonOfTheAnalysesOfV3(t *testing.T) {
 		t.Fatalf("positions: %+v", positions)
 	}
 }
+
+// A quote longer than 30 words that is in its answer word for word is cut to its
+// first 30 words by the cleaning (decided 5 November 2026 after the run); one
+// that is not in the answer is left to the check.
+func TestCleaningOfV3CutsALongQuoteThatIsWordForWord(t *testing.T) {
+	long := "Тогда мне казалось, что ВУЦ — способ не потерять год и узнать, что такое служба. Сейчас понимаю, что главной причиной было желание проверить себя: смогу ли я выдерживать порядок и отвечать за других."
+	answers := map[string]string{"1.1": long, "1.2": "Первые дни было очень страшно.", "2.4": "Хочу поблагодарить полковника Иванова за помощь."}
+	payload := essayPayloadFor(answers, nil)
+	output := goodEssayV3For(payload)
+	output["formation"].(map[string]any)["quotes"] = []any{map[string]any{"question": "1.1", "quote": long}}
+	output["moments"].(map[string]any)["quotes"] = []any{
+		map[string]any{"question": "1.2", "quote": "Первые дни было очень страшно"},
+		map[string]any{"question": "1.1", "quote": "Тогда мне казалось, что армия — это " + strings.Repeat("слово ", 30)},
+	}
+	back := roundTrip(t, output)
+	back, changes := cleanEssayAnswerV3(nil, model.Database{}, Source{}, back, payload)
+	quote := back["formation"].(map[string]any)["quotes"].([]any)[0].(map[string]any)["quote"].(string)
+	if changes != 1 || len(strings.Fields(quote)) != essayQuoteWords || !strings.HasPrefix(long, quote) {
+		t.Fatalf("%d changes, quote %q", changes, quote)
+	}
+	problems := strings.Join(checkEssayAnswerV3(back, payload), " | ")
+	if strings.Contains(problems, "formation") || !strings.Contains(problems, "moments: в цитате к вопросу 1.1") {
+		t.Fatalf("problems: %s", problems)
+	}
+}

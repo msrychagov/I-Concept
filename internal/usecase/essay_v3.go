@@ -266,9 +266,51 @@ func trimTextsV3(output map[string]any) int {
 	return changes
 }
 
-// cleanEssayAnswerV3 takes the marks off the start of the texts.
-func cleanEssayAnswerV3(_ *Service, _ model.Database, _ Source, output map[string]any, _ *object) (map[string]any, int) {
-	return output, trimTextsV3(output)
+// cleanEssayAnswerV3 takes the marks off the start of the texts and cuts the
+// quotes that are too long.
+func cleanEssayAnswerV3(_ *Service, _ model.Database, _ Source, output map[string]any, payload *object) (map[string]any, int) {
+	changes := trimTextsV3(output)
+	if payload != nil {
+		changes += trimLongQuotes(output, essayAnswers(payload, "эссе"), essayAnswers(payload, "прежнее_эссе"))
+	}
+	return output, changes
+}
+
+// trimLongQuotes cuts a quote of more than essayQuoteWords words that stands
+// word for word in its answer down to its first essayQuoteWords words: it
+// stays word for word (decided 5 November 2026 after the run, where the model
+// quoted an answer of 33 words whole in 50 tries). A quote not found in the
+// answer is left to the check. It returns the number of quotes cut.
+func trimLongQuotes(output map[string]any, current, previous map[string]string) int {
+	changes := 0
+	cut := func(raw any, answers map[string]string) {
+		for _, quote := range quoteList(raw) {
+			text := textOf(quote["quote"])
+			words := strings.Fields(text)
+			if len(words) <= essayQuoteWords || !strings.Contains(answers[textOf(quote["question"])], quoteForm(text)) {
+				continue
+			}
+			quote["quote"] = strings.Join(words[:essayQuoteWords], " ")
+			changes++
+		}
+	}
+	for _, key := range slices.Concat(essayParagraphs, []string{"teachersConclusion"}) {
+		if item := asMap(output[key]); item != nil {
+			cut(item["quotes"], current)
+		}
+	}
+	if formation := asMap(output["formation"]); formation != nil {
+		cut(formation["before"], previous)
+	}
+	for _, key := range []string{"developed", "strengthen", "teachers"} {
+		items, _ := asList(output[key])
+		for _, raw := range items {
+			if item := asMap(raw); item != nil {
+				cut(item["quotes"], current)
+			}
+		}
+	}
+	return changes
 }
 
 // ---- the summary of a cohort, v3 ------------------------------------------
