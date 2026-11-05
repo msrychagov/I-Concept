@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "properties": {
+    "paragraphs": {
+      "type": "array",
+      "description": "Вывод: два абзаца — опыт и черты будущего военного специалиста",
+      "items": {"type": "string"}
+    },
+    "areas": {
+      "type": "array",
+      "description": "По направлениям с опытом: по строке на направление",
+      "items": {
+        "type": "object",
+        "properties": {
+          "area": {"type": "string", "description": "Направление, как в поле «уровни»"},
+          "text": {"type": "string", "description": "Что развито по направлению"}
+        },
+        "required": ["area", "text"]
+      }
+    },
+    "psychologist": {
+      "type": "array",
+      "description": "Психологу: на что обратить внимание и что уточнить в беседе",
+      "items": {"type": "string"}
+    },
+    "training": {
+      "type": "array",
+      "description": "Для военной подготовки: чем полезны служба, работа, семейное положение",
+      "items": {"type": "string"}
+    },
+    "consider": {
+      "type": "array",
+      "description": "Что учесть: только факты о судимостях и иностранном гражданстве",
+      "items": {"type": "string"}
+    }
+  },
+  "required": ["paragraphs", "areas", "psychologist", "training", "consider"]
+}
