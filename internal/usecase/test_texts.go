@@ -39,7 +39,7 @@ var conditionLevel = regexp.MustCompile(`(^|[^а-я])услови[яй]\s+(?:[а
 // уровне») are the program's and pass; so does «самооценка», whose level the
 // input names.
 // selfRating is how a student rates himself: «оценивает себя», «оценивают себя».
-var selfRating = regexp.MustCompile(`оцени[а-я]*\s+себя`)
+var selfRating = regexp.MustCompile(`оцени[а-я]*\s+себя|себя\s+оцени[а-я]*`)
 
 func ratedLevelProblems(field, text string) []string {
 	// How the student rates himself is not a rating of the conditions: the
