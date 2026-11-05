@@ -395,11 +395,14 @@ func forCount(n int, phrases string) string {
 	return many
 }
 
-// qualities are the first qualities of a group of the image, as its short name
-// says them: «верность долгу, преданность Отечеству».
+// qualities is the first quality of a group of the image, as its short name
+// says it: «верность долгу». The run of 5 November: given «профессионализм,
+// умение принимать решения», the model wrote the name of the group, which the
+// check forbids, «профессионализм и умение принимать решения».
 func qualities(name string) string {
 	if g, ok := plainGroups[name]; ok {
-		return strings.Replace(g.Short, " и ", ", ", 1)
+		first, _, _ := strings.Cut(g.Short, " и ")
+		return first
 	}
 	return lowerFirst(name)
 }
