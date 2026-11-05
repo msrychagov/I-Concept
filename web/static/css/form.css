@@ -879,6 +879,11 @@ details.essay-left p {
     margin: .8rem 0 .3rem
 }
 
+.values-idea h4 small {
+    display: inline;
+    font-weight: 400
+}
+
 .values-list {
     margin: 0 0 .6rem;
     padding-left: 1.1rem;
