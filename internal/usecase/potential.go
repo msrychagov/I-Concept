@@ -43,6 +43,9 @@ type PotentialArea struct {
 	Level     string   `json:"level"`
 	LevelText string   `json:"levelText"`
 	Reasons   []string `json:"reasons"`
+	// NoExperience is the neutral line of an area at the level «не выражен»
+	// in the conclusion v5 (autobiography_v5.go).
+	NoExperience string `json:"noExperience,omitempty"`
 }
 
 type PotentialAward struct {
@@ -181,7 +184,11 @@ func autobiographyPotential(form model.Form, answers map[string]json.RawMessage)
 	result := Potential{Areas: []PotentialArea{}, High: []string{}, Awards: []PotentialAward{}}
 	for _, area := range potentialAreas {
 		level, reasons := levels[area.ID](a)
-		result.Areas = append(result.Areas, PotentialArea{ID: area.ID, Title: area.Title, Level: levelIDs[level], LevelText: levelTexts[level], Reasons: reasons})
+		item := PotentialArea{ID: area.ID, Title: area.Title, Level: levelIDs[level], LevelText: levelTexts[level], Reasons: reasons}
+		if level == levelNone {
+			item.NoExperience = withoutExperienceV5[area.ID]
+		}
+		result.Areas = append(result.Areas, item)
 		if level == levelHigh {
 			result.High = append(result.High, area.Title)
 		}

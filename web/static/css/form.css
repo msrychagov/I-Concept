@@ -499,6 +499,17 @@
     padding-left: 1.1rem
 }
 
+/* The conclusion of the instruction v5: a line for every area. */
+.portrait-conclusion ul.portrait-areas {
+    padding-left: 0;
+    list-style: none
+}
+
+.portrait-areas li {
+    margin: 0 0 .35rem;
+    line-height: 1.5
+}
+
 /* «Все направления»: the six areas behind a button. */
 .potential-all {
     margin-top: .8rem

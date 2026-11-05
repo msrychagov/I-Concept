@@ -9,8 +9,97 @@ import (
 	"vucdiagnostic/internal/promptbank"
 )
 
-// goodPortrait answers the way the newest instruction (v4) asks, for the input it is given.
+// goodPortrait answers the way the newest instruction (v5) asks, for the input it is given.
 func goodPortrait(user string) map[string]any {
+	user, _, _ = strings.Cut(user, "\n\n"+retryNote)
+	var input struct {
+		Levels    map[string]string `json:"уровни"`
+		Hobbies   []string          `json:"увлечения"`
+		Criminal  string            `json:"уголовная_ответственность"`
+		Languages []struct {
+			Name     string `json:"язык"`
+			Practice []struct {
+				Result string `json:"результат"`
+			} `json:"практика"`
+		} `json:"языки"`
+		Service struct {
+			Served string `json:"служил"`
+		} `json:"служба"`
+		Work    []any `json:"работа_до_вуза"`
+		Marital struct {
+			Status   string `json:"статус"`
+			Children int    `json:"детей"`
+		} `json:"семейное_положение"`
+		Family struct {
+			Upbringing string `json:"кто_воспитывал"`
+			Relatives  []struct {
+				Kind    string `json:"кем_приходится"`
+				Known   string `json:"сведения"`
+				Alive   string `json:"жив"`
+				Sphere  string `json:"сфера"`
+				Foreign string `json:"иностранное_гражданство"`
+				Crime   string `json:"судимость"`
+			} `json:"родственники"`
+		} `json:"семья"`
+	}
+	_ = json.Unmarshal([]byte(user), &input)
+	active := len(input.Hobbies) > 0
+	areas := []any{}
+	for _, area := range potentialAreas {
+		name := lowerFirst(area.Title)
+		if level := input.Levels[name]; level == "" || level == "не выражен" {
+			continue
+		}
+		active = true
+		text := "Развиты внимательность и собранность."
+		if area.ID == "languages" {
+			words := []string{}
+			for _, language := range input.Languages {
+				words = append(words, language.Name)
+				for _, practice := range language.Practice {
+					if practice.Result != "" {
+						words = append(words, practice.Result)
+					}
+				}
+			}
+			text = "Владеет языками: " + strings.Join(words, ", ") + "."
+		}
+		areas = append(areas, map[string]any{"area": name, "text": text})
+	}
+	paragraphs := []any{noActivities + "."}
+	if active {
+		paragraphs = []any{"Занимался тем, что указал в анкете.", "Внимателен и собран, умеет работать с товарищами."}
+	}
+	psychologist, consider := []any{}, []any{}
+	family := input.Family.Upbringing != "" && input.Family.Upbringing != "Оба родителя"
+	convicted, foreign := false, false
+	for _, r := range input.Family.Relatives {
+		parent := r.Kind == "Отец" || r.Kind == "Мать" || r.Kind == "Опекун, приёмный родитель"
+		family = family || parent && (r.Known == "Сведений не имею" || r.Alive == "Нет") || r.Sphere == "Военная служба"
+		convicted = convicted || r.Crime == "Да"
+		foreign = foreign || r.Foreign == "Да"
+	}
+	if family {
+		psychologist = append(psychologist, "Обстоятельства семьи студента. В беседе уточнить, кто его поддерживал.")
+	}
+	training := []any{}
+	if input.Service.Served == "Да" || len(input.Work) > 0 || input.Marital.Status == "Женат" || input.Marital.Children > 0 {
+		training = append(training, "Служба, работа или семья: привык к порядку.")
+	}
+	if input.Criminal == "привлекался" {
+		consider = append(consider, "Привлекался к уголовной ответственности; подробности — в ответах студента.")
+	}
+	if convicted {
+		consider = append(consider, "У родственника есть судимость.")
+	}
+	if foreign {
+		consider = append(consider, "У родственника есть иностранное гражданство.")
+	}
+	return map[string]any{"paragraphs": paragraphs, "areas": areas, "psychologist": psychologist, "training": training, "consider": consider}
+}
+
+// goodPortraitV4 answers the way the instruction v4 asks.
+func goodPortraitV4(user string) map[string]any {
 	user, _, _ = strings.Cut(user, "\n\n"+retryNote)
 	var input struct {
 		Levels   map[string]string `json:"уровни"`
@@ -61,6 +150,11 @@ func goodPortraitV3(user string) map[string]any {
 // portraitModel answers with goodPortrait changed by the mutate function.
 func portraitModel(mutate func(map[string]any)) *fakeModel {
 	return answeringModel(goodPortrait, mutate)
+}
+
+// portraitModelV4 answers the instruction v4.
+func portraitModelV4(mutate func(map[string]any)) *fakeModel {
+	return answeringModel(goodPortraitV4, mutate)
 }
 
 // portraitModelV3 answers the instruction v3.
@@ -145,7 +239,7 @@ func TestSubmittedAutobiographyGetsAPortraitOnceAndTheSameForEqualAnswers(t *tes
 		t.Fatalf("%+v after %d calls", view, m.count())
 	}
 	call := m.calls[0]
-	if !strings.HasPrefix(call.System, "Ты помогаешь преподавателю военного учебного центра") || !strings.Contains(string(call.Schema), `"required": ["paragraphs", "consider"]`) {
+	if !strings.HasPrefix(call.System, "Ты — военный психолог военного учебного центра") || !strings.Contains(string(call.Schema), `"required": ["paragraphs", "areas", "psychologist", "training", "consider"]`) {
 		t.Fatalf("instruction or schema: %.80s", call.System)
 	}
 	// What was sent is the anonymised input and nothing of the person.
@@ -267,10 +361,10 @@ func TestNewInstructionVersionMakesANewPortraitAndKeepsTheOld(t *testing.T) {
 	release := make(chan struct{})
 	m := &fakeModel{name: "fake", reply: func(call int, c Completion) (string, error) {
 		answer := goodPortrait(c.User)
-		answer["consider"] = []any{"Текст первой версии."}
+		answer["paragraphs"].([]any)[0] = "Текст первой версии."
 		if call > 1 {
 			<-release
-			answer["consider"] = []any{"Текст второй версии."}
+			answer["paragraphs"].([]any)[0] = "Текст второй версии."
 		}
 		data, _ := json.Marshal(answer)
 		return string(data), nil
@@ -321,8 +415,11 @@ func TestPortraitUsesTheLevelsOfTheProgramAndFindsThemInTheInput(t *testing.T) {
 	if problems := checkAutobiographyAnswer(goodPortraitV3(string(canonicalJSON(payload))), payload); len(problems) != 0 {
 		t.Fatalf("a good answer of v3 fails: %v", problems)
 	}
-	if problems := checkAutobiographyAnswerV4(goodPortrait(string(canonicalJSON(payload))), payload); len(problems) != 0 {
+	if problems := checkAutobiographyAnswerV4(goodPortraitV4(string(canonicalJSON(payload))), payload); len(problems) != 0 {
 		t.Fatalf("a good answer of v4 fails: %v", problems)
+	}
+	if problems := checkAutobiographyAnswerV5(goodPortrait(string(canonicalJSON(payload))), payload); len(problems) != 0 {
+		t.Fatalf("a good answer of v5 fails: %v", problems)
 	}
 }
 
