@@ -141,11 +141,24 @@ window.teacherAutobiography = async function ({view, api, esc}) {
         return dialog;
     }
 
-    // The text of the model for the autobiography. Since instruction v4: the
+    // The text of the model for the autobiography. Since instruction v5: two
+    // paragraphs, a line for every area (the program's own line for an area
+    // without experience) and the lists for the psychologist, the military
+    // training and what to consider; an empty list is not shown. v4: the
     // conclusion in paragraphs and «what to consider». Up to v3: the summary,
     // the potential table with the model's words, the qualities by hobbies and
     // the two lists. Levels stay the program's.
     window.portraitRenderers.autobiography = {
+        conclusionV5: (output, potential, esc) => {
+            const lines = (potential?.areas || []).map(a => {
+                const own = output.areas.find(x => String(x.area).toLowerCase() === a.title.toLowerCase());
+                return a.level === 'none'
+                    ? `<li class="muted"><b>${esc(a.title)}.</b> ${esc(a.noExperience || '')}</li>`
+                    : `<li><b>${esc(a.title)}.</b> ${esc(own ? own.text : '—')}</li>`;
+            }).join('');
+            const list = (title, items) => items.length ? `<h3>${title}</h3><ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '';
+            return `<section class="portrait-summary portrait-conclusion"><h3>Вывод</h3>${output.paragraphs.map(p => `<p>${esc(p)}</p>`).join('')}${lines ? `<h3>По направлениям</h3><ul class="portrait-areas">${lines}</ul>` : ''}${list('Психологу', output.psychologist)}${list('Для военной подготовки', output.training)}${list('Что учесть', output.consider)}</section>`;
+        },
         conclusion: (output, esc) => `<section class="portrait-summary portrait-conclusion"><h3>Вывод</h3>${output.paragraphs.map(p => `<p>${esc(p)}</p>`).join('')}<h3>Что учесть</h3>${output.consider.length ? `<ul>${output.consider.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '<p class="muted">Нет.</p>'}</section>`,
         summary: (output, esc) => `<section class="portrait-summary"><h3>Краткая характеристика</h3><p>${esc(output.summary)}</p></section>`,
         // Since instruction v3; a portrait of v1 or v2 has no hobbies and shows nothing here.
@@ -162,11 +175,13 @@ window.teacherAutobiography = async function ({view, api, esc}) {
 
     let portrait = null;
 
-    // Everything that depends on the model. Since v4: the conclusion and what
-    // to consider, the signature, then the program's potential with the areas
-    // of experience. A portrait of v1–v3, shown while the one of v4 is made,
-    // keeps its own layout: the summary, the potential with the model's
-    // columns, the qualities by hobbies, the points to note and the signature.
+    // Everything that depends on the model. Since v4: the conclusion (v5 with
+    // the lines of the areas and the three lists, v4 with what to consider),
+    // the signature, then the program's potential with the areas of
+    // experience; a conclusion of v4 is shown while the one of v5 is made. A
+    // portrait of v1–v3 keeps its own layout: the summary, the potential with
+    // the model's columns, the qualities by hobbies, the points to note and
+    // the signature.
     function portraitHtml(d, view) {
         const ready = view?.status === 'ready' ? view.portrait.output : null;
         const draw = window.portraitRenderers.autobiography;
@@ -175,7 +190,8 @@ window.teacherAutobiography = async function ({view, api, esc}) {
         if (ready && !Array.isArray(ready.paragraphs)) {
             return `${draw.summary(ready, esc)}${d.potential ? window.potentialView.card(d.potential, esc, ready) : ''}${draw.hobbies(ready, esc) + draw.attention(ready, esc)}${signature}`;
         }
-        return `${ready ? draw.conclusion(ready, esc) : state}${signature}${d.potential ? window.potentialView.brief(d.potential, esc) : ''}`;
+        const conclusion = ready && (Array.isArray(ready.areas) ? draw.conclusionV5(ready, d.potential, esc) : draw.conclusion(ready, esc));
+        return `${conclusion || state}${signature}${d.potential ? window.potentialView.brief(d.potential, esc) : ''}`;
     }
 
     async function answers(id) {
