@@ -80,7 +80,7 @@ func goodPortrait(user string) map[string]any {
 		foreign = foreign || r.Foreign == "Да"
 	}
 	if family {
-		psychologist = append(psychologist, "Обстоятельства семьи студента. В беседе уточнить, на кого из близких он опирается.")
+		psychologist = append(psychologist, "Обстоятельства семьи студента. В беседе уточнить, кто его поддерживал.")
 	}
 	training := []any{}
 	if input.Service.Served == "Да" || len(input.Work) > 0 || input.Marital.Status == "Женат" || input.Marital.Children > 0 {
