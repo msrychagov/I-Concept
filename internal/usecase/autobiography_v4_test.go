@@ -32,8 +32,8 @@ func TestV4AnswerThatBreaksTheRulesFailsAfterFiveTries(t *testing.T) {
 		"consider text": {func(a map[string]any) { a["consider"] = []any{1} }, "consider не список строк"},
 	} {
 		t.Run(name, func(t *testing.T) {
-			f := newAutobiographyFixture(t)
-			m := portraitModel(tc.mutate)
+			f := newAutobiographyFixtureAt(t, 4)
+			m := portraitModelV4(tc.mutate)
 			f.service.UseModel(m)
 			f.submit()
 			f.idle()
@@ -41,7 +41,7 @@ func TestV4AnswerThatBreaksTheRulesFailsAfterFiveTries(t *testing.T) {
 			if m.count() != 5 || view.Status != portraitFailed || !strings.Contains(view.Reason, tc.problem) {
 				t.Fatalf("%d calls, %+v", m.count(), view)
 			}
-			m.reply = portraitModel(nil).reply
+			m.reply = portraitModelV4(nil).reply
 			if retry, err := f.service.RetryPortrait(f.student.OwnerID, "autobiography", f.submission); err != nil || retry.Status == portraitFailed {
 				t.Fatalf("retry: %+v %v", retry, err)
 			}

@@ -120,3 +120,35 @@ func TestFailedPreparationKeepsInlineSystem(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCompleteUsesContextWindowAndAnswerLimit(t *testing.T) {
+	var options []map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var payload struct {
+			Options map[string]any `json:"options"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Error(err)
+		}
+		options = append(options, payload.Options)
+		_, _ = w.Write([]byte(`{"model":"qwen3.5:9b","message":{"content":"{}"}}`))
+	}))
+	defer server.Close()
+	client, err := New(server.URL, "qwen3.5:9b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Complete(context.Background(), usecase.Completion{User: "user"}); err != nil {
+		t.Fatal(err)
+	}
+	client.Context = 32768
+	if _, err := client.Complete(context.Background(), usecase.Completion{User: "user", MaxTokens: 8000}); err != nil {
+		t.Fatal(err)
+	}
+	want := [][2]float64{{8192, 5000}, {32768, 8000}}
+	for i, w := range want {
+		if options[i]["num_ctx"] != w[0] || options[i]["num_predict"] != w[1] {
+			t.Errorf("request %d: options %v, want num_ctx %v and num_predict %v", i+1, options[i], w[0], w[1])
+		}
+	}
+}

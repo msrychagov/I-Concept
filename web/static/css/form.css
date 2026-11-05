@@ -499,6 +499,17 @@
     padding-left: 1.1rem
 }
 
+/* The conclusion of the instruction v5: a line for every area. */
+.portrait-conclusion ul.portrait-areas {
+    padding-left: 0;
+    list-style: none
+}
+
+.portrait-areas li {
+    margin: 0 0 .35rem;
+    line-height: 1.5
+}
+
 /* «Все направления»: the six areas behind a button. */
 .potential-all {
     margin-top: .8rem
@@ -594,6 +605,17 @@
 
 .test-portrait-recommendations li {
     margin-bottom: .3rem
+}
+
+/* Who does an action and what to look at by the next testing: under it. */
+.test-portrait-action {
+    display: block;
+    margin-top: .15rem
+}
+
+/* A group of students for separate work: the names, the bases, the action. */
+.test-portrait-work li {
+    margin-bottom: .6rem
 }
 
 #platoon-conclusion:not(:empty) {
@@ -852,4 +874,53 @@ details.essay-left p {
     .change-quotes {
         grid-template-columns: 1fr
     }
+}
+
+/* Values by the ontograph of decree № 809: counts of the program, quotes behind a button */
+.values-block {
+    margin: 1rem 0
+}
+
+.values-note {
+    font-size: .88rem;
+    margin: -.2rem 0 .8rem
+}
+
+.values-idea h4 {
+    margin: .8rem 0 .3rem
+}
+
+.values-idea h4 small {
+    display: inline;
+    font-weight: 400
+}
+
+.values-list {
+    margin: 0 0 .6rem;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: .4rem;
+    overflow-wrap: anywhere
+}
+
+.values-list .essay-why {
+    display: inline-block;
+    margin-left: .3rem
+}
+
+.values-list .essay-why[open] {
+    display: block;
+    margin-left: 0
+}
+
+#platoon-values button.link, .values-block button.link {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    color: var(--green-2, #176347);
+    padding: 0;
+    min-height: 0;
+    font-weight: 600;
+    text-align: left;
+    text-decoration: underline
 }

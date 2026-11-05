@@ -79,6 +79,8 @@ type PlatoonPortraitData struct {
 	// Climate is the climate of the platoon by the students who answered all
 	// the pairs of the method (climate.go); nil with fewer than three of them.
 	Climate *PlatoonClimate `json:"climate,omitempty"`
+	// WorkGroups are the groups of students for separate work (platoon_groups.go).
+	WorkGroups []PlatoonWorkGroup `json:"workGroups"`
 }
 
 // PlatoonRelation is a sign of the core over the platoon.
@@ -348,6 +350,7 @@ func (a *Service) platoonPortrait(group string, portraits []studentPortrait) Pla
 	}
 
 	data.Climate = platoonClimate(portraits)
+	data.WorkGroups = a.workGroups(portraits)
 	if method := a.bank.Identity; method != nil {
 		names, ids := map[string]string{"": "не определён"}, []string{}
 		for _, scale := range method.Scales {

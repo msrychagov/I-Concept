@@ -502,7 +502,8 @@ func leadingStatuses(payload *object) (bool, [][]string) {
 func situationAllowed(payload *object) func(group int, kind string) bool {
 	lowEV := false
 	for _, m := range objectList(payload.values["методики"]) {
-		lowEV = lowEV || objectText(m, "компонент") == portraitComponentNames["EV"] && objectText(m, "уровень") == levelText["low"]
+		ev := objectText(m, "компонент") == portraitComponentNames["EV"] || objectText(m, "сторона") == plainComponentNames["EV"]
+		lowEV = lowEV || ev && objectText(m, "уровень") == levelText["low"]
 	}
 	types := map[int]string{}
 	for _, g := range objectList(payload.values["образ_защитника"]) {

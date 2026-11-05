@@ -29,6 +29,11 @@ func (a *Service) RegisterPrompts(prompts ...promptbank.Prompt) {
 	if prompt, ok := promptbank.Latest(prompts, essayCohortTask); ok {
 		a.registerPortraitTask(a.cohortTask(prompt))
 	}
+	if prompt, ok := promptbank.Latest(prompts, valuesTask); ok {
+		if o, err := loadOntograph(); err == nil {
+			a.registerPortraitTask(a.valuesTask(prompt, o))
+		}
+	}
 }
 
 // findSubmission returns the submitted autobiography a source points to.
@@ -48,15 +53,19 @@ func findSubmission(db model.Database, s Source) (model.FormSubmission, bool) {
 // anonymised input of model_input.go. The levels of potential are counted by
 // the program; the answer is only checked against them.
 func (a *Service) autobiographyTask(prompt promptbank.Prompt) portraitTask {
-	// The answer of v4 has other fields and rules; v1–v3 are checked as they
-	// always were. The input is the same, so a portrait of v3 is found by the
-	// fingerprint and shown while the one of v4 is made.
-	check, attempts := checkAutobiographyAnswer, 0
-	if n, _ := promptbank.Number(prompt.Version); n >= 4 {
+	// The answers of v4 and v5 have other fields and rules; v1–v3 are checked
+	// as they always were. The input is the same, so the portrait of the
+	// previous version is found by the fingerprint and shown while the new one
+	// is made (autobiography_v5.go).
+	check, attempts, tokens := checkAutobiographyAnswer, 0, 0
+	switch n, _ := promptbank.Number(prompt.Version); {
+	case n >= 5:
+		check, attempts, tokens = checkAutobiographyAnswerV5, autobiographyAttemptsV5, autobiographyTokensV5
+	case n == 4:
 		check, attempts = checkAutobiographyAnswerV4, 5
 	}
 	return portraitTask{
-		ID: autobiographyForm, Version: prompt.Version, Prompt: prompt, Attempts: attempts,
+		ID: autobiographyForm, Version: prompt.Version, Prompt: prompt, Attempts: attempts, MaxTokens: tokens,
 		Accepts: func(db model.Database, s Source) bool {
 			submission, ok := findSubmission(db, s)
 			return ok && submission.FormID == autobiographyForm && submission.Completed
@@ -568,6 +577,10 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 		// their own.
 		versions := []string{"v1"}
 		switch {
+		case humanInput(testPortraitTask, prompt.Version):
+			check, clean, versions = checkTestAnswerV7, cleanUnfitCodes, []string{"v6", "v5", "v4", "v3", "v1"}
+		case plainInput(testPortraitTask, prompt.Version):
+			check, clean, versions = checkTestAnswerV6, cleanUnfitCodes, []string{"v5", "v4", "v3", "v1"}
 		case termsInput(testPortraitTask, prompt.Version):
 			check, clean, versions = checkTestAnswerV5, cleanRepeatedCodes, []string{"v4", "v3", "v1"}
 		case climateInput(testPortraitTask, prompt.Version):

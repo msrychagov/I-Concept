@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "marks": {
+      "type": "array",
+      "description": "Отметки по онтографу, 0–40",
+      "items": {
+        "type": "object",
+        "properties": {
+          "node": {"type": "string", "description": "id узла онтографа: ценность, понятие, антиценность или их проявление в повседневной жизни"},
+          "sign": {"type": "string", "enum": ["принимает", "отвергает"]},
+          "whose": {"type": "string", "enum": ["своё", "одобряет у других", "другое"]},
+          "question": {"type": "string", "description": "Номер ответа"},
+          "quote": {"type": "string", "description": "Дословный кусок ответа, 3–30 слов"}
+        },
+        "required": ["node", "sign", "whose", "question", "quote"]
+      }
+    }
+  },
+  "required": ["marks"]
+}

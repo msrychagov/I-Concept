@@ -6,8 +6,8 @@
 // seven sections; a portrait of v1 is still shown in its own format.
 window.portraitRenderers = window.portraitRenderers || {};
 window.portraitRenderers.test = {
-    text(output, esc, data) {
-        if (output.paragraphs) return v5(output, esc, data || {});
+    text(output, esc, data, version) {
+        if (output.paragraphs) return v5(output, esc, data || {}, versionNumber(version) >= 7);
         if (output.components) return v2(output, esc, data || {});
         const paragraph = (title, text) => text ? `<h4>${esc(title)}</h4><p>${esc(text)}</p>` : '';
         const list = (title, items) => (items || []).length ? `<h4>${esc(title)}</h4><ul>${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
@@ -28,12 +28,57 @@ window.portraitRenderers.test = {
     }
 };
 
+// versionNumber is the number of a version of an instruction: «v7» is 7.
+function versionNumber(version) {
+    return parseInt(String(version || '').replace(/^v/, ''), 10) || 0;
+}
+
 // recommendationList names the direction of the catalogue and the group of the
-// image of every recommendation.
-function testRecommendations(items, esc, data) {
+// image of every recommendation; an action of test/v6 or test-platoon/v4 also
+// says who does it, in which activity, and what the program suggests to look
+// at by the next testing: how the student rates himself in the group and its
+// scales of the methods on the low level. An action of test/v7 or
+// test-platoon/v5 (human) is for everyone: no who and no activity.
+function testRecommendations(items, esc, data, human) {
+    const lowerFirst = t => t ? t[0].toLowerCase() + t.slice(1) : t;
     const directions = Object.fromEntries((data.catalogue || []).map(d => [d.id, d.name]));
-    const groups = Object.fromEntries((data.defender || []).map((g, n) => [n + 1, g.name]));
-    return (items || []).length ? `<h4>Рекомендации</h4><ul class="test-portrait-recommendations">${items.map(r => `<li><b>${esc(directions[r.code] || r.code)}</b>${groups[r.group] ? ` <span class="muted">(${esc(groups[r.group].toLowerCase())})</span>` : ''}. ${esc(r.text)}</li>`).join('')}</ul>` : '';
+    const groups = Object.fromEntries((data.defender || []).map((g, n) => [n + 1, g]));
+    const look = r => {
+        const low = ((groups[r.group] || {}).methods || []).filter(m => m.level === 'low').map(m => lowerFirst(m.name));
+        return ['как студент оценивает себя в этих качествах', ...low].join('; ');
+    };
+    return (items || []).length ? `<h4>Рекомендации</h4><ul class="test-portrait-recommendations">${items.map(r => `<li><b>${esc(directions[r.code] || r.code)}</b>${groups[r.group] ? ` <span class="muted">(${esc(groups[r.group].name.toLowerCase())})</span>` : ''}. ${esc(r.text)}${testAction(r, esc, look(r), human)}</li>`).join('')}</ul>` : '';
+}
+
+// testAction is the line under an action: who does it and in which activity
+// (test/v6, test-platoon/v4) and what to look at by the next testing.
+function testAction(r, esc, look, human) {
+    if (!r.who && !human) return '';
+    const parts = [r.who ? `Кто: ${r.who}` : '', r.kind ? `${r.kind} деятельность` : '', look ? `при следующем тестировании посмотреть: ${look}` : ''].filter(Boolean);
+    return `<small class="test-portrait-action muted">${esc(parts.join(' · '))}</small>`;
+}
+
+// testWork is «Кому нужна отдельная работа» of test-platoon/v4: the groups the
+// program put together, by the label of the answer, with the names, the bases,
+// the action of the model and what to look at; the groups past the first five
+// have no action and go under «Ещё нужна отдельная работа».
+function testWork(items, esc, data, human) {
+    const lowerFirst = t => t ? t[0].toLowerCase() + t.slice(1) : t;
+    const groups = data.workGroups || [];
+    const byLabel = Object.fromEntries(groups.map(g => [g.label, g]));
+    const directions = Object.fromEntries((data.catalogue || []).map(d => [d.id, d.name]));
+    const names = g => g.students.map(s => `<button type="button" class="text-button" data-session="${esc(s.sessionId)}">${esc(s.name)}</button>`).join(', ');
+    // The bases in plain words (Инструкция по взводу v5.md, Т5) for every version.
+    const bases = g => `<span class="muted">По тесту:</span> ${esc(((g.plain || []).length ? g.plain : g.bases).join('; '))}.`;
+    const shown = (items || []).map(r => {
+        const g = byLabel[r.label];
+        const head = g ? `<b>${names(g)}</b><br>${bases(g)}<br>` : '';
+        const direction = directions[r.code] ? ` <span class="muted">(${esc(lowerFirst(directions[r.code]))})</span>` : '';
+        return `<li>${head}<span class="muted">Что сделать:</span> ${esc(r.text)}${direction}${testAction(r, esc, g ? g.look.map(lowerFirst).join('; ') : '', human)}</li>`;
+    }).join('');
+    const rest = groups.filter(g => !g.model).map(g => `<li><b>${names(g)}</b><br>${bases(g)}</li>`).join('');
+    return (shown ? `<h4>Кому нужна отдельная работа</h4><ul class="test-portrait-work">${shown}</ul>` : '')
+        + (rest ? `<h4>Ещё нужна отдельная работа</h4><ul class="test-portrait-work">${rest}</ul>` : '');
 }
 
 // paragraphs are the four paragraphs of the portrait of v5 or of the
@@ -43,10 +88,10 @@ function testParagraphs(output, esc) {
     return ['values', 'will', 'image', 'environment'].filter(key => p[key]).map(key => `<p>${esc(p[key])}</p>`).join('');
 }
 
-function v5(output, esc, data) {
+function v5(output, esc, data, human) {
     return `<div class="test-portrait-text">
    ${testParagraphs(output, esc)}
-   ${testRecommendations(output.recommendations, esc, data)}
+   ${testRecommendations(output.recommendations, esc, data, human)}
    ${output.conclusion ? `<h4>Общий вывод</h4><p>${esc(output.conclusion)}</p>` : ''}
   </div>`;
 }
@@ -68,13 +113,16 @@ function v2(output, esc, data) {
 }
 
 window.portraitRenderers['test-platoon'] = {
-    text(output, esc, data) {
+    text(output, esc, data, version) {
         const paragraph = (title, text) => text ? `<h4>${esc(title)}</h4><p>${esc(text)}</p>` : '';
-        const individual = (output.individual || []).length ? `<h4>Кому нужна отдельная работа</h4><ul>${output.individual.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+        const human = versionNumber(version) >= 5;
+        const work = output.individual || [];
+        const individual = work.length && typeof work[0] === 'object' ? testWork(work, esc, data || {}, human)
+            : work.length ? `<h4>Кому нужна отдельная работа</h4><ul>${work.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
         if (output.paragraphs) {
             return `<div class="test-portrait-text">
    ${testParagraphs(output, esc)}
-   ${testRecommendations(output.recommendations, esc, data || {})}
+   ${testRecommendations(output.recommendations, esc, data || {}, human)}
    ${individual}
    ${paragraph('Общий вывод', output.conclusion)}
   </div>`;
@@ -172,7 +220,7 @@ window.testPortrait = (() => {
             handle = window.portraitView.start(api, 'test', id, {
                 alive: () => alive && box.isConnected,
                 update: view => {
-                    const ready = view.status === 'ready' ? window.portraitRenderers.test.text(view.portrait.output, esc, methods) : '';
+                    const ready = view.status === 'ready' ? window.portraitRenderers.test.text(view.portrait.output, esc, methods, view.portrait.version) : '';
                     box.innerHTML = window.portraitView.status(view, esc) + signature(view, esc, SIGNATURE) + ready;
                     box.querySelector('[data-portrait-retry]')?.addEventListener('click', () => run('POST'));
                 }
@@ -268,11 +316,12 @@ window.testPortrait = (() => {
                     if (view.status === 'none') {
                         box.innerHTML = '<p><button type="button" data-platoon-make>Составить вывод по взводу</button></p><p class="muted">Вывод составляется по последнему завершённому тестированию с методиками каждого студента; в модель уходят только числа по взводу, без имён.</p>';
                     } else {
-                        const ready = view.status === 'ready' ? window.portraitRenderers['test-platoon'].text(view.portrait.output, esc, platoon) : '';
+                        const ready = view.status === 'ready' ? window.portraitRenderers['test-platoon'].text(view.portrait.output, esc, platoon, view.portrait.version) : '';
                         box.innerHTML = window.portraitView.status(view, esc) + signature(view, esc, PLATOON_SIGNATURE) + ready;
                     }
                     box.querySelector('[data-platoon-make]')?.addEventListener('click', () => run('POST'));
                     box.querySelector('[data-portrait-retry]')?.addEventListener('click', () => run('POST'));
+                    box.querySelectorAll('[data-session]').forEach(b => b.onclick = () => open(b.dataset.session));
                 }
             }, first);
         };

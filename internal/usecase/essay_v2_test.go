@@ -321,7 +321,12 @@ func TestAnalysesOfV1AreShownWhileV2IsMadeAndStayOutOfTheSummary(t *testing.T) {
 	// v2 comes; the model is not connected yet.
 	f.service.UseModel(nil)
 	f.service.portraits.tasks = nil
-	f.service.RegisterPrompts(prompts...)
+	second := []promptbank.Prompt{}
+	for _, task := range []string{essayForm, essayCohortTask} {
+		prompt, _ := promptbank.Find(prompts, task, "v2")
+		second = append(second, prompt)
+	}
+	f.service.RegisterPrompts(second...)
 	value, _ := f.service.EssayOverview(f.owner)
 	view := roundTrip(t, value.(map[string]any))["assignments"].([]any)[0].(map[string]any)
 	if counts := view["counts"].(map[string]any); counts["submitted"] != 3.0 || counts["analysed"] != 0.0 || counts["withoutAnalysis"] != 3.0 {

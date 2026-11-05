@@ -42,7 +42,12 @@ func (a *Service) platoonTask(prompt promptbank.Prompt) portraitTask {
 	var earlier func(a *Service, db model.Database, s Source) []*object
 	check, clean := checkPlatoonAnswer, cleanRepeatedDirections
 	versions := []string{"v1"}
-	if termsInput(testPlatoonTask, prompt.Version) {
+	switch {
+	case humanInput(testPlatoonTask, prompt.Version):
+		check, clean, versions = checkPlatoonAnswerV5, cleanUnfitCodes, []string{"v4", "v3", "v2", "v1"}
+	case plainInput(testPlatoonTask, prompt.Version):
+		check, clean, versions = checkPlatoonAnswerV4, cleanUnfitCodes, []string{"v3", "v2", "v1"}
+	case termsInput(testPlatoonTask, prompt.Version):
 		check, clean, versions = checkPlatoonAnswerV3, cleanRepeatedCodes, []string{"v2", "v1"}
 	}
 	if climateInput(testPlatoonTask, prompt.Version) {
@@ -186,7 +191,14 @@ func (a *Service) platoonPayloadFor(version string, data PlatoonPortraitData) *o
 		return payload
 	}
 	a.addPlatoonClimate(payload, data, version)
-	if termsInput(testPlatoonTask, version) {
+	// From v4 on the input is in plain words, without the dictionary, with the
+	// groups of students for separate work.
+	if plainInput(testPlatoonTask, version) {
+		a.plainPlatoonPayload(payload, data)
+		if humanInput(testPlatoonTask, version) {
+			humanPlatoonPayload(payload, data)
+		}
+	} else if termsInput(testPlatoonTask, version) {
 		signs := []string{}
 		for _, sign := range data.EnvironmentSigns {
 			signs = append(signs, sign.ID)
@@ -487,6 +499,12 @@ func checkPlatoonAnswer(output map[string]any, payload *object) []string {
 // platoonIdentityProblems checks that a text names, by block, the leading
 // status most students of the platoon have.
 func platoonIdentityProblems(field, text string, identity any) []string {
+	return platoonStatusProblems(field, text, identity, statusNamed)
+}
+
+// platoonStatusProblems is platoonIdentityProblems with a way to tell that a
+// text names a status: by its name, or from v4 on by its meaning too.
+func platoonStatusProblems(field, text string, identity any, statusNamed func(lower, name string) bool) []string {
 	problems := []string{}
 	lower := normalizedText(text)
 	for _, block := range objectList(identity) {

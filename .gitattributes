@@ -1,0 +1,3 @@
+# The ontograph of values is a word for word copy of the file in the wiki,
+# CRLF line ends included: the test compares them byte for byte.
+internal/valuebank/*.json -text

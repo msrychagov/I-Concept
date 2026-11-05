@@ -202,10 +202,10 @@ type summaryResolver struct {
 	info     map[string]refInfo
 	analysis map[string]map[string]any
 	// shape is the shape of the summary: 1 shows the quotes of the analyses of
-	// v1 under the sources; 2 shows the texts of the paragraphs only (Д12).
+	// v1 under the sources; 2 and 3 show the texts of the paragraphs only (Д12).
 	shape int
 	// advice are the numbers of the recommendations of the analyses in the
-	// input of a summary of v2, in order.
+	// input of a summary of v2, or of their points «усилить» in v3, in order.
 	advice []string
 }
 
@@ -223,11 +223,12 @@ func newSummaryResolver(a *Service, db model.Database, portrait model.Portrait) 
 	for _, review := range input.Reviews {
 		add(review["путь"])
 		add(review["итог"])
-		for _, key := range []string{"моменты", "положительное", "отрицательное", "на_что_обратить_внимание", "что_изменилось", "абзацы", "рекомендации"} {
+		add(review["о_преподавателях"])
+		for _, key := range []string{"моменты", "положительное", "отрицательное", "на_что_обратить_внимание", "что_изменилось", "абзацы", "рекомендации", "воспитал_вуц", "усилить"} {
 			list, _ := review[key].([]any)
 			for _, item := range list {
 				add(item)
-				if key == "рекомендации" {
+				if key == "рекомендации" || key == "усилить" {
 					r.advice = append(r.advice, textOf(asMap(item)["номер"]))
 				}
 			}
@@ -358,8 +359,45 @@ func (r *summaryResolver) annotationsV2(output map[string]any) map[string]any {
 	return common
 }
 
+// annotationsV3 is what the program adds to a summary of v3: the authors and
+// the sources of each paragraph, point and of the conclusion about the
+// teachers, and the points «усилить» of the analyses no point of the summary
+// stands on (decision Д14).
+func (r *summaryResolver) annotationsV3(output map[string]any) map[string]any {
+	common := map[string]any{}
+	for _, key := range essayParagraphs {
+		common[key] = r.group(asMap(output[key])["refs"])
+	}
+	used := map[string]bool{}
+	for _, key := range []string{"developed", "strengthen"} {
+		groups := []sourceGroup{}
+		for _, item := range listOf(output, key) {
+			refs, _ := asMap(item)["refs"].([]any)
+			groups = append(groups, r.group(refs))
+			for _, ref := range refs {
+				if text, _ := ref.(string); key == "strengthen" {
+					used[text] = true
+				}
+			}
+		}
+		common[key] = groups
+	}
+	common["teachersConclusion"] = r.group(asMap(output["teachersConclusion"])["refs"])
+	rest := []sourceView{}
+	for _, ref := range r.advice {
+		if view, ok := r.source(ref); ok && !used[ref] {
+			rest = append(rest, view)
+		}
+	}
+	common["notIncluded"] = rest
+	return common
+}
+
 // summaryAnnotations is what the program adds to the text of the model.
 func (r *summaryResolver) annotations(output map[string]any) map[string]any {
+	if r.shape == 3 {
+		return r.annotationsV3(output)
+	}
 	if r.shape != 1 {
 		return r.annotationsV2(output)
 	}
@@ -623,10 +661,10 @@ func (a *Service) essaySummary(db model.Database, teacherID, assignmentID string
 		"status":     portraitOff,
 		"summary":    nil,
 	}
-	// The block of v2 stands on the positions in the analyses of v2; the block
-	// of v1 on the list of the center and every analysis shown.
-	if a.cohortShape() == 2 {
-		result["teachers"] = a.teacherBlockV2(db, a.cohortAuthorsOf(db, as.ID, 2))
+	// The block of v2 and v3 stands on the positions in the analyses of its
+	// shape; the block of v1 on the list of the center and every analysis shown.
+	if shape := a.cohortShape(); shape >= 2 {
+		result["teachers"] = a.teacherBlockV2(db, a.cohortAuthorsOf(db, as.ID, shape))
 	} else {
 		result["teachers"] = a.teacherBlock(db, t.VUC, a.cohortAuthorsOf(db, as.ID, 0))
 	}

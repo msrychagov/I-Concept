@@ -22,7 +22,8 @@ func (m *countingModel) Complete(_ context.Context, c usecase.Completion) (useca
 	return usecase.Reply{Text: m.reply(c.User), Version: "fake-1", In: 1, Out: 1}, nil
 }
 
-// portraitAnswer is an answer that follows the newest instruction (v4) for the given input.
+// portraitAnswer is an answer that follows the newest instruction (v5) for
+// the minimal answers: no family circumstances, no service, work or records.
 func portraitAnswer(user string) string {
 	var input struct {
 		Levels  map[string]string `json:"уровни"`
@@ -30,14 +31,18 @@ func portraitAnswer(user string) string {
 	}
 	_ = json.Unmarshal([]byte(user), &input)
 	active := len(input.Hobbies) > 0
-	for _, level := range input.Levels {
-		active = active || level != "не выражен"
+	areas := []any{}
+	for _, area := range []string{"спорт", "музыка и творчество", "военно-патриотическая деятельность", "наука", "волонтёрство", "иностранные языки"} {
+		if level := input.Levels[area]; level != "" && level != "не выражен" {
+			active = true
+			areas = append(areas, map[string]any{"area": area, "text": "Развита собранность."})
+		}
 	}
 	paragraphs := []any{"Занятий, по которым можно назвать качества и навыки, студент не указал."}
 	if active {
-		paragraphs = []any{"По опыту в занятиях — усидчивость.", "Пригодится на занятиях ВУЦ."}
+		paragraphs = []any{"Занимался тем, что указал в анкете.", "Внимателен и собран."}
 	}
-	data, _ := json.Marshal(map[string]any{"paragraphs": paragraphs, "consider": []any{"Воспитывался обоими родителями."}})
+	data, _ := json.Marshal(map[string]any{"paragraphs": paragraphs, "areas": areas, "psychologist": []any{}, "training": []any{}, "consider": []any{}})
 	return string(data)
 }
 
@@ -93,7 +98,7 @@ func TestPortraitRoutes(t *testing.T) {
 	view := s.waitFor(t, "ready")
 	portrait := view["portrait"].(map[string]any)
 	output := portrait["output"].(map[string]any)
-	if len(output["paragraphs"].([]any)) == 0 || len(output["consider"].([]any)) != 1 || portrait["created"] == "" || m.calls.Load() != 1 {
+	if len(output["paragraphs"].([]any)) == 0 || output["areas"] == nil || len(output["consider"].([]any)) != 0 || portrait["created"] == "" || m.calls.Load() != 1 {
 		t.Fatalf("view %v after %d calls", view, m.calls.Load())
 	}
 

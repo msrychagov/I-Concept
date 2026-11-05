@@ -55,6 +55,9 @@ type PlatoonView struct {
 	// Climate is the climate of the platoon by the method of Lutoshkin; nil
 	// when fewer than three students answered all its pairs.
 	Climate *PlatoonClimate `json:"climate,omitempty"`
+	// WorkGroups are the groups of students for separate work: the conclusion
+	// of test-platoon/v4 names them by label.
+	WorkGroups []PlatoonWorkGroup `json:"workGroups"`
 }
 
 // latestMethodSessions are the latest finished sessions with the methods of
@@ -167,7 +170,7 @@ func (a *Service) MethodsSummaryFor(teacherID, group string) (MethodsSummary, er
 	summary.Rows = a.levelRows(portraits)
 	if group != "" {
 		platoon := a.platoonPortrait(group, portraits)
-		summary.Platoon = &PlatoonView{Students: platoon.Students, Minimum: platoonMinimum, Defender: platoon.Defender, Catalogue: a.defender.Directions, Climate: platoon.Climate}
+		summary.Platoon = &PlatoonView{Students: platoon.Students, Minimum: platoonMinimum, Defender: platoon.Defender, Catalogue: a.defender.Directions, Climate: platoon.Climate, WorkGroups: platoon.WorkGroups}
 	}
 	slices.Sort(summary.Groups)
 	return summary, nil
