@@ -268,6 +268,12 @@ func TestV5DecisionsAfterTheRun(t *testing.T) {
 	if problems := checkAutobiographyAnswerV5(trap, comparisonPayload(t, "05 Ловушка.json")); len(problems) != 0 {
 		t.Fatalf("%q", problems)
 	}
+	// Nor the line of the languages (decided 6 November 2026).
+	science := sampleV5("03 Наука и языки.json")
+	science["areas"].([]any)[3].(map[string]any)["text"] = "Английский — свободно, IELTS 7,5; немецкий — B1: свободно читает и объясняется на учебные и бытовые темы."
+	if problems := checkAutobiographyAnswerV5(science, comparisonPayload(t, "03 Наука и языки.json")); len(problems) != 0 {
+		t.Fatalf("languages: %q", problems)
+	}
 	// The paragraphs still may not copy an example.
 	answer["paragraphs"].([]any)[1] = "Быстро ориентируется в игре, умеет действовать заодно с командой."
 	if problems := checkAutobiographyAnswerV5(answer, payload); len(problems) != 1 || !strings.Contains(problems[0], "повторяет пример") {

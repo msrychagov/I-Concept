@@ -328,8 +328,10 @@ func foundV5(text string) string {
 // commonProblemsV5 are the rules of every text of the answer: no machine
 // phrase, no appointment (prohibition 4), no copy of an example where examples
 // is set. The points for the psychologist and the military training may repeat
-// their examples (decided by the user after the run of 5 November 2026). A
-// problem names the word of the rule and how to write instead, never the text.
+// their examples (decided by the user after the run of 5 November 2026), and
+// so may the line of the languages (6 November: «читает и объясняется на
+// учебные и бытовые темы» is how a level is told). A problem names the word of
+// the rule and how to write instead, never the text.
 func commonProblemsV5(where, text string, examples bool) []string {
 	problems := []string{}
 	if found := machinePhraseV5.FindString(text); found != "" {
@@ -446,7 +448,7 @@ func areasProblemsV5(value any, payload *object, empty, jobs []string) []string 
 		} else if found := levelWordV5.FindString(text); found != "" && area != "иностранные языки" {
 			problems = append(problems, fmt.Sprintf("%s: уровень потенциала («%s») — уровень не называй, его показывает программа", where, strings.ToLower(found)))
 		}
-		problems = append(problems, commonProblemsV5(where, text, true)...)
+		problems = append(problems, commonProblemsV5(where, text, area != "иностранные языки")...)
 		problems = append(problems, qualityProblemsV5(where, text, jobs, false)...)
 		problems = append(problems, absenceProblemsV5(where, text, empty)...)
 		if area == "иностранные языки" {
