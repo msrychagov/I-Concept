@@ -33,12 +33,12 @@ func mustOntograph(t *testing.T) *valuebank.Ontograph {
 func TestOntographInputHasTheCoderNodesAndNoPersonalData(t *testing.T) {
 	o := mustOntograph(t)
 	input := newObject()
-	input.set("онтограф", ontographInput(o))
+	input.set("онтограф", ontographInput(o, false))
 	if label := personalData(input); label != "" {
 		t.Fatalf("the ontograph looks like personal data: %s", label)
 	}
 	text := modelText(canonicalJSON(input))
-	values := objectList(ontographInput(o).values["ценности"])
+	values := objectList(ontographInput(o, false).values["ценности"])
 	notions := 0
 	for _, value := range values {
 		list, _ := value.values["понятия"].([]string)
@@ -316,5 +316,73 @@ func TestOpenAnswersOfATestAreMarkedAndCountedOverThePlatoon(t *testing.T) {
 	}
 	if other, _ := f.service.PlatoonValues("someone-else", "101"); other.Texts != 0 {
 		t.Fatalf("another teacher sees the platoon: %+v", other)
+	}
+}
+
+// v2 gives the notions with their definitions, without the tail «Ключ: …».
+func TestOntographInputOfV2HasTheDefinitionsOfTheNotions(t *testing.T) {
+	o := mustOntograph(t)
+	input := newObject()
+	input.set("онтограф", ontographInput(o, true))
+	if label := personalData(input); label != "" {
+		t.Fatalf("the ontograph looks like personal data: %s", label)
+	}
+	text := modelText(canonicalJSON(input))
+	if !strings.Contains(text, "aid_vyr — Взаимовыручка: Взаимовыручка рядом с солидарностью") || strings.Contains(text, "Ключ:") || len([]rune(text)) > 35000 {
+		t.Fatalf("%d characters: %.300s", len([]rune(text)), text)
+	}
+}
+
+func TestSpreadOfTheMarksOfV2(t *testing.T) {
+	o := mustOntograph(t)
+	mark := func(node, whose string) any { return valueMark(node, "принимает", whose, "1.1", "Пришёл служить вместе с другом") }
+	for name, c := range map[string]struct {
+		marks []any
+		want  string
+	}{
+		"four of six on one value": {[]any{mark("v_srv", "своё"), mark("srv_post", "своё"), mark("v_srv", "своё"), mark("srv_resp", "своё"), mark("aid_vyr", "своё"), mark("honest", "своё")}, "больше половины отметок (4 из 6) — на «Служение Отечеству»"},
+		"three of six is a half":   {[]any{mark("v_srv", "своё"), mark("srv_post", "своё"), mark("srv_resp", "своё"), mark("aid_vyr", "своё"), mark("honest", "своё"), mark("col_act", "своё")}, ""},
+		"five marks, one value":    {[]any{mark("srv_post", "своё"), mark("srv_resp", "своё"), mark("srv_act", "своё"), mark("srv_valor", "своё"), mark("srv_free", "своё")}, ""},
+		"«другое» is not counted":  {[]any{mark("v_srv", "своё"), mark("v_srv", "другое"), mark("v_srv", "другое"), mark("v_srv", "другое"), mark("aid_vyr", "своё"), mark("honest", "своё"), mark("col_act", "своё")}, ""},
+		"four marks, no notion":    {[]any{mark("v_srv", "своё"), mark("v_col", "своё"), mark("v_mem", "своё"), mark("ev_craft", "своё")}, "ни одного понятия"},
+		"three marks, no notion":   {[]any{mark("v_srv", "своё"), mark("v_col", "своё"), mark("v_mem", "своё")}, ""},
+	} {
+		joined := strings.Join(spreadProblems(o, roundTrip(t, map[string]any{"marks": c.marks})), " | ")
+		if c.want == "" && joined != "" || c.want != "" && !strings.Contains(joined, c.want) {
+			t.Errorf("%s: %s", name, joined)
+		}
+	}
+}
+
+// The marking of v1 is shown while the one of v2 is made: their inputs differ
+// by the definitions of the notions (decision Д-З10).
+func TestMarkingOfV1IsShownWhileV2IsMade(t *testing.T) {
+	f := newEssayFixture(t)
+	t.Cleanup(f.service.Close)
+	prompts, err := promptbank.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, _ := promptbank.Find(prompts, valuesTask, "v1")
+	f.service.RegisterPrompts(first)
+	f.service.portraits.pause = 0
+	m := valuesModel()
+	f.service.UseModel(m)
+	_, id := f.submitted("values-v1@example.test", "2401", f.assignment, map[string]string{"1.1": "Пришёл служить вместе с другом."})
+	f.idle()
+	if m.count() != 1 || strings.Contains(m.calls[0].User, "Взаимовыручка рядом") {
+		t.Fatalf("%d calls of v1", m.count())
+	}
+	f.service.UseModel(nil)
+	f.service.portraits.tasks = nil
+	f.service.RegisterPrompts(valuesPrompt(t))
+	view, err := f.service.ValuesFor(f.owner, id, false)
+	if err != nil || view.Status != portraitReady || view.Count == nil || view.Count.Ideas[3].Accept != 1 {
+		t.Fatalf("the marking of v1 is not shown: %+v %v", view, err)
+	}
+	f.service.UseModel(m)
+	f.idle()
+	if m.count() != 2 || !strings.Contains(m.calls[1].User, "Взаимовыручка рядом") || !strings.Contains(m.calls[1].System, "Сначала ищи понятие") {
+		t.Fatalf("%d calls: the marking of v2 must be made by itself", m.count())
 	}
 }

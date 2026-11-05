@@ -35,8 +35,39 @@ var (
 
 // valuesTask marks the essays and the open answers of the tests. The essay keeps
 // the patronymic, as its analysis does; the open answers of a test are cut as
-// for the portrait by the test, by valuesRows.
+// for the portrait by the test, by valuesRows. Since v2 (decided 5 November
+// 2026 after the run) the notions go with their definitions and the program
+// refuses a marking that puts most marks on one value or takes no notion; the
+// marking of v1, made for another input, is shown while the one of v2 is made.
 func (a *Service) valuesTask(prompt promptbank.Prompt, o *valuebank.Ontograph) portraitTask {
+	second := false
+	if n, _ := promptbank.Number(prompt.Version); n >= 2 {
+		second = true
+	}
+	payloadOf := func(a *Service, db model.Database, s Source, definitions bool) (*object, error) {
+		rows, _ := a.valuesRows(db, s)
+		if len(rows) == 0 {
+			return nil, problem(Invalid, "Нет текста для разметки.")
+		}
+		payload := newObject()
+		// The input is cleaned in place: the ontograph is built anew every time.
+		payload.set("онтограф", ontographInput(o, definitions))
+		payload.set("текст", rows)
+		return payload, nil
+	}
+	check := func(output map[string]any, payload *object) []string { return checkValuesAnswer(o, output, payload) }
+	var earlier func(a *Service, db model.Database, s Source) []*object
+	if second {
+		check = func(output map[string]any, payload *object) []string {
+			return append(checkValuesAnswer(o, output, payload), spreadProblems(o, output)...)
+		}
+		earlier = func(a *Service, db model.Database, s Source) []*object {
+			if payload, err := payloadOf(a, db, s, false); err == nil {
+				return []*object{payload}
+			}
+			return nil
+		}
+	}
 	return portraitTask{
 		ID: valuesTask, Version: prompt.Version, Prompt: prompt,
 		// Up to 40 marks of five short fields with a quote each.
@@ -46,19 +77,8 @@ func (a *Service) valuesTask(prompt promptbank.Prompt, o *valuebank.Ontograph) p
 			rows, _ := a.valuesRows(db, s)
 			return len(rows) > 0
 		},
-		Payload: func(a *Service, db model.Database, s Source) (*object, error) {
-			rows, _ := a.valuesRows(db, s)
-			if len(rows) == 0 {
-				return nil, problem(Invalid, "Нет текста для разметки.")
-			}
-			payload := newObject()
-			// The input is cleaned in place: the ontograph is built anew every time.
-			payload.set("онтограф", ontographInput(o))
-			payload.set("текст", rows)
-			return payload, nil
-		},
-		Clean: cleanValuesAnswer,
-		Check: func(output map[string]any, payload *object) []string { return checkValuesAnswer(o, output, payload) },
+		Payload: func(a *Service, db model.Database, s Source) (*object, error) { return payloadOf(a, db, s, second) },
+		Clean:   cleanValuesAnswer, Check: check, Earlier: earlier,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			if submission, ok := findSubmission(db, s); ok {
 				return teacherOwnsSubmission(db, teacherID, submission)
@@ -70,9 +90,10 @@ func (a *Service) valuesTask(prompt promptbank.Prompt, o *valuebank.Ontograph) p
 }
 
 // ontographInput is the ontograph as the model gets it: every node a line «id —
-// название: определение», the notions of a value as «id — название» inside it;
-// no ideas, threats, links or quotes of the report.
-func ontographInput(o *valuebank.Ontograph) *object {
+// название: определение», the notions of a value inside it as «id — название»,
+// with their definitions since v2 (without the tail «Ключ: …»); no ideas,
+// threats, links or quotes of the report.
+func ontographInput(o *valuebank.Ontograph, definitions bool) *object {
 	line := func(node valuebank.Node) string { return node.ID + " — " + node.Label + ": " + node.Definition }
 	lines := func(class string) []string {
 		list := []string{}
@@ -85,9 +106,15 @@ func ontographInput(o *valuebank.Ontograph) *object {
 	for _, value := range o.Of(valuebank.Value) {
 		notions := []string{}
 		for _, notion := range o.Of(valuebank.Aspect) {
-			if notion.ParentValue == value.ID {
-				notions = append(notions, notion.ID+" — "+notion.Label)
+			if notion.ParentValue != value.ID {
+				continue
 			}
+			text := notion.ID + " — " + notion.Label
+			if definitions {
+				definition, _, _ := strings.Cut(notion.Definition, " Ключ:")
+				text += ": " + definition
+			}
+			notions = append(notions, text)
 		}
 		entry := newObject()
 		entry.set("узел", line(value))
@@ -185,6 +212,52 @@ func checkValuesAnswer(o *valuebank.Ontograph, output map[string]any, payload *o
 			problems = append(problems, where+": whose — «своё», «одобряет у других» или «другое»")
 		}
 		problems = append(problems, quoteProblems(where, mark, answers)...)
+	}
+	return problems
+}
+
+const (
+	// spreadLeast is the fewest counted marks from which one value must not take
+	// more than half of them (decision Д-З7); notionLeast those from which a
+	// marking must have a notion (Д-З8).
+	spreadLeast = 6
+	notionLeast = 4
+)
+
+// spreadProblems finds what the run of 5 November showed in the marking of v1:
+// one value taking more than half of the marks («служение Отечеству» on any
+// moment of the training) and no notion at all. Only the marks the numbers take
+// are counted. A problem names the value, never the quote.
+func spreadProblems(o *valuebank.Ontograph, output map[string]any) []string {
+	marks, _ := asList(output["marks"])
+	counted, notions := 0, 0
+	byTarget, order := map[string]int{}, []string{}
+	for _, raw := range marks {
+		mark := asMap(raw)
+		id := textOf(mark["node"])
+		node, known := o.Node(id)
+		if !known || !o.Coded(id) || !slices.Contains(valueCounted, textOf(mark["whose"])) {
+			continue
+		}
+		counted++
+		if node.Class == valuebank.Aspect {
+			notions++
+		}
+		target, _ := o.Counted(id)
+		if byTarget[target] == 0 {
+			order = append(order, target)
+		}
+		byTarget[target]++
+	}
+	problems := []string{}
+	for _, target := range order {
+		if counted >= spreadLeast && 2*byTarget[target] > counted {
+			value, _ := o.Node(target)
+			problems = append(problems, fmt.Sprintf("marks: больше половины отметок (%d из %d) — на «%s»: отмечай только места, где ценность прямо видна, обычные обстоятельства учёбы не отмечай, бери понятия", byTarget[target], counted, value.Label))
+		}
+	}
+	if counted >= notionLeast && notions == 0 {
+		problems = append(problems, "marks: ни одного понятия — сначала ищи понятие внутри ценности, например aid_vyr — Взаимовыручка, honest — Честность")
 	}
 	return problems
 }
