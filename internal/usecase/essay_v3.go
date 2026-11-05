@@ -507,9 +507,27 @@ func checkCohortAnswerV3(output map[string]any, payload *object) []string {
 		more, _ := refsOf("teachersConclusion", conclusion["refs"], known, kindIs("teachers"), 2)
 		problems = append(problems, more...)
 	}
-	words := 0
+	words, earlier := 0, cohortHasEarlier(payload)
 	for _, t := range essayTextsV3(output) {
 		words += countWords(textOf(t.raw))
+		if !earlier && cohortEarlierWords.MatchString(textOf(t.raw)) {
+			problems = append(problems, t.where+": прежнего эссе нет ни у кого из авторов — не пиши о прежних эссе и о том, что меняется между эссе")
+		}
 	}
 	return append(problems, tooLongV3(words)...)
+}
+
+// cohortEarlierWords find words about the earlier essays in a summary: written
+// of a cohort where nobody wrote one, they invent a comparison (decided
+// 5 November 2026 after the run: «У тех, кто писал эссе ранее…»).
+var cohortEarlierWords = regexp.MustCompile(`(?i)(прежн|предыдущ)\p{L}*(\s+и\s+(нов|последн|нынешн)\p{L}*)?\s+эссе|писал\p{L}*\s+(эссе\s+)?(ранее|раньше|прежде|до\s+этого)|(ранее|раньше|прежде)\s+писал\p{L}*|между\s+(двумя\s+)?эссе`)
+
+// cohortHasEarlier says whether an author of the input of a summary wrote an essay before.
+func cohortHasEarlier(payload *object) bool {
+	for _, review := range objectList(payload.values["разборы"]) {
+		if earlier, _ := review.values["прежнее_эссе"].(bool); earlier {
+			return true
+		}
+	}
+	return false
 }

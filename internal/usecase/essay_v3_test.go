@@ -318,3 +318,33 @@ func TestCleaningOfV3CutsALongQuoteThatIsWordForWord(t *testing.T) {
 		t.Fatalf("problems: %s", problems)
 	}
 }
+
+// A summary of a cohort where nobody wrote an essay before must not speak of
+// the earlier essays (decided 5 November 2026 after the run).
+func TestSummaryOfV3OfACohortWithoutEarlierEssays(t *testing.T) {
+	none := func() *object {
+		payload := cohortPayloadV3For(3)
+		for _, review := range objectList(payload.values["разборы"]) {
+			review.set("прежнее_эссе", false)
+		}
+		return payload
+	}
+	for name, c := range map[string]struct {
+		payload *object
+		text    string
+		want    string
+	}{
+		"nobody, «писал эссе ранее»": {none(), "Авторы пришли ради отсрочки. У тех, кто писал эссе ранее, уходит скепсис.", "formation: прежнего эссе нет ни у кого из авторов"},
+		"nobody, «между эссе»":        {none(), "Авторы пришли ради отсрочки, и между эссе меняется отношение к службе.", "formation: прежнего эссе нет"},
+		"nobody, plain text":          {none(), "Авторы пришли ради отсрочки, а теперь ценят порядок.", ""},
+		"somebody, «писал эссе ранее»": {cohortPayloadV3For(3), "Авторы пришли ради отсрочки. У тех, кто писал эссе ранее, уходит скепсис.", ""},
+	} {
+		output := goodCohortV3(modelText(canonicalJSON(c.payload)))
+		output["formation"].(map[string]any)["text"] = c.text
+		_, _, problems := cleanedV3(t, c.payload, output)
+		joined := strings.Join(problems, " | ")
+		if c.want == "" && joined != "" || c.want != "" && !strings.Contains(joined, c.want) {
+			t.Errorf("%s: %s", name, joined)
+		}
+	}
+}
