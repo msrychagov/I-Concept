@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"encoding/json"
+	"math"
 	"slices"
 	"strings"
 	"testing"
@@ -168,6 +169,19 @@ func TestV5FindsTheBrokenRules(t *testing.T) {
 		"training not about":      {"04 Служил, работал, женат.json", set("training", "Любит охоту и рыбалку."), "в training — только служба"},
 		"consider not needed":     {"04 Служил, работал, женат.json", set("consider", "Служил в Вооружённых силах."), "судимостей и иностранного гражданства нет"},
 		"consider conclusion":     {"05 Ловушка.json", func(a map[string]any) {}, "вывод вместо факта"},
+		// Checks added after the run of 6 November 2026.
+		"wrong term":       {"05 Ловушка.json", paragraph(0, "Год играл в футбол, участвовал в волонтёрских акциях."), "срок не тот («год» — в анкете «футбол»: 3–5 лет)"},
+		"term of a group":  {"02 Спорт и военно-патриотическое.json", paragraph(0, "Год состоял в «Юнармии»."), "срок не тот («год» — в анкете «военно-патриотическое»: больше 3 лет)"},
+		"not worked":       {"01 Минимальная.json", paragraph(0, "Увлекается киберспортом. До поступления не работал."), "об отсутствии («не работал»)"},
+		"without profile":  {"01 Минимальная.json", paragraph(0, "Увлекается киберспортом, окончил школу без профиля."), "об отсутствии («без профиля»)"},
+		"knows little":     {"03 Наука и языки.json", paragraph(1, "Военное дело пока знает мало."), "чего ещё нет или что поможет потом («знает мало»)"},
+		"will help":        {"03 Наука и языки.json", paragraph(1, "Привычка к дисциплине поможет освоить строевую подготовку."), "чего ещё нет или что поможет потом («поможет»)"},
+		"new field":        {"03 Наука и языки.json", paragraph(1, "Военное дело для него — новая область."), "«новая область»"},
+		"connector":        {"03 Наука и языки.json", area(3, "Английский — свободно, IELTS 7,5; немецкий — B1, что позволяет читать литературу."), "машинный оборот («что позволяет»)"},
+		"shows readiness":  {"03 Наука и языки.json", paragraph(1, "Языки показывают готовность к новой среде."), "машинный оборот («показывают готовность»)"},
+		"trip quality":     {"03 Наука и языки.json", paragraph(1, "Опыт поездок развил собранность."), "качества из поездок («поездок»)"},
+		"training joined":  {"04 Служил, работал, женат.json", set("training", "Служил механиком-водителем, работал автослесарем: знает технику.", "Женат, растит ребёнка: привык заботиться о близких."), "в одном пункте сразу служба и работа"},
+		"training too few": {"04 Служил, работал, женат.json", set("training", "Служил механиком-водителем: знает технику."), "пунктов 1, а обстоятельств 3"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			answer := trapAnswerV5(name)
@@ -254,6 +268,12 @@ func TestV5DecisionsAfterTheRun(t *testing.T) {
 	if problems := checkAutobiographyAnswerV5(trap, comparisonPayload(t, "05 Ловушка.json")); len(problems) != 0 {
 		t.Fatalf("%q", problems)
 	}
+	// Nor the line of the languages (decided 6 November 2026).
+	science := sampleV5("03 Наука и языки.json")
+	science["areas"].([]any)[3].(map[string]any)["text"] = "Английский — свободно, IELTS 7,5; немецкий — B1: свободно читает и объясняется на учебные и бытовые темы."
+	if problems := checkAutobiographyAnswerV5(science, comparisonPayload(t, "03 Наука и языки.json")); len(problems) != 0 {
+		t.Fatalf("languages: %q", problems)
+	}
 	// The paragraphs still may not copy an example.
 	answer["paragraphs"].([]any)[1] = "Быстро ориентируется в игре, умеет действовать заодно с командой."
 	if problems := checkAutobiographyAnswerV5(answer, payload); len(problems) != 1 || !strings.Contains(problems[0], "повторяет пример") {
@@ -273,10 +293,53 @@ func TestV5WorkOfTheSameNameAsTheServiceIsAllowed(t *testing.T) {
 	answer := map[string]any{
 		"paragraphs":   []any{"Служил механиком-водителем.", "Привык к порядку и технике."},
 		"areas":        []any{map[string]any{"area": "военно-патриотическая деятельность", "text": "К службе относится серьёзно."}},
-		"psychologist": []any{}, "training": []any{"Работал механиком: знает устройство машин."}, "consider": []any{},
+		"psychologist": []any{}, "training": []any{"Служил механиком-водителем: привык к порядку.", "Работал механиком: знает устройство машин."}, "consider": []any{},
 	}
 	if problems := checkAutobiographyAnswerV5(answer, payload); len(problems) != 0 {
 		t.Fatalf("%q", problems)
+	}
+}
+
+func TestV5TermsOfTheQuestionnaire(t *testing.T) {
+	for text, want := range map[string]termV5{
+		"До года": {0, 1}, "1–3 года": {1, 3}, "3–5 лет": {3, 5}, "Больше 5 лет": {5, math.Inf(1)}, "Больше 3 лет": {3, math.Inf(1)}, "Разово": {0, 0.5},
+	} {
+		if got, ok := answerTermV5(text); !ok || got != want {
+			t.Errorf("%q: %v", text, got)
+		}
+	}
+	for text, want := range map[string]termV5{
+		"Год играл в футбол":      {1, 1},
+		"три года занимался":      {3, 3},
+		"Три–пять лет занимается": {3, 5},
+		"больше пяти лет":         {5.5, math.Inf(1)},
+		"Меньше года участвовал":  {0, 1},
+		"не менее двух лет":       {2, math.Inf(1)},
+		"полтора года":            {1.5, 1.5},
+		"занимается 4 года":       {4, 4},
+	} {
+		if got := durationsV5(strings.ToLower(text)); len(got) != 1 || got[0].term != want {
+			t.Errorf("%q: %+v", text, got)
+		}
+	}
+	for _, text := range []string{"в 2025 году окончил школу", "с сентября 2025 года", "много лет", "«Зарница 2.0»"} {
+		if got := durationsV5(text); len(got) != 0 {
+			t.Errorf("%q: %+v", text, got)
+		}
+	}
+	activities := activityTermsV5(comparisonPayload(t, "02 Спорт и военно-патриотическое.json"))
+	for _, text := range []string{
+		"Больше пяти лет занимается самбо, раньше занимался лёгкой атлетикой.",
+		"Меньше года участвовал в волонтёрских акциях.",
+		"Три года командовал отделением в «Юнармии».",
+		"Год служил в армии.",
+	} {
+		if problems := termProblemsV5("абзац", text, activities); len(problems) != 0 {
+			t.Errorf("%q: %q", text, problems)
+		}
+	}
+	if problems := termProblemsV5("абзац", "Два года занимается самбо.", activities); len(problems) != 1 || !strings.Contains(problems[0], "больше 5 лет") {
+		t.Errorf("самбо: %q", problems)
 	}
 }
 

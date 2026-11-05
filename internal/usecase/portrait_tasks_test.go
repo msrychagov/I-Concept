@@ -82,9 +82,16 @@ func goodPortrait(user string) map[string]any {
 	if family {
 		psychologist = append(psychologist, "Обстоятельства семьи студента. В беседе уточнить, кто его поддерживал.")
 	}
+	// One point for each circumstance of the military training.
 	training := []any{}
-	if input.Service.Served == "Да" || len(input.Work) > 0 || input.Marital.Status == "Женат" || input.Marital.Children > 0 {
-		training = append(training, "Служба, работа или семья: привык к порядку.")
+	if input.Service.Served == "Да" {
+		training = append(training, "Служил в армии: привык к порядку.")
+	}
+	if len(input.Work) > 0 {
+		training = append(training, "До вуза работал: привык к труду.")
+	}
+	if input.Marital.Status == "Женат" || input.Marital.Children > 0 {
+		training = append(training, "Женат: заботится о близких.")
 	}
 	if input.Criminal == "привлекался" {
 		consider = append(consider, "Привлекался к уголовной ответственности; подробности — в ответах студента.")
