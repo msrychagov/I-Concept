@@ -83,7 +83,8 @@ func newPlatoonFixture(t *testing.T, n int) *platoonFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.RegisterPrompts(prompts...)
+	// The values of the open answers are another task (values_test.go).
+	s.RegisterPrompts(promptsWithout(prompts, valuesTask)...)
 	s.portraits.pause = 0
 	t.Cleanup(s.Close)
 	f := &platoonFixture{service: s}
