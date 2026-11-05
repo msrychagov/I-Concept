@@ -38,8 +38,13 @@ var conditionLevel = regexp.MustCompile(`(^|[^а-я])услови[яй]\s+(?:[а
 // «низкий». The levels of the kinds of activity («включён … на высоком
 // уровне») are the program's and pass; so does «самооценка», whose level the
 // input names.
+// selfRating is how a student rates himself: «оценивает себя», «оценивают себя».
+var selfRating = regexp.MustCompile(`оцени[а-я]*\s+себя`)
+
 func ratedLevelProblems(field, text string) []string {
-	lower := strings.ReplaceAll(lowerText(text), "самооцен", "само-цен")
+	// How the student rates himself is not a rating of the conditions: the
+	// run of 5 November, «Студенты оценивают себя высоко».
+	lower := selfRating.ReplaceAllString(strings.ReplaceAll(lowerText(text), "самооцен", "само-цен"), "само-цен")
 	for _, clause := range clauseBreak.Split(lower, -1) {
 		found := ""
 		if m := levelAdverb.FindStringSubmatch(clause); m != nil && strings.Contains(clause, "оцен") {
