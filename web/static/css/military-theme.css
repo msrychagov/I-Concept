@@ -1377,3 +1377,22 @@ textarea {
         color: var(--muted)
     }
 }
+
+/* The dates of the other passings at the top of a window (slices.js). */
+.slice-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 16px
+}
+
+.slice-bar button {
+    min-height: 0;
+    padding: 6px 12px;
+    font-size: 14px
+}
+
+.slice-bar button:disabled {
+    opacity: 1
+}
