@@ -100,7 +100,7 @@
     gap: 1rem
 }
 
-.dashboard-metrics article {
+.dashboard-metrics article, .dashboard-metrics .metric-link {
     background: white;
     border: 1px solid #dce5ec;
     border-radius: 10px;

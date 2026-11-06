@@ -445,7 +445,7 @@ img, svg {
     margin: 22px 0
 }
 
-.dashboard-metrics article {
+.dashboard-metrics article, .dashboard-metrics .metric-link {
     position: relative;
     overflow: hidden;
     padding: 0px 18px 22px;
@@ -457,7 +457,7 @@ img, svg {
     transition: transform .22s, box-shadow .22s
 }
 
-.dashboard-metrics article:hover, .welcome .block:hover {
+.dashboard-metrics article:hover, .dashboard-metrics .metric-link:hover, .welcome .block:hover {
     transform: translateY(-3px);
     box-shadow: 0 12px 30px #1d332c18
 }
@@ -937,7 +937,7 @@ body.is-cabinet #portal {
         gap: 14px
     }
 
-    .dashboard-metrics article {
+    .dashboard-metrics article, .dashboard-metrics .metric-link {
         font-size: 16px;
         padding-bottom: 18px
     }
@@ -1081,7 +1081,7 @@ body.is-cabinet #portal {
         gap: 10px
     }
 
-    .dashboard-metrics article {
+    .dashboard-metrics article, .dashboard-metrics .metric-link {
         padding-left: 12px;
         padding-right: 12px;
         font-size: 15px
@@ -1577,4 +1577,18 @@ textarea {
     .path-people {
         grid-template-columns: minmax(0, 1fr)
     }
+}
+
+/* The home cards are buttons (decided 6 November 2026): the look of the card stays. */
+.dashboard-metrics .metric-link {
+    display: block;
+    width: 100%;
+    min-height: 0;
+    text-align: left;
+    color: var(--ink);
+    cursor: pointer
+}
+
+.dashboard-metrics .metric-link:hover {
+    background: linear-gradient(#faf8f3, #eee9df)
 }
