@@ -41,7 +41,7 @@ func (h *Handler) authenticate(w http.ResponseWriter, r *http.Request, role, ope
 		h.respond(w, nil, err)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{Name: "vuc_" + role, Value: result.Token, Path: "/", Expires: result.Expires, HttpOnly: true, Secure: r.TLS != nil, SameSite: http.SameSiteLaxMode})
+	http.SetCookie(w, &http.Cookie{Name: "vuc_" + role, Value: result.Token, Path: "/", Expires: result.Expires, HttpOnly: true, Secure: h.secure(r), SameSite: http.SameSiteLaxMode})
 	h.reply(w, map[string]any{"account": usecase.PublicAccount(result.Account)}, status)
 }
 func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +53,7 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 		h.respond(w, nil, err)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{Name: "vuc_" + role, Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: r.TLS != nil, SameSite: http.SameSiteLaxMode})
+	http.SetCookie(w, &http.Cookie{Name: "vuc_" + role, Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: h.secure(r), SameSite: http.SameSiteLaxMode})
 	h.reply(w, map[string]any{"ok": true}, 200)
 }
 func (h *Handler) teacherProfile(w http.ResponseWriter, r *http.Request) {

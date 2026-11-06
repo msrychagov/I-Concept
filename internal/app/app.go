@@ -19,7 +19,10 @@ import (
 	"vucdiagnostic/web"
 )
 
-type Config struct{ DataFile, DatabaseURL, AdminUser, AdminPassword string }
+type Config struct {
+	DataFile, DatabaseURL, AdminUser, AdminPassword string
+	TrustProxy                                      bool
+}
 type App struct {
 	http.Handler
 	service *usecase.Service
@@ -80,7 +83,7 @@ func New(config Config) (*App, error) {
 			return nil, err
 		}
 	}
-	handler := httptransport.New(service, web.Files, httptransport.Config{AdminUser: config.AdminUser, AdminPassword: config.AdminPassword})
+	handler := httptransport.New(service, web.Files, httptransport.Config{AdminUser: config.AdminUser, AdminPassword: config.AdminPassword, TrustProxy: config.TrustProxy})
 	return &App{Handler: handler, service: service, close: closeRepository}, nil
 }
 func (a *App) Close() {
