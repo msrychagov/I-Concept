@@ -3,7 +3,7 @@
 // score: how many times and where. One text (an essay or the open answers of a
 // test) — mount; many texts (an assignment of an essay, a platoon) — summary.
 window.valuesBlock = (() => {
-    const NOTE = 'Отметки модели по «Онтографу ценностей 1.1» (указ № 809), считает программа. Не уровень и не оценка: сколько раз и где об этом сказано. Считаются собственные слова автора и то, что он одобряет у других.';
+    const NOTE = 'Какие ценности видны в словах автора: сколько раз и где об этом сказано. Это не уровень и не оценка. Считаются собственные слова автора и то, что он одобряет у других.';
     const PERIOD = 3000;
     const waiting = view => view.status === 'queued' || view.status === 'working';
     const capital = text => text ? text[0].toUpperCase() + text.slice(1) : text;

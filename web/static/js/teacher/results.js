@@ -36,6 +36,8 @@ window.teacherResult = async function ({view, api, esc, id, slices}) {
         });
         stopAI = window.testPortrait.mount({element: dialog.querySelector('#test-portrait-box'), api, esc, id, methods: r.methods, completed: s.completed, conclusion: r.conclusion});
         // Values by the ontograph in the open answers «Мои действия и опыт» (values.js).
+        // The values go inside «Подробно» of the conclusion, not under every tab.
+        dialog.querySelector('#test-portrait-box [data-pane="details"]')?.append(dialog.querySelector('#values-box'));
         stopValues = s.completed ? window.valuesBlock.mount({element: dialog.querySelector('#values-box'), api, esc, id, title: 'Ценности в ответах о деятельности'}) : () => {};
         list();
 

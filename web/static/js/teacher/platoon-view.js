@@ -230,7 +230,9 @@ window.teacherPlatoonView = async function ({view, api, esc, start = 'platoons',
             const values = await api('/values/platoons/' + encodeURIComponent(p)).catch(() => null);
             if (!alive() || !values?.texts) return;
             const valuesBox = box.querySelector('#pv-values');
-            valuesBox.innerHTML = `<h3>Ценности по указу № 809 — ответы «Мои действия и опыт»</h3>${window.valuesBlock.summary(values, esc, {noun: 'студентов', of: 'студентов с рассказанными ответами'})}`;
+            // The values go inside «Подробно» of the conclusion, not under every tab.
+            box.querySelector('#pv-conclusion [data-pane="details"]')?.append(valuesBox);
+            valuesBox.innerHTML = `<h3>Ценности в ответах о деятельности</h3>${window.valuesBlock.summary(values, esc, {noun: 'студентов', of: 'студентов с рассказанными ответами'})}`;
             valuesBox.querySelectorAll('[data-session]').forEach(b => b.onclick = () => openResult(b.dataset.session));
         } catch (err) {
             if (alive()) failed(box, err);

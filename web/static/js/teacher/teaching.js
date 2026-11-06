@@ -58,12 +58,21 @@ window.teacherConceptTesting = async function ({view, state, api, esc}) {
         };
         // Values by the ontograph in the open answers of the platoon (values.js).
         const platoonValues = async group => {
-            const box = view.querySelector('#platoon-values');
+            // The values go inside «Подробно» of the conclusion, not under every
+            // tab; the conclusion is drawn anew on every change of the platoon.
+            let box = view.querySelector('#platoon-values');
+            if (!box) {
+                box = document.createElement('div');
+                box.id = 'platoon-values';
+                box.className = 'values-block';
+                platoonBox.after(box);
+            }
+            platoonBox.querySelector('[data-pane="details"]')?.append(box);
             box.innerHTML = '';
             if (!group) return;
             const values = await api('/values/platoons/' + encodeURIComponent(group)).catch(() => null);
             if (!values?.texts || aiChoose.value !== group) return;
-            box.innerHTML = `<h3>Ценности по указу № 809 — ответы «Мои действия и опыт», взвод ${esc(group)}</h3>${window.valuesBlock.summary(values, esc, {noun: 'студентов', of: 'студентов с рассказанными ответами'})}`;
+            box.innerHTML = `<h3>Ценности в ответах о деятельности, взвод ${esc(group)}</h3>${window.valuesBlock.summary(values, esc, {noun: 'студентов', of: 'студентов с рассказанными ответами'})}`;
             box.querySelectorAll('[data-session]').forEach(b => b.onclick = () => result(b.dataset.session));
         };
         aiChoose.onchange = aiRefresh;
