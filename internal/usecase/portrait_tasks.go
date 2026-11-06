@@ -64,8 +64,12 @@ func (a *Service) autobiographyTask(prompt promptbank.Prompt) portraitTask {
 	case n == 4:
 		check, attempts = checkAutobiographyAnswerV4, 5
 	}
+	// Since 6 November 2026 the conclusion is written by the program
+	// (autobiography_conclusion.go) and the model is not asked: the task is
+	// manual, so nothing is queued after a submission or at startup, and the
+	// window «Анкета» no longer asks for it. The task stays for a retry by hand.
 	return portraitTask{
-		ID: autobiographyForm, Version: prompt.Version, Prompt: prompt, Attempts: attempts, MaxTokens: tokens,
+		ID: autobiographyForm, Version: prompt.Version, Prompt: prompt, Attempts: attempts, MaxTokens: tokens, Manual: !a.portraits.autobiographyModel,
 		Accepts: func(db model.Database, s Source) bool {
 			submission, ok := findSubmission(db, s)
 			return ok && submission.FormID == autobiographyForm && submission.Completed
