@@ -272,7 +272,7 @@ func TestSummaryOfV3IsComposedOnTheButtonOfTheAnalysesOfV3(t *testing.T) {
 	}
 	done := f.summary(f.owner)
 	summary := done["summary"].(map[string]any)
-	if done["status"] != portraitReady || summary["version"] != "v3" || summary["older"] != false {
+	if done["status"] != portraitReady || summary["version"] != "v4" || summary["older"] != false {
 		t.Fatalf("summary: %+v", done)
 	}
 	common := summary["common"].(map[string]any)
