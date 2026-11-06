@@ -2,6 +2,7 @@
 # Runs on the server from cron: dumps PostgreSQL into /opt/vuc/backups and
 # keeps the newest 14 dumps.
 set -eu
+umask 077
 dir=/opt/vuc/backups
 mkdir -p "$dir"
 cd /opt/vuc/project
