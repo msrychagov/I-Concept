@@ -142,7 +142,7 @@ window.portraitRenderers['test-platoon'] = {
 
 window.testPortrait = (() => {
     const COMPONENTS = {CS: 'Ценностно-смысловой', EV: 'Эмоционально-волевой', DP: 'Деятельностно-практический'};
-    const SIGNATURE = 'По результатам тестирования: самооценка студента и методики';
+    const SIGNATURE = 'Составлено программой по ответам тестирования.';
     const PLATOON_SIGNATURE = 'По результатам тестирования взвода: самооценка студентов и методики';
     const number = v => v == null ? '—' : String(v).replace('.', ',');
     // A rating of the climate, from +3 to −3, with its sign.
@@ -202,35 +202,46 @@ window.testPortrait = (() => {
         return `<p class="portrait-signature muted">${esc(text)}${date ? ` · ${esc(date)}` : ''}</p>`;
     }
 
-    // Mounts the block and returns the function that stops its polling.
-    function mount({element, api, esc, id, methods, completed}) {
-        if (methods && !completed) {
-            element.innerHTML = `<h3>Портрет по результатам тестирования</h3><p class="muted">Текст портрета составится после завершения тестирования.</p>${tables(methods, esc)}`;
-            return () => {};
-        }
+    // A switch of the panes «Вывод», «Подробно», «Рекомендации», like the
+    // window of the autobiography.
+    function tabs(names) {
+        const buttons = names.map(([id, title], n) => `<button type="button" data-show="${id}" aria-pressed="${n === 0}"${n ? ' class="secondary"' : ''}>${title}</button>`).join('');
+        return `<div class="toolbar autobiography-switch" role="group" aria-label="Что показать">${buttons}</div>`;
+    }
+
+    function bindTabs(element) {
+        element.querySelectorAll('[data-show]').forEach(b => b.onclick = () => {
+            element.querySelectorAll('[data-show]').forEach(x => {
+                const on = x === b;
+                x.classList.toggle('secondary', !on);
+                x.setAttribute('aria-pressed', String(on));
+            });
+            element.querySelectorAll('[data-pane]').forEach(pane => pane.hidden = pane.dataset.pane !== b.dataset.show);
+        });
+    }
+
+    // Mounts the conclusion on a test the program wrote (test_conclusion.go):
+    // the summary, the details with the tables of the methods and the
+    // recommendations. Returns the function that stops it: nothing to stop,
+    // the conclusion comes ready in the report.
+    function mount({element, esc, methods, completed, conclusion}) {
+        const title = '<h3>Вывод по тестированию</h3>';
         if (!methods) {
-            element.innerHTML = '<h3>Портрет по результатам тестирования</h3><p class="muted">В этом тестировании нет методик уровней Я-концепции, портрет не составляется. Включите «Методики уровней Я-концепции» при назначении.</p>';
+            element.innerHTML = `${title}<p class="muted">В этом тестировании нет методик уровней Я-концепции, вывод не составляется. Включите «Методики уровней Я-концепции» при назначении.</p>`;
             return () => {};
         }
-        element.innerHTML = `<h3>Портрет по результатам тестирования</h3><div data-test-text aria-live="polite"></div>${tables(methods, esc)}`;
-        const box = element.querySelector('[data-test-text]');
-        let handle, alive = true;
-        const run = (first = 'GET') => {
-            handle?.stop();
-            handle = window.portraitView.start(api, 'test', id, {
-                alive: () => alive && box.isConnected,
-                update: view => {
-                    const ready = view.status === 'ready' ? window.portraitRenderers.test.text(view.portrait.output, esc, methods, view.portrait.version) : '';
-                    box.innerHTML = window.portraitView.status(view, esc) + signature(view, esc, SIGNATURE) + ready;
-                    box.querySelector('[data-portrait-retry]')?.addEventListener('click', () => run('POST'));
-                }
-            }, first);
-        };
-        run();
-        return () => {
-            alive = false;
-            handle?.stop();
-        };
+        if (!completed || !conclusion) {
+            element.innerHTML = `${title}<p class="muted">Вывод составится после завершения тестирования.</p>${tables(methods, esc)}`;
+            return () => {};
+        }
+        const advice = (conclusion.recommendations || []).map(r => `<li>${esc(r.text)}</li>`).join('');
+        element.innerHTML = `${title}${tabs([['summary', 'Вывод'], ['details', 'Подробно'], ['advice', 'Рекомендации']])}
+   <div data-pane="summary" class="test-portrait-text"><p>${esc(conclusion.summary)}</p></div>
+   <div data-pane="details" class="test-portrait-text" hidden><p class="muted">По ответам студента.</p>${(conclusion.details || []).map(p => `<h4>${esc(p.title)}</h4><p>${esc(p.text)}</p>`).join('')}${tables(methods, esc)}</div>
+   <div data-pane="advice" class="test-portrait-text" hidden>${advice ? `<ul class="test-portrait-recommendations">${advice}</ul>` : '<p class="muted">Рекомендаций нет.</p>'}</div>
+   <p class="portrait-signature muted">${esc(SIGNATURE)}</p>`;
+        bindTabs(element);
+        return () => {};
     }
 
     // The platoon table "scale or kind × level" with counts; a count opens the
