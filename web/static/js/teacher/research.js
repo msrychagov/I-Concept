@@ -2,7 +2,7 @@
     'use strict';
     const view = document.querySelector('#view');
     const messages = document.querySelector('#messages');
-    let state, profile, editingProfileId = '', tab = 'overview', conceptTab = 'testing';
+    let state, profile, editingProfileId = '', tab = 'overview', conceptTab = 'testing', tabOptions = {};
     const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
         '&': '&amp;',
         '<': '&lt;',
@@ -88,15 +88,30 @@
                 return window.teacherPlatoons({view: section, api, esc});
             case 'model':
                 return window.teacherMethodology({view: section, state, esc});
+            case 'people':
+                return window.teacherPlatoonView({view: section, api, esc, start: tabOptions.start, home: () => go('overview')});
         }
     }
 
-    document.querySelector('#nav').onclick = event => {
-        const button = event.target.closest('[data-tab]');
-        if (!button || !state) return;
-        tab = button.dataset.tab;
+    // A section by its tab; the path «взвод → студент» has no menu item and
+    // keeps «Главная» marked. The cards of the home page lead here.
+    function go(next, options = {}) {
+        if (!state) return;
+        tab = next;
+        tabOptions = options;
+        if (options.concept) conceptTab = options.concept;
+        const button = document.querySelector(`#nav [data-tab="${next}"]`) || document.querySelector('#nav [data-tab="overview"]');
         document.querySelectorAll('[data-tab]').forEach(item => item.classList.toggle('active', item === button));
         render();
+        scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    window.teacherGo = go;
+
+    document.querySelector('#nav').onclick = event => {
+        const button = event.target.closest('[data-tab]');
+        if (!button) return;
+        go(button.dataset.tab);
     };
     // The profile menu lives in the teacher header only. Logout behavior remains unchanged.
     const userMenu = document.querySelector('.teacher-user-menu');
