@@ -390,24 +390,27 @@ func (w conclusionWriter) education() string {
 		if !(kind == "cadet" || kind == "suvorov" || profile == "cadet" || adjective != "" || medal || (higher && speciality != "")) {
 			continue
 		}
+		// The medal goes right after «Окончил»: «Окончил с медалью
+		// физико-математический лицей», not «лицей с медалью».
+		finished := e.Finished
+		if medal && !r.is("edu_finished", "no") {
+			if higher {
+				finished += " " + e.Honours
+			} else {
+				finished += " " + e.Medal
+			}
+		}
 		var text string
 		switch {
 		case profile == "cadet" && kind != "cadet" && kind != "suvorov":
-			text = e.CadetClass
+			text = strings.Replace(e.CadetClass, e.Finished, finished, 1)
 		case r.is("edu_finished", "no"):
 			text = e.NotFinished + " " + w.profiled(kind, adjective, e.TypesIn[kind], true)
 		default:
-			text = e.Finished + " " + w.profiled(kind, adjective, e.Types[kind], false)
+			text = finished + " " + w.profiled(kind, adjective, e.Types[kind], false)
 		}
 		if higher && speciality != "" {
 			text += " " + fill(e.Speciality, map[string]string{"speciality": speciality})
-		}
-		if medal {
-			if higher {
-				text += " " + e.Honours
-			} else {
-				text += " " + e.Medal
-			}
 		}
 		out = append(out, fullSentence(text))
 	}
