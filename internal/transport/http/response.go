@@ -68,6 +68,7 @@ func (h *Handler) adminAuthorized(w http.ResponseWriter, r *http.Request) bool {
 	}
 	return true
 }
+
 // secure reports whether the browser reached the server over HTTPS.
 func (h *Handler) secure(r *http.Request) bool {
 	return r.TLS != nil || h.config.TrustProxy && strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
