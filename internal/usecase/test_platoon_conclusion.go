@@ -152,7 +152,12 @@ func (a *Service) platoonConclusion(portraits []studentPortrait, groups []Platoo
 	}
 	for _, g := range groups {
 		for _, code := range g.Codes {
-			if text := p.Recommendations[code].Many; text != "" {
+			// One student in the group gets the phrase about «him».
+			text := p.Recommendations[code].Many
+			if len(g.Students) == 1 {
+				text = p.Recommendations[code].One
+			}
+			if text != "" {
 				c.Work = append(c.Work, ConclusionWork{Label: g.Label, Code: code, Text: text})
 				break
 			}
