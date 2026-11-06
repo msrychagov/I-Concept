@@ -128,11 +128,17 @@ func TestPotentialSummaryCountsTheLatestSubmittedAutobiographies(t *testing.T) {
 	if potential, ok := detail.(map[string]any)["potential"].(Potential); !ok || potential.Areas[0].Level != "high" {
 		t.Fatalf("detail potential: %v", detail.(map[string]any)["potential"])
 	}
+	if conclusion, ok := detail.(map[string]any)["conclusion"].(AutobiographyConclusion); !ok || len(conclusion.Paragraphs) == 0 || len(conclusion.Areas) == 0 {
+		t.Fatalf("detail conclusion: %v", detail.(map[string]any)["conclusion"])
+	}
 	draft, err := s.FormSubmissionDetail(ids["draft"])
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, leaked := draft.(map[string]any)["potential"]; leaked {
 		t.Fatal("potential of a draft")
+	}
+	if _, leaked := draft.(map[string]any)["conclusion"]; leaked {
+		t.Fatal("conclusion of a draft")
 	}
 }
