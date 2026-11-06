@@ -20,3 +20,12 @@ var autobiographyPhrases []byte
 
 // AutobiographyPhrases returns the phrase book as it is built into the binary.
 func AutobiographyPhrases() []byte { return autobiographyPhrases }
+
+// The phrase book of the conclusion on the test «Я-концепция» the program
+// writes without a language model.
+//
+//go:embed phrases/test-conclusion.json
+var testPhrases []byte
+
+// TestPhrases returns the phrase book of the test conclusion.
+func TestPhrases() []byte { return testPhrases }
