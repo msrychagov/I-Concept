@@ -187,6 +187,11 @@ S['EvidenceTrend']=obj({'available':boolean(),'reason':string(),'previous':numbe
 S['EvidenceRow']=obj({'id':string(),'name':string(),'block':string(),'definition':string(),'limitations':string(),'selfImage':integer(nullable=True),'statements':number(nullable=True),'coverage':integer(),'total':integer(),'choices':arr(ref('EvidenceChoice')),'trend':ref('EvidenceTrend')})
 S['Report']['properties']['evidence']=arr(ref('EvidenceRow'))
 S['Report']['properties']['methods']={'type':'object','additionalProperties':True,'description':'Портрет по методикам (только у сессий с методиками): methods — уровни шкал по ключам, components и images — Я-реальное и Я-идеальное, signs и conditions — показатели без уровней, kinds — виды деятельности с уровнем по анкете, openAnswers — рассказы о деятельности.'}
+S['ConclusionPart']=obj({'id':string(enum=['values','will','image','environment']),'title':string(),'text':string()}, ['id','title','text'])
+S['ConclusionAdvice']=obj({'code':string(description='Код направления каталога рекомендаций.'),'text':string()}, ['code','text'])
+S['TestConclusion']=obj({'summary':string(description='«Вывод» — один абзац.'),'details':arr(ref('ConclusionPart')),'recommendations':arr(ref('ConclusionAdvice'))}, ['summary','details','recommendations'])
+S['TestConclusion']['description']='Вывод по тестированию, который составляет программа из готовых фраз без языковой модели: общий вывод, «Подробно» по четырём частям и рекомендации. Считается при каждом запросе, не хранится.'
+S['Report']['properties']['conclusion']=ref('TestConclusion')
 S['Report']['properties']['interpretationNote']=string()
 S['FormSubmission']['properties']['answers']={'type':'object','additionalProperties':True,'description':'Ключ — id поля верхнего уровня. choice — строка, multi — массив строк, text/textarea — строка, date/month/year — ГГГГ-ММ-ДД / ГГГГ-ММ / ГГГГ, group — массив объектов.'}
 S['FormProgress']=obj({'complete':arr(string()),'missing':{'type':'object','additionalProperties':arr(string())},'total':integer()}, ['complete','missing','total'])

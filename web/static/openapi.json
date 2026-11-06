@@ -9077,6 +9077,9 @@
             "additionalProperties": true,
             "description": "Портрет по методикам (только у сессий с методиками): methods — уровни шкал по ключам, components и images — Я-реальное и Я-идеальное, signs и conditions — показатели без уровней, kinds — виды деятельности с уровнем по анкете, openAnswers — рассказы о деятельности."
           },
+          "conclusion": {
+            "$ref": "#/components/schemas/TestConclusion"
+          },
           "interpretationNote": {
             "type": "string"
           }
@@ -9454,6 +9457,77 @@
           }
         },
         "additionalProperties": false
+      },
+      "ConclusionPart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "values",
+              "will",
+              "image",
+              "environment"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "text"
+        ]
+      },
+      "ConclusionAdvice": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Код направления каталога рекомендаций."
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "text"
+        ]
+      },
+      "TestConclusion": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "description": "«Вывод» — один абзац."
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConclusionPart"
+            }
+          },
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConclusionAdvice"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "summary",
+          "details",
+          "recommendations"
+        ],
+        "description": "Вывод по тестированию, который составляет программа из готовых фраз без языковой модели: общий вывод, «Подробно» по четырём частям и рекомендации. Считается при каждом запросе, не хранится."
       },
       "FormProgress": {
         "type": "object",

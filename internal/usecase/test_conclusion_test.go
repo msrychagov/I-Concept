@@ -175,3 +175,32 @@ func TestNoTestConclusionWithoutData(t *testing.T) {
 		t.Fatal("a conclusion without data")
 	}
 }
+
+// The report of a finished session with the methods has the conclusion; an
+// unfinished one has the methods only.
+func TestReportHasTheTestConclusion(t *testing.T) {
+	a := testApp(t)
+	db, err := a.demoDatabase()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, record := range db.Sessions {
+		s := record.Session
+		if !s.Completed || !s.Methods || s.Kind != "student" {
+			continue
+		}
+		if _, ok := a.analyze(s, db.Sessions)["conclusion"].(*TestConclusion); !ok {
+			t.Fatalf("%s: no conclusion in the report", s.Participant)
+		}
+		s.Completed = false
+		result := a.analyze(s, db.Sessions)
+		if _, ok := result["conclusion"]; ok {
+			t.Fatal("a conclusion on an unfinished session")
+		}
+		if result["methods"] == nil {
+			t.Fatal("no methods in the report")
+		}
+		return
+	}
+	t.Fatal("no finished demo session with the methods")
+}
