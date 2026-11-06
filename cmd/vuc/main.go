@@ -36,6 +36,7 @@ func main() {
 		DatabaseURL:   database.URLFromEnv(),
 		AdminUser:     env("VUC_ADMIN_USER", "admin"),
 		AdminPassword: env("VUC_ADMIN_PASSWORD", ""),
+		TrustProxy:    env("VUC_TRUST_PROXY", "") == "1",
 	})
 	if err != nil {
 		log.Fatal(err)
