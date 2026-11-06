@@ -63,14 +63,45 @@ window.autobiographyWindow = (() => {
         return `${conclusion || state}${signature}${d.potential ? window.potentialView.brief(d.potential, esc) : ''}`;
     }
 
+    // The sheet of the print page (/autobiography/print) inside the window: the
+    // frame grows with the sheet, «Печать» prints only the sheet.
+    function sheet(pane, id) {
+        if (pane.firstElementChild) return;
+        const url = '/autobiography/print?id=' + encodeURIComponent(id);
+        pane.innerHTML = `<div class="toolbar sheet-actions"><button type="button" data-print>Печать</button><a class="button secondary" href="${url}" target="_blank" rel="noopener">Открыть отдельно</a></div><iframe class="sheet-frame" src="${url}&embed=1" title="Автобиография для печати"></iframe>`;
+        const frame = pane.querySelector('iframe');
+        frame.addEventListener('load', () => {
+            const page = frame.contentDocument?.documentElement;
+            if (!page) return;
+            const fit = () => frame.style.height = page.scrollHeight + 'px';
+            new ResizeObserver(fit).observe(page);
+            fit();
+        });
+        pane.querySelector('[data-print]').onclick = () => frame.contentWindow.print();
+    }
+
     async function open({dialog, api, esc, id, slices}) {
         portrait?.stop();
         show(dialog, '<h2>Загрузка анкеты…</h2>');
         try {
             const d = await api('/submissions/' + encodeURIComponent(id));
             const s = d.submission, who = d.student;
-            show(dialog, `<div class="section-title"><div><h2>${esc(who?.name || 'Студент')}</h2><p>Взвод ${esc(who?.platoon || '')} · ${esc(d.form.title)}</p></div><button class="secondary" data-close>Закрыть</button></div>${window.sliceBar(slices, id, esc)}
-   <p class="${s.completed ? 'submitted-note' : 'draft-note'}">${s.completed ? `Сдана ${fmtDate(s.completedAt)}. <a class="button secondary" href="/autobiography/print?id=${encodeURIComponent(s.id)}" target="_blank" rel="noopener">Автобиография для печати</a>` : `Не сдана: заполнено разделов ${d.progress.complete.length} из ${d.progress.total}. Показан черновик. Уровни потенциала появятся после сдачи.`}</p><div id="portrait-box">${portraitHtml(d, null, esc)}</div><h3 class="answers-heading">Ответы</h3>${window.formView.answers(d.form, s, esc)}`);
+            // Two buttons (decided 6 November 2026 after the supervisor): «Вывод» —
+            // the conclusion, the potential and the answers folded; «Автобиография» —
+            // the sheet for the personal file as it is printed.
+            show(dialog, `<div class="section-title"><div><h2>${esc(who?.name || 'Студент')}</h2><p>Взвод ${esc(who?.platoon || '')} · ${esc(d.form.title)}${s.completed ? ' · сдана ' + fmtDate(s.completedAt) : ''}</p></div><button class="secondary" data-close>Закрыть</button></div>${window.sliceBar(slices, id, esc)}
+   <div class="toolbar autobiography-switch" role="group" aria-label="Что показать"><button type="button" data-show="conclusion" aria-pressed="true">Вывод</button><button type="button" class="secondary" data-show="sheet" aria-pressed="false" ${s.completed ? '' : 'disabled title="Появится после сдачи"'}>Автобиография</button></div>
+   <div data-pane="conclusion">${s.completed ? '' : `<p class="draft-note">Не сдана: заполнено разделов ${d.progress.complete.length} из ${d.progress.total}. Показан черновик. Вывод, потенциал и автобиография для печати появятся после сдачи.</p>`}<div id="portrait-box">${portraitHtml(d, null, esc)}</div><details class="answers-fold" ${s.completed ? '' : 'open'}><summary>Ответы анкеты</summary>${window.formView.answers(d.form, s, esc)}</details></div>
+   <div data-pane="sheet" hidden></div>`);
+            dialog.querySelectorAll('[data-show]').forEach(b => b.onclick = () => {
+                dialog.querySelectorAll('[data-show]').forEach(x => {
+                    const on = x === b;
+                    x.classList.toggle('secondary', !on);
+                    x.setAttribute('aria-pressed', String(on));
+                });
+                dialog.querySelectorAll('[data-pane]').forEach(pane => pane.hidden = pane.dataset.pane !== b.dataset.show);
+                if (b.dataset.show === 'sheet') sheet(dialog.querySelector('[data-pane="sheet"]'), s.id);
+            });
             window.sliceBar.bind(dialog, slices, next => open({dialog, api, esc, id: next, slices}));
             if (!s.completed) return;
             const box = dialog.querySelector('#portrait-box');

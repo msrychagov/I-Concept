@@ -7,6 +7,9 @@
     const params = new URLSearchParams(location.search);
     const student = params.get('role') === 'student';
     const id = params.get('id') || '';
+    // Inside the window of the teacher (&embed=1) the window has its own buttons.
+    const embed = params.get('embed') === '1';
+    if (embed) document.body.classList.add('embedded');
     const back = student ? '/student' : '/research';
     const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -18,9 +21,9 @@
         const glue = text => text.replace(/(^|[\s(«])(г\.|ул\.|д\.|кв\.|обл\.|с\.|пос\.|пр\.|№)\s+/g, '$1$2\u00a0');
         // A paragraph that ends with a colon introduces the next ones (the relatives).
         const paragraphs = d.paragraphs.map(p => `<p${p.endsWith(':') ? ' class="lead-in"' : ''}>${esc(glue(p))}</p>`).join('');
-        root.innerHTML = `<nav class="sheet-tools" aria-label="Действия"><a href="${back}">← В кабинет</a><button type="button" id="print-sheet">Печать</button></nav>
+        root.innerHTML = `${embed ? '' : `<nav class="sheet-tools" aria-label="Действия"><a href="${back}">← В кабинет</a><button type="button" id="print-sheet">Печать</button></nav>`}
 <article class="sheet" aria-label="Автобиография"><h1>Автобиография</h1>${paragraphs}<footer class="sheet-sign"><span>${esc(d.date)}</span><span class="sign-line">(подпись)</span><span>${esc(d.surname)}</span></footer></article>`;
-        root.querySelector('#print-sheet').onclick = () => window.print();
+        root.querySelector('#print-sheet')?.addEventListener('click', () => window.print());
     }
 
     window.apiRequest((student ? '/students/me/submissions/' : '/submissions/') + encodeURIComponent(id) + '/autobiography')
