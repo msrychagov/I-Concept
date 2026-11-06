@@ -35,7 +35,7 @@ window.teacherConceptTesting = async function ({view, state, api, esc}) {
         const summaryBox = view.querySelector('#methods-summary');
         const platoonBox = view.querySelector('#platoon-conclusion');
         const drawSummary = () => {
-            summaryBox.innerHTML = window.testPortrait.summary(summary, esc, selected) + window.testPortrait.students(summary, selected, esc);
+            summaryBox.innerHTML = window.testPortrait.summary(summary, esc, selected, !!aiChoose.value) + window.testPortrait.students(summary, selected, esc);
             summaryBox.querySelectorAll('[data-row]').forEach(b => b.onclick = () => {
                 const next = {row: b.dataset.row, level: b.dataset.level};
                 selected = selected && selected.row === next.row && selected.level === next.level ? null : next;

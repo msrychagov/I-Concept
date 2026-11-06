@@ -220,7 +220,7 @@ window.teacherPlatoonView = async function ({view, api, esc, start = 'platoons',
             // The table of the levels goes inside «Подробно» of the conclusion, not under every tab.
             box.querySelector('#pv-conclusion [data-pane="details"]')?.prepend(methods);
             const drawMethods = () => {
-                methods.innerHTML = window.testPortrait.summary(summary, esc, selected) + window.testPortrait.students(summary, selected, esc);
+                methods.innerHTML = window.testPortrait.summary(summary, esc, selected, true) + window.testPortrait.students(summary, selected, esc);
                 methods.querySelectorAll('[data-row]').forEach(b => b.onclick = () => {
                     const next = {row: b.dataset.row, level: b.dataset.level};
                     selected = selected && selected.row === next.row && selected.level === next.level ? null : next;

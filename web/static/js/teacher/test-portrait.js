@@ -240,7 +240,9 @@ window.testPortrait = (() => {
 
     // The platoon table "scale or kind × level" with counts; a count opens the
     // list of students, a name opens the result.
-    function summary(data, esc, selected) {
+    // titled: with its own heading and a line about what it is — inside
+    // «Подробно» of the conclusion by a platoon.
+    function summary(data, esc, selected, titled) {
         if (!data.sessions) return '<p class="muted">Завершённых тестирований с методиками пока нет.</p>';
         const head = `<tr><th>Показатель</th>${data.rows[0].levels.map(l => `<th>${esc(l.levelText)}</th>`).join('')}</tr>`;
         const group = (title, rows) => rows.length ? `<tr class="test-portrait-group"><th colspan="${rows[0].levels.length + 1}">${esc(title)}</th></tr>${rows.map(r => `<tr><th scope="row">${esc(r.name)}</th>${r.levels.map(l => {
@@ -249,7 +251,8 @@ window.testPortrait = (() => {
         }).join('')}</tr>`).join('')}` : '';
         const body = Object.keys(COMPONENTS).map(code => group(COMPONENTS[code] + ' компонент', data.rows.filter(r => r.kind === 'method' && r.component === code))).join('')
             + group('Виды деятельности', data.rows.filter(r => r.kind === 'activity'));
-        return `<p class="muted">Учтено тестирований: ${data.sessions} — последнее завершённое с методиками у каждого студента. Уровни посчитаны программой по ключам методик.</p><div class="table-scroll"><table class="potential-summary"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+        const head2 = titled ? '<h4>Уровни методик по взводу</h4><p>Сколько студентов взвода оказались на высоком, среднем и низком уровне по каждой методике теста. Нажмите на число — откроется список этих студентов.</p>' : '';
+        return `${head2}<p class="muted">Учтено тестирований: ${data.sessions} — последнее завершённое с методиками у каждого студента. Уровни посчитаны программой по ключам методик.</p><div class="table-scroll"><table class="potential-summary"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
     }
 
     function students(data, selected, esc) {
