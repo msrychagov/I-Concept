@@ -299,11 +299,23 @@ window.testPortrait = (() => {
             return () => {};
         }
         const c = platoon.conclusion;
-        const work = c ? platoonWork(platoon, c, esc) : '';
-        const text = c ? `<div class="test-portrait-text"><p>${esc(c.summary)}</p>${c.recommendations.length ? `<h4>Рекомендации взводу</h4><ul class="test-portrait-recommendations">${c.recommendations.map(r => `<li>${esc(r.text)}</li>`).join('')}</ul>` : ''}${work}</div><p class="portrait-signature muted">${esc(PLATOON_SIGNATURE)}</p>`
-            : `<p class="muted">Вывод по взводу составляется, когда тестирование с методиками завершили хотя бы двое; сейчас: ${platoon.students}.</p>`;
-        element.innerHTML = `<h3>Вывод по взводу ${esc(group)}</h3>${text}<div data-platoon-groups></div>`;
-        element.querySelectorAll('.test-portrait-text [data-session]').forEach(b => b.onclick = () => open(b.dataset.session));
+        if (!c) {
+            element.innerHTML = `<h3>Вывод по взводу ${esc(group)}</h3><p class="muted">Вывод по взводу составляется, когда тестирование с методиками завершили хотя бы двое; сейчас: ${platoon.students}.</p><div data-platoon-groups></div>`;
+        } else {
+            // The same switch as the conclusion on a student: «Вывод»,
+            // «Рекомендации», «Отдельная работа», «Подробно» (the groups of the
+            // image and the climate of the platoon).
+            const advice = c.recommendations.length ? `<ul class="test-portrait-recommendations">${c.recommendations.map(r => `<li>${esc(r.text)}</li>`).join('')}</ul>` : '<p class="muted">Рекомендаций нет.</p>';
+            const work = platoonWork(platoon, c, esc) || '<p class="muted">Отдельная работа сейчас никому не нужна.</p>';
+            element.innerHTML = `<h3>Вывод по взводу ${esc(group)}</h3>${tabs([['summary', 'Вывод'], ['advice', 'Рекомендации'], ['work', 'Отдельная работа'], ['details', 'Подробно']])}
+   <div data-pane="summary" class="test-portrait-text"><p>${esc(c.summary)}</p></div>
+   <div data-pane="advice" class="test-portrait-text" hidden>${advice}</div>
+   <div data-pane="work" class="test-portrait-text" hidden><p class="muted">Кому нужна отдельная работа и что сделать.</p>${work}</div>
+   <div data-pane="details" hidden><div data-platoon-groups></div></div>
+   <p class="portrait-signature muted">${esc(PLATOON_SIGNATURE)}</p>`;
+            bindTabs(element);
+        }
+        element.querySelectorAll('[data-pane="work"] [data-session]').forEach(b => b.onclick = () => open(b.dataset.session));
         let selected = null;
         const groups = element.querySelector('[data-platoon-groups]');
         const drawGroups = () => {
@@ -328,7 +340,7 @@ window.testPortrait = (() => {
             const bases = ((g.plain || []).length ? g.plain : g.bases).join('; ');
             return `<li><b>${names}</b><br><span class="muted">По тесту:</span> ${esc(bases)}.${actions[g.label] ? `<br><span class="muted">Что сделать:</span> ${esc(actions[g.label])}` : ''}</li>`;
         }).join('');
-        return items ? `<h4>Кому нужна отдельная работа</h4><ul class="test-portrait-work">${items}</ul>` : '';
+        return items ? `<ul class="test-portrait-work">${items}</ul>` : '';
     }
 
     return {mount, summary, students, mountPlatoon};
