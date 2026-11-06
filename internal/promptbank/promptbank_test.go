@@ -34,22 +34,26 @@ func TestLatestVersionMatchesTheWikiWhenItIsThere(t *testing.T) {
 		{"autobiography", "v5", "../../../Вики/Автобиография/Инструкция v5 — черновик.md"},
 		{"autobiography", "v4", "../../../Вики/Автобиография/Инструкция v4 — черновик.md"},
 		{"autobiography", "v3", "../../../Вики/Автобиография/Инструкция v3 — черновик.md"},
-		{"test", "", "../../../Вики/Тестирование/Инструкция v7.md"},
+		{"test", "", "../../../Вики/Тестирование/Инструкция v8.md"},
+		{"test", "v7", "../../../Вики/Тестирование/Инструкция v7.md"},
 		{"test", "v6", "../../../Вики/Тестирование/Инструкция v6.md"},
 		{"test", "v5", "../../../Вики/Тестирование/Инструкция v5.md"},
 		{"test", "v4", "../../../Вики/Тестирование/Инструкция v4.md"},
 		{"test", "v3", "../../../Вики/Тестирование/Инструкция v3.md"},
 		{"test", "v2", "../../../Вики/Тестирование/Инструкция v2.md"},
 		{"test", "v1", "../../../Вики/Тестирование/Инструкция.md"},
-		{"test-platoon", "", "../../../Вики/Тестирование/Инструкция по взводу v5.md"},
+		{"test-platoon", "", "../../../Вики/Тестирование/Инструкция по взводу v6.md"},
+		{"test-platoon", "v5", "../../../Вики/Тестирование/Инструкция по взводу v5.md"},
 		{"test-platoon", "v4", "../../../Вики/Тестирование/Инструкция по взводу v4.md"},
 		{"test-platoon", "v3", "../../../Вики/Тестирование/Инструкция по взводу v3.md"},
 		{"test-platoon", "v2", "../../../Вики/Тестирование/Инструкция по взводу v2.md"},
 		{"test-platoon", "v1", "../../../Вики/Тестирование/Инструкция по взводу.md"},
-		{"essay", "", "../../../Вики/Эссе выпускника/Инструкция v3.md"},
+		{"essay", "", "../../../Вики/Эссе выпускника/Инструкция v4.md"},
+		{"essay", "v3", "../../../Вики/Эссе выпускника/Инструкция v3.md"},
 		{"essay", "v2", "../../../Вики/Эссе выпускника/Инструкция v2.md"},
 		{"essay", "v1", "../../../Вики/Эссе выпускника/Инструкция.md"},
-		{"essay-cohort", "", "../../../Вики/Эссе выпускника/Инструкция по выпуску v3.md"},
+		{"essay-cohort", "", "../../../Вики/Эссе выпускника/Инструкция по выпуску v4.md"},
+		{"essay-cohort", "v3", "../../../Вики/Эссе выпускника/Инструкция по выпуску v3.md"},
 		{"essay-cohort", "v2", "../../../Вики/Эссе выпускника/Инструкция по выпуску v2.md"},
 		{"essay-cohort", "v1", "../../../Вики/Эссе выпускника/Инструкция по выпуску.md"},
 		{"values", "", "../../../Вики/Онтограф ценностей 1.1/Инструкция разметки v2.md"},
@@ -92,8 +96,8 @@ func TestEssayPromptsAreEmbedded(t *testing.T) {
 	// v3: what the center brought up, what to strengthen, the conclusion about
 	// the teachers (Вики/Эссе выпускника/Инструкция v3.md).
 	for task, want := range map[string]string{"essay": `"required": ["formation", "moments", "environment", "developed", "strengthen", "teachersConclusion", "teachers"]`, "essay-cohort": `"required": ["formation", "moments", "environment", "developed", "strengthen", "teachersConclusion"]`} {
-		prompt, ok := Latest(prompts, task)
-		if !ok || prompt.Version != "v3" || !strings.Contains(prompt.Instruction, "военный психолог") || !strings.Contains(string(prompt.Schema), want) {
+		prompt, ok := Find(prompts, task, "v3")
+		if !ok || !strings.Contains(prompt.Instruction, "военный психолог") || !strings.Contains(string(prompt.Schema), want) {
 			t.Errorf("%s: %+v", task, prompt.Version)
 		}
 	}
@@ -151,5 +155,35 @@ func TestVersionFoldersMustBeNamedVN(t *testing.T) {
 		if _, err := parse(files); err == nil {
 			t.Errorf("%s accepted", version)
 		}
+	}
+}
+
+// The newest versions of the tasks that write text have one block about the
+// style word for word (Вики/Языковая модель/План стиля ответа.md), and so the
+// essay goes on with v4.
+func TestNewestVersionsHaveOneStyleBlock(t *testing.T) {
+	prompts, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	block := ""
+	for task, version := range map[string]string{"test": "v8", "test-platoon": "v6", "autobiography": "v6", "essay": "v4", "essay-cohort": "v4"} {
+		prompt, ok := Latest(prompts, task)
+		if !ok || prompt.Version != version {
+			t.Fatalf("%s: the newest version is %s, not %s", task, prompt.Version, version)
+		}
+		start := strings.Index(prompt.Instruction, "Как писать (по пособиям стилистики русского языка):")
+		end := strings.LastIndex(prompt.Instruction, "\n\nПиши по-русски")
+		if start < 0 || end < start {
+			t.Fatalf("%s: no block about the style before the last line", task)
+		}
+		if piece := prompt.Instruction[start:end]; block == "" {
+			block = piece
+		} else if piece != block {
+			t.Errorf("%s: the block about the style differs", task)
+		}
+	}
+	if !strings.Contains(block, "10. Перед ответом перечитай каждое поле") {
+		t.Errorf("the block is cut: %q", block)
 	}
 }
