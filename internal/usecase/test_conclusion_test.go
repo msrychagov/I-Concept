@@ -204,3 +204,63 @@ func TestReportHasTheTestConclusion(t *testing.T) {
 	}
 	t.Fatal("no finished demo session with the methods")
 }
+
+// The conclusions by the demo platoons are kept in testdata/test_conclusion,
+// «взвод N.json»; with -update they are rewritten.
+func TestPlatoonConclusionOfDemoPlatoons(t *testing.T) {
+	a := testApp(t)
+	if err := a.SeedDemo(); err != nil {
+		t.Fatal(err)
+	}
+	all, err := a.MethodsSummaryFor("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	digits := regexp.MustCompile(`\d`)
+	seen := 0
+	for _, group := range all.Groups {
+		summary, err := a.MethodsSummaryFor("", group)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c := summary.Platoon.Conclusion
+		if summary.Platoon.Students < 2 {
+			if c != nil {
+				t.Errorf("%s: a conclusion by one student", group)
+			}
+			continue
+		}
+		seen++
+		if c == nil || c.Summary == "" || len(c.Recommendations) == 0 {
+			t.Fatalf("%s: incomplete conclusion %+v", group, c)
+		}
+		if digits.MatchString(c.Summary) || strings.Contains(c.Summary, "один студент") {
+			t.Errorf("%s: a number in %q", group, c.Summary)
+		}
+		if len(c.Work) != len(summary.Platoon.WorkGroups) {
+			t.Errorf("%s: %d actions for %d groups", group, len(c.Work), len(summary.Platoon.WorkGroups))
+		}
+		got, err := json.MarshalIndent(c, "", " ")
+		if err != nil {
+			t.Fatal(err)
+		}
+		got = append(got, '\n')
+		path := filepath.Join("testdata", "test_conclusion", "взвод "+group+".json")
+		if *update {
+			if err := os.WriteFile(path, got, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			continue
+		}
+		want, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("%s differs; run go test -run TestPlatoonConclusionOfDemoPlatoons -update\n%s", path, got)
+		}
+	}
+	if seen == 0 {
+		t.Fatal("no demo platoon of two students")
+	}
+}

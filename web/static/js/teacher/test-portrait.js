@@ -143,7 +143,7 @@ window.portraitRenderers['test-platoon'] = {
 window.testPortrait = (() => {
     const COMPONENTS = {CS: 'Ценностно-смысловой', EV: 'Эмоционально-волевой', DP: 'Деятельностно-практический'};
     const SIGNATURE = 'Составлено программой по ответам тестирования.';
-    const PLATOON_SIGNATURE = 'По результатам тестирования взвода: самооценка студентов и методики';
+    const PLATOON_SIGNATURE = 'Составлено программой по ответам тестирования студентов взвода.';
     const number = v => v == null ? '—' : String(v).replace('.', ',');
     // A rating of the climate, from +3 to −3, with its sign.
     const signed = v => v == null ? '—' : v > 0 ? '+' + number(v) : v < 0 ? '−' + number(-v) : '0';
@@ -194,12 +194,6 @@ window.testPortrait = (() => {
 
     function tables(m, esc) {
         return `<div class="test-portrait-numbers"><h4>Результаты методик</h4>${levels(m, esc)}${image(m, esc)}</div>`;
-    }
-
-    function signature(view, esc, text) {
-        if (view.status !== 'ready') return '';
-        const date = view.portrait.created ? new Date(view.portrait.created).toLocaleDateString('ru-RU') : '';
-        return `<p class="portrait-signature muted">${esc(text)}${date ? ` · ${esc(date)}` : ''}</p>`;
     }
 
     // A switch of the panes «Вывод», «Подробно», «Рекомендации», like the
@@ -295,15 +289,21 @@ window.testPortrait = (() => {
    ${c.equal ? '<p class="muted">Все стороны климата оценены одинаково.</p>' : ''}`;
     }
 
-    // The conclusion by a platoon: made by the button of three students at
-    // least; above the table of levels. Returns the function that stops it.
-    function mountPlatoon({element, api, esc, group, platoon, open}) {
+    // The conclusion by a platoon the program wrote (test_platoon_conclusion.go):
+    // the summary, the recommendations to the platoon and the groups for
+    // separate work with their action; below — the groups of the image and the
+    // climate. Returns the function that stops it: nothing to stop.
+    function mountPlatoon({element, esc, group, platoon, open}) {
         if (!group || !platoon) {
             element.innerHTML = '';
             return () => {};
         }
-        const enough = platoon.students >= platoon.minimum;
-        element.innerHTML = `<h3>Вывод по взводу ${esc(group)}</h3>${enough ? '<div data-platoon-text aria-live="polite"></div>' : `<p class="muted">Вывод по взводу составляется не меньше чем по ${platoon.minimum} студентам; завершили тестирование с методиками: ${platoon.students}.</p>`}<div data-platoon-groups></div>`;
+        const c = platoon.conclusion;
+        const work = c ? platoonWork(platoon, c, esc) : '';
+        const text = c ? `<div class="test-portrait-text"><p>${esc(c.summary)}</p>${c.recommendations.length ? `<h4>Рекомендации взводу</h4><ul class="test-portrait-recommendations">${c.recommendations.map(r => `<li>${esc(r.text)}</li>`).join('')}</ul>` : ''}${work}</div><p class="portrait-signature muted">${esc(PLATOON_SIGNATURE)}</p>`
+            : `<p class="muted">Вывод по взводу составляется, когда тестирование с методиками завершили хотя бы двое; сейчас: ${platoon.students}.</p>`;
+        element.innerHTML = `<h3>Вывод по взводу ${esc(group)}</h3>${text}<div data-platoon-groups></div>`;
+        element.querySelectorAll('.test-portrait-text [data-session]').forEach(b => b.onclick = () => open(b.dataset.session));
         let selected = null;
         const groups = element.querySelector('[data-platoon-groups]');
         const drawGroups = () => {
@@ -316,31 +316,19 @@ window.testPortrait = (() => {
             groups.querySelectorAll('[data-session]').forEach(b => b.onclick = () => open(b.dataset.session));
         };
         drawGroups();
-        if (!enough) return () => {};
-        const box = element.querySelector('[data-platoon-text]');
-        let handle, alive = true;
-        const run = (first = 'GET') => {
-            handle?.stop();
-            handle = window.portraitView.start(api, 'test-platoon', group, {
-                alive: () => alive && box.isConnected,
-                update: view => {
-                    if (view.status === 'none') {
-                        box.innerHTML = '<p><button type="button" data-platoon-make>Составить вывод по взводу</button></p><p class="muted">Вывод составляется по последнему завершённому тестированию с методиками каждого студента; в модель уходят только числа по взводу, без имён.</p>';
-                    } else {
-                        const ready = view.status === 'ready' ? window.portraitRenderers['test-platoon'].text(view.portrait.output, esc, platoon, view.portrait.version) : '';
-                        box.innerHTML = window.portraitView.status(view, esc) + signature(view, esc, PLATOON_SIGNATURE) + ready;
-                    }
-                    box.querySelector('[data-platoon-make]')?.addEventListener('click', () => run('POST'));
-                    box.querySelector('[data-portrait-retry]')?.addEventListener('click', () => run('POST'));
-                    box.querySelectorAll('[data-session]').forEach(b => b.onclick = () => open(b.dataset.session));
-                }
-            }, first);
-        };
-        run();
-        return () => {
-            alive = false;
-            handle?.stop();
-        };
+        return () => {};
+    }
+
+    // «Кому нужна отдельная работа»: the groups of the program with the names,
+    // the bases in plain words and the action of the phrase book.
+    function platoonWork(platoon, c, esc) {
+        const actions = Object.fromEntries((c.work || []).map(w => [w.label, w.text]));
+        const items = (platoon.workGroups || []).map(g => {
+            const names = g.students.map(s => `<button type="button" class="text-button" data-session="${esc(s.sessionId)}">${esc(s.name)}</button>`).join(', ');
+            const bases = ((g.plain || []).length ? g.plain : g.bases).join('; ');
+            return `<li><b>${names}</b><br><span class="muted">По тесту:</span> ${esc(bases)}.${actions[g.label] ? `<br><span class="muted">Что сделать:</span> ${esc(actions[g.label])}` : ''}</li>`;
+        }).join('');
+        return items ? `<h4>Кому нужна отдельная работа</h4><ul class="test-portrait-work">${items}</ul>` : '';
     }
 
     return {mount, summary, students, mountPlatoon};
