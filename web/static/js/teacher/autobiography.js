@@ -1,10 +1,8 @@
-// The window «Анкета» of one autobiography: the conclusion of the model, the
+// The window «Анкета» of one autobiography: the conclusion of the program, the
 // potential and the answers. Opened from the section «Автобиография» and from
 // the path «взвод → студент» (platoon-view.js).
 window.autobiographyWindow = (() => {
-    const FORM = 'autobiography';
     const fmtDate = v => v ? new Date(v).toLocaleDateString('ru-RU') : '';
-    let portrait = null;
 
     function show(dialog, html) {
         dialog.innerHTML = html;
@@ -12,55 +10,17 @@ window.autobiographyWindow = (() => {
         dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
     }
 
-    // The text of the model for the autobiography. Since instruction v5: two
-    // paragraphs, a line for every area (the program's own line for an area
-    // without experience) and the lists for the psychologist, the military
-    // training and what to consider; an empty list is not shown. v4: the
-    // conclusion in paragraphs and «what to consider». Up to v3: the summary,
-    // the potential table with the model's words, the qualities by hobbies and
-    // the two lists. Levels stay the program's.
-    window.portraitRenderers.autobiography = {
-        conclusionV5: (output, potential, esc) => {
-            const lines = (potential?.areas || []).map(a => {
-                const own = output.areas.find(x => String(x.area).toLowerCase() === a.title.toLowerCase());
-                return a.level === 'none'
-                    ? `<li class="muted"><b>${esc(a.title)}.</b> ${esc(a.noExperience || '')}</li>`
-                    : `<li><b>${esc(a.title)}.</b> ${esc(own ? own.text : '—')}</li>`;
-            }).join('');
-            const list = (title, items) => items.length ? `<h3>${title}</h3><ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '';
-            return `<section class="portrait-summary portrait-conclusion"><h3>Вывод</h3>${output.paragraphs.map(p => `<p>${esc(p)}</p>`).join('')}${lines ? `<h3>По направлениям</h3><ul class="portrait-areas">${lines}</ul>` : ''}${list('Психологу', output.psychologist)}${list('Для военной подготовки', output.training)}${list('Что учесть', output.consider)}</section>`;
-        },
-        conclusion: (output, esc) => `<section class="portrait-summary portrait-conclusion"><h3>Вывод</h3>${output.paragraphs.map(p => `<p>${esc(p)}</p>`).join('')}<h3>Что учесть</h3>${output.consider.length ? `<ul>${output.consider.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '<p class="muted">Нет.</p>'}</section>`,
-        summary: (output, esc) => `<section class="portrait-summary"><h3>Краткая характеристика</h3><p>${esc(output.summary)}</p></section>`,
-        // Since instruction v3; a portrait of v1 or v2 has no hobbies and shows nothing here.
-        hobbies: (output, esc) => {
-            if (!Array.isArray(output.hobbies)) return '';
-            const items = output.hobbies;
-            return `<section class="portrait-hobbies"><h3>Качества по увлечениям</h3>${items.length ? `<ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '<p class="muted">Нет.</p>'}</section>`;
-        },
-        attention: (output, esc) => {
-            const list = (title, items) => `<div><h3>${title}</h3>${items.length ? `<ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '<p class="muted">Нет.</p>'}</div>`;
-            return `<section class="portrait-attention"><h2>На что обратить внимание</h2><div class="portrait-lists">${list('Что можно использовать', output.attention.use)}${list('Что учесть', output.attention.consider)}</div></section>`;
-        }
-    };
-
-    // Everything that depends on the model. Since v4: the conclusion (v5 with
-    // the lines of the areas and the three lists, v4 with what to consider),
-    // the signature, then the program's potential with the areas of
-    // experience; a conclusion of v4 is shown while the one of v5 is made. A
-    // portrait of v1–v3 keeps its own layout: the summary, the potential with
-    // the model's columns, the qualities by hobbies, the points to note and
-    // the signature.
-    function portraitHtml(d, view, esc) {
-        const ready = view?.status === 'ready' ? view.portrait.output : null;
-        const draw = window.portraitRenderers.autobiography;
-        const state = view ? window.portraitView.status(view, esc) : '';
-        const signature = view ? window.portraitView.signature(view, esc) : '';
-        if (ready && !Array.isArray(ready.paragraphs)) {
-            return `${draw.summary(ready, esc)}${d.potential ? window.potentialView.card(d.potential, esc, ready) : ''}${draw.hobbies(ready, esc) + draw.attention(ready, esc)}${signature}`;
-        }
-        const conclusion = ready && (Array.isArray(ready.areas) ? draw.conclusionV5(ready, d.potential, esc) : draw.conclusion(ready, esc));
-        return `${conclusion || state}${signature}${d.potential ? window.potentialView.brief(d.potential, esc) : ''}`;
+    // The conclusion the program writes from the answers (Вики/Автобиография/План
+    // вывода программой.md; decided 6 November 2026): the story and the
+    // qualities, a line for every area with experience, three lists (an empty
+    // one is not shown), the signature, then the program's potential. The
+    // language model is no longer asked for the autobiography.
+    function conclusionHtml(d, esc) {
+        const c = d.conclusion;
+        if (!c) return '';
+        const list = (title, items) => items.length ? `<h3>${title}</h3><ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '';
+        const lines = c.areas.map(a => `<li><b>${esc(a.title)}:</b> ${esc(a.text)}</li>`).join('');
+        return `<section class="portrait-summary portrait-conclusion"><h3>Вывод</h3>${c.paragraphs.map(p => `<p>${esc(p)}</p>`).join('')}${lines ? `<h3>По направлениям</h3><ul class="portrait-areas">${lines}</ul>` : ''}${list('На что обратить внимание', c.attention)}${list('Для военной подготовки', c.training)}${list('Что учесть', c.consider)}</section><p class="portrait-signature muted">Составлено программой по ответам анкеты.</p>${d.potential ? window.potentialView.brief(d.potential, esc) : ''}`;
     }
 
     // The sheet of the print page (/autobiography/print) inside the window: the
@@ -81,7 +41,6 @@ window.autobiographyWindow = (() => {
     }
 
     async function open({dialog, api, esc, id, slices}) {
-        portrait?.stop();
         show(dialog, '<h2>Загрузка анкеты…</h2>');
         try {
             const d = await api('/submissions/' + encodeURIComponent(id));
@@ -91,7 +50,7 @@ window.autobiographyWindow = (() => {
             // the sheet for the personal file as it is printed.
             show(dialog, `<div class="section-title"><div><h2>${esc(who?.name || 'Студент')}</h2><p>Взвод ${esc(who?.platoon || '')} · ${esc(d.form.title)}${s.completed ? ' · сдана ' + fmtDate(s.completedAt) : ''}</p></div><button class="secondary" data-close>Закрыть</button></div>${window.sliceBar(slices, id, esc)}
    <div class="toolbar autobiography-switch" role="group" aria-label="Что показать"><button type="button" data-show="conclusion" aria-pressed="true">Вывод</button><button type="button" class="secondary" data-show="sheet" aria-pressed="false" ${s.completed ? '' : 'disabled title="Появится после сдачи"'}>Автобиография</button></div>
-   <div data-pane="conclusion">${s.completed ? '' : `<p class="draft-note">Не сдана: заполнено разделов ${d.progress.complete.length} из ${d.progress.total}. Показан черновик. Вывод, потенциал и автобиография для печати появятся после сдачи.</p>`}<div id="portrait-box">${portraitHtml(d, null, esc)}</div><details class="answers-fold" ${s.completed ? '' : 'open'}><summary>Ответы анкеты</summary>${window.formView.answers(d.form, s, esc)}</details></div>
+   <div data-pane="conclusion">${s.completed ? '' : `<p class="draft-note">Не сдана: заполнено разделов ${d.progress.complete.length} из ${d.progress.total}. Показан черновик. Вывод, потенциал и автобиография для печати появятся после сдачи.</p>`}<div id="portrait-box">${conclusionHtml(d, esc)}</div><details class="answers-fold" ${s.completed ? '' : 'open'}><summary>Ответы анкеты</summary>${window.formView.answers(d.form, s, esc)}</details></div>
    <div data-pane="sheet" hidden></div>`);
             dialog.querySelectorAll('[data-show]').forEach(b => b.onclick = () => {
                 dialog.querySelectorAll('[data-show]').forEach(x => {
@@ -103,20 +62,6 @@ window.autobiographyWindow = (() => {
                 if (b.dataset.show === 'sheet') sheet(dialog.querySelector('[data-pane="sheet"]'), s.id);
             });
             window.sliceBar.bind(dialog, slices, next => open({dialog, api, esc, id: next, slices}));
-            if (!s.completed) return;
-            const box = dialog.querySelector('#portrait-box');
-            const alive = () => dialog.open && box.isConnected;
-            const run = (first = 'GET') => {
-                portrait?.stop();
-                portrait = window.portraitView.start(api, FORM, id, {
-                    alive,
-                    update: view => {
-                        box.innerHTML = portraitHtml(d, view, esc);
-                        box.querySelector('[data-portrait-retry]')?.addEventListener('click', () => run('POST'));
-                    }
-                }, first);
-            };
-            run();
         } catch (err) {
             show(dialog, `<p class="error">${esc(err.message)}</p><button class="secondary" data-close>Закрыть</button>`);
         }
