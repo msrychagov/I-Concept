@@ -50,6 +50,11 @@ window.teacherConceptTesting = async function ({view, state, api, esc}) {
                 summary = await api('/reports/methods' + (aiChoose.value ? '?group=' + encodeURIComponent(aiChoose.value) : ''));
                 stopPlatoon();
                 stopPlatoon = window.testPortrait.mountPlatoon({element: platoonBox, api, esc, group: aiChoose.value, platoon: summary.platoon, open: result});
+                // The table of the levels goes inside «Подробно» of the conclusion,
+                // not under every tab; with no conclusion (all platoons) it stays below.
+                const details = platoonBox.querySelector('[data-pane="details"]');
+                if (details) details.prepend(summaryBox);
+                else platoonBox.parentNode.append(summaryBox);
                 platoonValues(aiChoose.value);
                 drawSummary()
             } catch (err) {
