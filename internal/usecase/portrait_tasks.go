@@ -607,7 +607,10 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 		ID: testPortraitTask, Version: prompt.Version, Prompt: prompt,
 		// The portrait has nine sections: about 2000 tokens of Russian text.
 		// More rules than in the autobiography: more tries, each with the notes.
-		MaxTokens: 4000, Attempts: 5,
+		// Since 6 November 2026 the conclusion is written by the program
+		// (test_conclusion.go) and the model is not asked: the task is manual,
+		// nothing is queued after a test or at startup. It stays for a retry by hand.
+		MaxTokens: 4000, Attempts: 5, Manual: !a.portraits.testModel,
 		Accepts: func(db model.Database, s Source) bool {
 			session, ok := findSession(db, s)
 			return ok && session.Completed && session.Methods && a.TestPortrait(session) != nil
