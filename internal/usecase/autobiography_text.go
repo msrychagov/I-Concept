@@ -259,7 +259,7 @@ func aboutParagraph(r textReader, name string) string {
 // The kinds of school as they stand after «окончил», when the name the
 // student typed does not say it, and after «учился в».
 var (
-	schoolKinds   = map[string]string{"school": "школу", "lyceum": "лицей", "gymnasium": "гимназию", "cadet": "кадетскую школу", "suvorov": "училище", "college": "колледж", "university": "вуз", "other": "учебное заведение"}
+	schoolKinds   = map[string]string{"school": "школу", "lyceum": "лицей", "gymnasium": "гимназию", "cadet": "кадетский корпус", "suvorov": "училище", "college": "колледж", "university": "вуз", "other": "учебное заведение"}
 	schoolWords   = []string{"школ", "лице", "гимнази", "корпус", "училищ", "колледж", "техникум", "университет", "институт", "академи", "вуз"}
 	studiedPlaces = []struct{ stem, place string }{{"техникум", "в техникуме"}, {"колледж", "в колледже"}, {"университет", "в университете"}, {"институт", "в институте"}, {"академи", "в академии"}}
 )
