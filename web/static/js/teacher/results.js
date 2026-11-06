@@ -1,4 +1,4 @@
-window.teacherResult = async function ({view, api, esc, id}) {
+window.teacherResult = async function ({view, api, esc, id, slices}) {
     const dialog = view.querySelector('#result-dialog');
     const fmt = value => value == null ? 'Нет данных' : Number(value).toFixed(2).replace('.', ',');
     let data, page = 1, pageSize = 10, stopAI = () => {}, stopValues = () => {};
@@ -19,7 +19,7 @@ window.teacherResult = async function ({view, api, esc, id}) {
         const answered = rows.reduce((sum, row) => sum + row.coverage, 0);
         const total = rows.reduce((sum, row) => sum + row.total, 0);
         const statements = data.items.filter(item => !item.responseOnly && (item.scored || ['B', 'C', 'D'].includes(item.module)));
-        dialog.innerHTML = `<div class="section-title"><div><h2>${esc(s.participant)}</h2><p>Взвод ${esc(s.group)} · ${esc(s.wave)}</p></div><button class="secondary" id="close-result">Закрыть</button></div>
+        dialog.innerHTML = `<div class="section-title"><div><h2>${esc(s.participant)}</h2><p>Взвод ${esc(s.group)} · ${esc(s.wave)}</p></div><button class="secondary" id="close-result">Закрыть</button></div>${window.sliceBar(slices, id, esc)}
    <p>${s.completed ? 'Прохождение завершено' : 'Прохождение в процессе'} · ответов на утверждения ${answered} из ${total}</p>
    <section class="surface test-portrait" id="test-portrait-box" aria-label="Портрет по результатам тестирования"></section>
    <h3>Отчёт по утверждениям</h3><p class="muted">Средний балл по показателю рассчитывается по шкале 1–5 с учётом обратных утверждений. При неполном наборе ответов балл не рассчитывается; пропуски не заменяются нулём.</p>
@@ -30,6 +30,10 @@ window.teacherResult = async function ({view, api, esc, id}) {
    <section class="surface values-block" id="values-box" hidden></section>
    <a class="button secondary" href="/api/v1/sessions/${encodeURIComponent(id)}/export">Экспорт сессии</a>`;
         dialog.querySelector('#close-result').onclick = () => dialog.close();
+        window.sliceBar.bind(dialog, slices, next => {
+            dialog.close();
+            window.teacherResult({view, api, esc, id: next, slices});
+        });
         stopAI = window.testPortrait.mount({element: dialog.querySelector('#test-portrait-box'), api, esc, id, methods: r.methods, completed: s.completed});
         // Values by the ontograph in the open answers «Мои действия и опыт» (values.js).
         stopValues = s.completed ? window.valuesBlock.mount({element: dialog.querySelector('#values-box'), api, esc, id, title: 'Ценности в ответах о деятельности'}) : () => {};

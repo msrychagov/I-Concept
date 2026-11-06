@@ -30,6 +30,15 @@ window.teachingDashboard = async function ({view, api, esc}) {
         return `<div class="testing-bar" role="img" aria-label="${esc(label)}: завершено ${s.done}, в процессе ${s.started}, не начато ${s.waiting}, всего ${s.total}"><span class="testing-done" style="width:${s.done / s.total * 100}%"></span><span class="testing-started" style="width:${s.started / s.total * 100}%"></span><span class="testing-waiting" style="width:${s.waiting / s.total * 100}%"></span></div>`;
     }
 
+    // The cards lead on (decided 6 November 2026): students and platoons — the
+    // path «взвод → студент», the two counts of testing — «Назначения и результаты».
+    const card = (to, picture, emblem, count, label) => `<button type="button" class="metric-link" data-go="${to}"><img class="metric-picture" src="/assets/images/reference/${picture}.jpg" alt=""><span class="metric-emblem"><img class="ui-icon" src="/assets/images/icons/${emblem}.svg" alt="" width="26" height="26"></span><strong>${count}</strong>${label}</button>`;
+    const routes = {
+        students: () => window.teacherGo('people', {start: 'students'}),
+        platoons: () => window.teacherGo('people', {start: 'platoons'}),
+        testing: () => window.teacherGo('profiles', {concept: 'testing'})
+    };
+
     function draw() {
         const rows = datasets.map(rowsFor), totals = rows.map(stats), all = stats(rows.flat());
         const shownStudents = students.filter(s => !platoon || s.platoon === platoon);
@@ -37,7 +46,7 @@ window.teachingDashboard = async function ({view, api, esc}) {
         const assignments = datasets.flatMap(d => d.assignments).filter(a => a.active && (!platoon || !a.platoon || a.platoon === platoon));
         root.innerHTML = `<header class="page-heading"><div><div class="eyebrow">Кабинет преподавателя</div><h1>Главная</h1><p class="muted">Общая статистика по вашим назначениям и студентам</p></div></header>
    <div id="overview-error" role="alert"></div>
-   <div class="dashboard-metrics"><article><img class="metric-picture" src="/assets/images/reference/card-study.jpg" alt=""><span class="metric-emblem"><img class="ui-icon" src="/assets/images/icons/graduation.svg" alt="" width="26" height="26"></span><strong>${shownStudents.length}</strong>Студентов</article><article><img class="metric-picture" src="/assets/images/reference/card-upbringing.jpg" alt=""><span class="metric-emblem"><img class="ui-icon" src="/assets/images/icons/users.svg" alt="" width="26" height="26"></span><strong>${shownPlatoons.filter(Boolean).length}</strong>Взводов</article><article><img class="metric-picture" src="/assets/images/reference/card-daily.jpg" alt=""><span class="metric-emblem"><img class="ui-icon" src="/assets/images/icons/clipboard.svg" alt="" width="26" height="26"></span><strong>${assignments.length}</strong>Активных тестирований</article><article><img class="metric-picture" src="/assets/images/reference/card-knowledge.jpg" alt=""><span class="metric-emblem"><img class="ui-icon" src="/assets/images/icons/check-circle.svg" alt="" width="26" height="26"></span><strong>${all.done} / ${all.total}</strong>Пройдено назначений</article></div>
+   <div class="dashboard-metrics">${card('students', 'card-study', 'graduation', shownStudents.length, 'Студентов')}${card('platoons', 'card-upbringing', 'users', shownPlatoons.filter(Boolean).length, 'Взводов')}${card('testing', 'card-daily', 'clipboard', assignments.length, 'Активных тестирований')}${card('testing', 'card-knowledge', 'check-circle', `${all.done} / ${all.total}`, 'Пройдено назначений')}</div>
    <section class="surface testing-summary"><div class="section-title"><div><h2>Общая статистика</h2></div></div>
    <div class="toolbar testing-filters"><label>Назначения<select id="overview-scope"><option value="all" ${scope === 'all' ? 'selected' : ''}>Все, включая закрытые</option><option value="active" ${scope === 'active' ? 'selected' : ''}>Только активные</option></select></label><label>Взвод<select id="overview-platoon"><option value="">Все взводы</option>${platoons.filter(Boolean).map(p => `<option value="${esc(p)}" ${p === platoon ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></label></div>
    <div class="testing-legend"><span><i class="testing-done"></i>Завершено</span><span><i class="testing-started"></i>В процессе</span><span><i class="testing-waiting"></i>Не начато</span></div>
@@ -52,6 +61,7 @@ window.teachingDashboard = async function ({view, api, esc}) {
             const s = stats(rows[i].filter(r => r.student.platoon === p));
             return `<div class="testing-platoon-type"><div class="testing-bar-heading"><b>${esc(d.name)}</b><strong>${s.total ? percent(s.done, s.total) + '%' : '—'}</strong></div>${bar(s, d.name)}<p>${s.total ? `${s.done} из ${s.total} завершено <span>· ${s.started} в процессе · ${s.waiting} не начато</span>` : 'Тестирование ещё не назначено'}</p></div>`
         }).join('')}</div></article>`).join('') || '<p class="muted">Пока нет данных по взводам. Добавьте студентов в разделе «Управление взводом».</p>'}</div></section>`;
+        root.querySelectorAll('[data-go]').forEach(b => b.onclick = () => routes[b.dataset.go]());
         root.querySelector('#overview-scope').onchange = e => {
             scope = e.target.value;
             draw()

@@ -59,6 +59,15 @@ body {
     color: #a11;
 }
 
+/* Inside the window of the teacher: no desk around the sheet. */
+body.embedded {
+    background: transparent;
+}
+
+body.embedded .sheet {
+    margin: 0 auto;
+}
+
 /* A4 is 210 × 297 mm; the margins of the paper are 20 mm. */
 .sheet {
     width: 210mm;

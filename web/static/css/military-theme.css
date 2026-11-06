@@ -445,7 +445,7 @@ img, svg {
     margin: 22px 0
 }
 
-.dashboard-metrics article {
+.dashboard-metrics article, .dashboard-metrics .metric-link {
     position: relative;
     overflow: hidden;
     padding: 0px 18px 22px;
@@ -457,7 +457,7 @@ img, svg {
     transition: transform .22s, box-shadow .22s
 }
 
-.dashboard-metrics article:hover, .welcome .block:hover {
+.dashboard-metrics article:hover, .dashboard-metrics .metric-link:hover, .welcome .block:hover {
     transform: translateY(-3px);
     box-shadow: 0 12px 30px #1d332c18
 }
@@ -937,7 +937,7 @@ body.is-cabinet #portal {
         gap: 14px
     }
 
-    .dashboard-metrics article {
+    .dashboard-metrics article, .dashboard-metrics .metric-link {
         font-size: 16px;
         padding-bottom: 18px
     }
@@ -1081,7 +1081,7 @@ body.is-cabinet #portal {
         gap: 10px
     }
 
-    .dashboard-metrics article {
+    .dashboard-metrics article, .dashboard-metrics .metric-link {
         padding-left: 12px;
         padding-right: 12px;
         font-size: 15px
@@ -1375,5 +1375,254 @@ textarea {
 
     .testing-overview > .page-heading p {
         color: var(--muted)
+    }
+}
+
+/* The dates of the other passings at the top of a window (slices.js). */
+.slice-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 16px
+}
+
+.slice-bar button {
+    min-height: 0;
+    padding: 6px 12px;
+    font-size: 14px
+}
+
+.slice-bar button:disabled {
+    opacity: 1
+}
+
+/* The path «взвод → студент» (platoon-view.js). */
+.path-crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 4px;
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 15px
+}
+
+.path-crumbs .text-button {
+    min-height: 0;
+    padding: 4px 6px;
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px
+}
+
+.path-crumbs .text-button:hover {
+    background: transparent;
+    color: var(--teal)
+}
+
+.path-crumbs [aria-current] {
+    padding: 4px 6px;
+    color: var(--ink);
+    font-weight: 500
+}
+
+.path-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin: 18px 0
+}
+
+.path-tiles-two {
+    grid-template-columns: repeat(2, minmax(0, 1fr))
+}
+
+.path-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 6px;
+    width: 100%;
+    min-height: 168px;
+    padding: 20px 18px;
+    text-align: left;
+    color: var(--ink);
+    background: linear-gradient(#faf8f3, #eee9df);
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    box-shadow: var(--shadow);
+    font: 500 17px 'Roboto Condensed', sans-serif;
+    transition: transform .22s, box-shadow .22s
+}
+
+.path-tile .metric-emblem {
+    position: static;
+    margin-bottom: 8px
+}
+
+.path-tile b {
+    font: 600 22px/1.2 'Roboto Condensed', sans-serif;
+    color: var(--forest)
+}
+
+.path-tile small {
+    color: var(--muted);
+    font: 400 15px/1.35 'Roboto Condensed', sans-serif
+}
+
+.path-tile:hover {
+    background: linear-gradient(#faf8f3, #eee9df);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px #1d332c18
+}
+
+.path-tile.active {
+    border-color: var(--gold);
+    box-shadow: inset 0 0 0 2px var(--gold), var(--shadow)
+}
+
+.path-tile:disabled {
+    opacity: .55;
+    transform: none;
+    box-shadow: none
+}
+
+.path-hint {
+    margin-top: -4px
+}
+
+.path-people {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none
+}
+
+.path-person {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    text-align: left;
+    color: var(--forest);
+    background: #f7f4ec;
+    border-color: #d7cfbb
+}
+
+.path-person:hover {
+    background: #ebe5d6
+}
+
+.path-person b {
+    display: block;
+    font-weight: 600
+}
+
+.path-person small {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 400
+}
+
+.path-person-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(#304a3d, #1b3027);
+    border: 2px solid #d3bc7b
+}
+
+.path-person-icon .ui-icon {
+    filter: invert(82%) sepia(23%) saturate(539%) hue-rotate(3deg)
+}
+
+@media (max-width: 740px) {
+    .path-tiles, .path-tiles-two {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px
+    }
+
+    .path-tile {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        column-gap: 14px;
+        row-gap: 2px;
+        min-height: 0;
+        padding: 14px
+    }
+
+    .path-tile .metric-emblem {
+        grid-row: span 2;
+        margin: 0;
+        width: 46px;
+        height: 46px
+    }
+
+    .path-tile b {
+        font-size: 19px
+    }
+
+    .path-people {
+        grid-template-columns: minmax(0, 1fr)
+    }
+}
+
+/* The home cards are buttons (decided 6 November 2026): the look of the card stays. */
+.dashboard-metrics .metric-link {
+    display: block;
+    width: 100%;
+    min-height: 0;
+    text-align: left;
+    color: var(--ink);
+    cursor: pointer
+}
+
+.dashboard-metrics .metric-link:hover {
+    background: linear-gradient(#faf8f3, #eee9df)
+}
+
+/* The window of the autobiography: «Вывод» and «Автобиография» (the sheet for printing). */
+.autobiography-switch {
+    margin: 4px 0 16px
+}
+
+.answers-fold {
+    margin-top: 18px
+}
+
+.answers-fold > summary {
+    cursor: pointer;
+    font: 600 18px 'Roboto Condensed', sans-serif;
+    color: var(--forest)
+}
+
+.sheet-actions {
+    margin-bottom: 12px
+}
+
+.sheet-frame {
+    display: block;
+    width: 100%;
+    height: 70vh;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #e9ece8
+}
+
+@media (max-width: 740px) {
+    .autobiography-switch > button, .sheet-actions > button, .sheet-actions > .button {
+        flex: 1 1 0
     }
 }
