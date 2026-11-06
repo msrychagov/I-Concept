@@ -378,6 +378,11 @@ img, svg {
     font-size: 11px
 }
 
+body[data-role]:not(.is-cabinet) .site-footer {
+    color: #f5f1e5cc;
+    border-top-color: #f5f1e533
+}
+
 .page-heading, .section-title, .portal-head, .assignment-row {
     flex-wrap: wrap
 }
