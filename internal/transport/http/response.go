@@ -8,6 +8,7 @@ import (
 	"log"
 	"mime"
 	"net/http"
+	"strings"
 	"vucdiagnostic/internal/usecase"
 )
 
@@ -66,6 +67,11 @@ func (h *Handler) adminAuthorized(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	return true
+}
+
+// secure reports whether the browser reached the server over HTTPS.
+func (h *Handler) secure(r *http.Request) bool {
+	return r.TLS != nil || h.config.TrustProxy && strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 }
 func (h *Handler) validOrigin(w http.ResponseWriter, r *http.Request) bool {
 	if origin := r.Header.Get("Origin"); origin != "" && origin != "http://"+r.Host && origin != "https://"+r.Host {

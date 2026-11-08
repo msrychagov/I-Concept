@@ -1,0 +1,95 @@
+# Server setup: Caddy in front with automatic HTTPS, the application and
+# PostgreSQL are reachable only inside the compose network.
+#   docker compose -f docker-compose.prod.yaml --env-file ../server.env up -d --build
+# Settings (VUC_DOMAIN, DB_PASSWORD, VUC_ADMIN_PASSWORD) live in ../server.env,
+# not in the repository. See Вики/Развёртывание.md.
+
+x-database-environment: &database-environment
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_USER: app
+  DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in server.env}
+  DB_NAME: app_db
+  DB_SSLMODE: disable
+
+x-application: &application
+  image: i-concept:${IMAGE_TAG:-local}
+  build:
+    context: .
+    dockerfile: Dockerfile
+
+services:
+  caddy:
+    image: caddy:2.8.4-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      VUC_DOMAIN: ${VUC_DOMAIN:?Set VUC_DOMAIN in server.env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+  app:
+    <<: *application
+    restart: unless-stopped
+    expose:
+      - "8080"
+    env_file:
+      - path: ../.secrets/llm.env
+        required: false
+    environment:
+      <<: *database-environment
+      VUC_ADMIN_USER: ${VUC_ADMIN_USER:-admin}
+      VUC_ADMIN_PASSWORD: ${VUC_ADMIN_PASSWORD:?Set VUC_ADMIN_PASSWORD in server.env}
+      VUC_TRUST_PROXY: "1"
+      GIGACHAT_CA_FILE: /app/certs/mincifry.crt
+    volumes:
+      - ../.secrets/russian_trusted_root_ca_pem.crt:/app/certs/mincifry.crt:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    <<: *application
+    entrypoint: ["migrate"]
+    command: []
+    restart: "no"
+    environment: *database-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  seed:
+    <<: *application
+    profiles: ["tools"]
+    entrypoint: ["seed"]
+    command: []
+    environment: *database-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in server.env}
+      POSTGRES_DB: app_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

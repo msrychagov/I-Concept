@@ -7,7 +7,12 @@ import (
 	"vucdiagnostic/internal/usecase"
 )
 
-type Config struct{ AdminUser, AdminPassword string }
+type Config struct {
+	AdminUser, AdminPassword string
+	// TrustProxy: the server stands behind a reverse proxy that terminates HTTPS
+	// and sets X-Forwarded-Proto.
+	TrustProxy bool
+}
 type Handler struct {
 	service *usecase.Service
 	files   fs.FS
