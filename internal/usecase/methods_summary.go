@@ -58,6 +58,9 @@ type PlatoonView struct {
 	// WorkGroups are the groups of students for separate work: the conclusion
 	// of test-platoon/v4 names them by label.
 	WorkGroups []PlatoonWorkGroup `json:"workGroups"`
+	// Conclusion is the conclusion by the platoon the program writes
+	// (test_platoon_conclusion.go); nil with too few students.
+	Conclusion *PlatoonConclusion `json:"conclusion,omitempty"`
 }
 
 // latestMethodSessions are the latest finished sessions with the methods of
@@ -170,7 +173,7 @@ func (a *Service) MethodsSummaryFor(teacherID, group string) (MethodsSummary, er
 	summary.Rows = a.levelRows(portraits)
 	if group != "" {
 		platoon := a.platoonPortrait(group, portraits)
-		summary.Platoon = &PlatoonView{Students: platoon.Students, Minimum: platoonMinimum, Defender: platoon.Defender, Catalogue: a.defender.Directions, Climate: platoon.Climate, WorkGroups: platoon.WorkGroups}
+		summary.Platoon = &PlatoonView{Students: platoon.Students, Minimum: platoonMinimum, Defender: platoon.Defender, Catalogue: a.defender.Directions, Climate: platoon.Climate, WorkGroups: platoon.WorkGroups, Conclusion: a.platoonConclusion(portraits, platoon.WorkGroups)}
 	}
 	slices.Sort(summary.Groups)
 	return summary, nil

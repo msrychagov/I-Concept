@@ -187,6 +187,11 @@ S['EvidenceTrend']=obj({'available':boolean(),'reason':string(),'previous':numbe
 S['EvidenceRow']=obj({'id':string(),'name':string(),'block':string(),'definition':string(),'limitations':string(),'selfImage':integer(nullable=True),'statements':number(nullable=True),'coverage':integer(),'total':integer(),'choices':arr(ref('EvidenceChoice')),'trend':ref('EvidenceTrend')})
 S['Report']['properties']['evidence']=arr(ref('EvidenceRow'))
 S['Report']['properties']['methods']={'type':'object','additionalProperties':True,'description':'Портрет по методикам (только у сессий с методиками): methods — уровни шкал по ключам, components и images — Я-реальное и Я-идеальное, signs и conditions — показатели без уровней, kinds — виды деятельности с уровнем по анкете, openAnswers — рассказы о деятельности.'}
+S['ConclusionPart']=obj({'id':string(enum=['values','will','image','environment']),'title':string(),'text':string()}, ['id','title','text'])
+S['ConclusionAdvice']=obj({'code':string(description='Код направления каталога рекомендаций.'),'text':string()}, ['code','text'])
+S['TestConclusion']=obj({'summary':string(description='«Вывод» — один абзац.'),'details':arr(ref('ConclusionPart')),'recommendations':arr(ref('ConclusionAdvice'))}, ['summary','details','recommendations'])
+S['TestConclusion']['description']='Вывод по тестированию, который составляет программа из готовых фраз без языковой модели: общий вывод, «Подробно» по четырём частям и рекомендации. Считается при каждом запросе, не хранится.'
+S['Report']['properties']['conclusion']=ref('TestConclusion')
 S['Report']['properties']['interpretationNote']=string()
 S['FormSubmission']['properties']['answers']={'type':'object','additionalProperties':True,'description':'Ключ — id поля верхнего уровня. choice — строка, multi — массив строк, text/textarea — строка, date/month/year — ГГГГ-ММ-ДД / ГГГГ-ММ / ГГГГ, group — массив объектов.'}
 S['FormProgress']=obj({'complete':arr(string()),'missing':{'type':'object','additionalProperties':arr(string())},'total':integer()}, ['complete','missing','total'])
@@ -205,7 +210,10 @@ S['PotentialArea']=obj({'id':string(enum=['sport','creative','patriotic','scienc
 S['PotentialAward']=obj({'name':string(),'year':string()}, ['name','year'])
 S['Potential']=obj({'areas':arr(ref('PotentialArea')),'high':arr(string(description='Направления с высоким уровнем.')),'awards':arr(ref('PotentialAward'))}, ['areas','high','awards'])
 S['Potential']['description']='Уровни потенциала по шести направлениям, посчитанные программой по шкале из ответов студента. Общего уровня нет. Государственные награды на уровни не влияют.'
-S['FormSubmissionDetail']=obj({'submission':ref('FormSubmission'),'form':ref('Form'),'student':ref('PublicAccount'),'progress':ref('FormProgress'),'potential':ref('Potential')}, ['submission','form','student','progress'])
+S['ConclusionArea']=obj({'id':string(enum=['sport','creative','patriotic','science','volunteering','languages']),'title':string(),'text':string(description='Строка направления после названия и двоеточия: оценка словами по уровню шкалы, затем опыт.')}, ['id','title','text'])
+S['AutobiographyConclusion']=obj({'paragraphs':arr(string()),'areas':arr(ref('ConclusionArea')),'attention':arr(string()),'training':arr(string()),'consider':arr(string())}, ['paragraphs','areas','attention','training','consider'])
+S['AutobiographyConclusion']['description']='Вывод по автобиографии, который составляет программа из готовых фраз без языковой модели: абзацы (рассказ о студенте и качества), строки направлений с опытом, «На что обратить внимание» (семья и воспитание), «Для военной подготовки», «Что учесть». Считается при каждом запросе, не хранится.'
+S['FormSubmissionDetail']=obj({'submission':ref('FormSubmission'),'form':ref('Form'),'student':ref('PublicAccount'),'progress':ref('FormProgress'),'potential':ref('Potential'),'conclusion':ref('AutobiographyConclusion')}, ['submission','form','student','progress'])
 S['PotentialStudent']=obj({'submissionId':string(),'studentId':string(),'name':string(),'platoon':string()}, ['submissionId','studentId','name','platoon'])
 S['PotentialLevelGroup']=obj({'level':string(enum=['high','medium','initial','none']),'levelText':string(),'students':arr(ref('PotentialStudent'))}, ['level','levelText','students'])
 S['PotentialAreaSummary']=obj({'id':string(),'title':string(),'levels':arr(ref('PotentialLevelGroup'))}, ['id','title','levels'])
@@ -242,7 +250,7 @@ endpoint('/essays/assignments/{id}/summary','get','getEssaySummary','Эссе','
 endpoint('/essays/assignments/{id}/summary','post','composeEssaySummary','Эссе','Составить сводку по выдаче','EssaySummary',description='Ставит сводку в очередь по эссе с готовым разбором (не меньше двух). Одинаковый набор разборов даёт ту же сводку без вызова модели.',codes=[400,404])
 endpoint('/forms/{formId}','get','getForm','Анкеты','Описание анкеты','Form',description='Разделы, поля, развилки и справочники.',codes=[404])
 endpoint('/forms/{formId}/overview','get','getFormOverview','Анкеты','Обзор анкеты: студенты, назначения, сдача','FormOverview',codes=[404])
-endpoint('/submissions/{id}','get','getFormSubmissionDetail','Анкеты','Ответы студента на анкету','FormSubmissionDetail',description='Отдаётся и сданная, и начатая анкета. У сданной автобиографии есть potential — уровни потенциала.',codes=[404])
+endpoint('/submissions/{id}','get','getFormSubmissionDetail','Анкеты','Ответы студента на анкету','FormSubmissionDetail',description='Отдаётся и сданная, и начатая анкета. У сданной автобиографии есть potential — уровни потенциала — и conclusion — вывод программы.',codes=[404])
 S['AutobiographyText']=obj({'student':string(description='ФИО из учётной записи.'),'paragraphs':arr(string()),'date':string(description='День сдачи по Москве, «15 сентября 2024 г.».'),'surname':string(description='Фамилия для подписи.')}, ['student','paragraphs','date','surname'])
 S['AutobiographyText']['description']='Автобиография для личного дела: текст бумажного бланка от первого лица, который программа собирает по шаблону из ответов сданной автобиографии. Заново при каждом запросе, в базе не хранится; языковая модель не участвует.'
 endpoint('/submissions/{id}/autobiography','get','getAutobiographyText','Анкеты','Автобиография для печати','AutobiographyText',description='Только сданная автобиография по своему назначению; несданная, чужая или другая анкета — 404.',codes=[404])

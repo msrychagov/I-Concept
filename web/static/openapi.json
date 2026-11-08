@@ -5748,7 +5748,7 @@
             }
           }
         },
-        "description": "Отдаётся и сданная, и начатая анкета. У сданной автобиографии есть potential — уровни потенциала.",
+        "description": "Отдаётся и сданная, и начатая анкета. У сданной автобиографии есть potential — уровни потенциала — и conclusion — вывод программы.",
         "parameters": [
           {
             "name": "id",
@@ -9077,6 +9077,9 @@
             "additionalProperties": true,
             "description": "Портрет по методикам (только у сессий с методиками): methods — уровни шкал по ключам, components и images — Я-реальное и Я-идеальное, signs и conditions — показатели без уровней, kinds — виды деятельности с уровнем по анкете, openAnswers — рассказы о деятельности."
           },
+          "conclusion": {
+            "$ref": "#/components/schemas/TestConclusion"
+          },
           "interpretationNote": {
             "type": "string"
           }
@@ -9455,6 +9458,77 @@
         },
         "additionalProperties": false
       },
+      "ConclusionPart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "values",
+              "will",
+              "image",
+              "environment"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "text"
+        ]
+      },
+      "ConclusionAdvice": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Код направления каталога рекомендаций."
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "text"
+        ]
+      },
+      "TestConclusion": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "description": "«Вывод» — один абзац."
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConclusionPart"
+            }
+          },
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConclusionAdvice"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "summary",
+          "details",
+          "recommendations"
+        ],
+        "description": "Вывод по тестированию, который составляет программа из готовых фраз без языковой модели: общий вывод, «Подробно» по четырём частям и рекомендации. Считается при каждом запросе, не хранится."
+      },
       "FormProgress": {
         "type": "object",
         "properties": {
@@ -9804,6 +9878,79 @@
         ],
         "description": "Уровни потенциала по шести направлениям, посчитанные программой по шкале из ответов студента. Общего уровня нет. Государственные награды на уровни не влияют."
       },
+      "ConclusionArea": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "sport",
+              "creative",
+              "patriotic",
+              "science",
+              "volunteering",
+              "languages"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "description": "Строка направления после названия и двоеточия: оценка словами по уровню шкалы, затем опыт."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "text"
+        ]
+      },
+      "AutobiographyConclusion": {
+        "type": "object",
+        "properties": {
+          "paragraphs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConclusionArea"
+            }
+          },
+          "attention": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "training": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "consider": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "paragraphs",
+          "areas",
+          "attention",
+          "training",
+          "consider"
+        ],
+        "description": "Вывод по автобиографии, который составляет программа из готовых фраз без языковой модели: абзацы (рассказ о студенте и качества), строки направлений с опытом, «На что обратить внимание» (семья и воспитание), «Для военной подготовки», «Что учесть». Считается при каждом запросе, не хранится."
+      },
       "FormSubmissionDetail": {
         "type": "object",
         "properties": {
@@ -9821,6 +9968,9 @@
           },
           "potential": {
             "$ref": "#/components/schemas/Potential"
+          },
+          "conclusion": {
+            "$ref": "#/components/schemas/AutobiographyConclusion"
           }
         },
         "additionalProperties": false,

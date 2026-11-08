@@ -199,10 +199,32 @@ func newAutobiographyFixtureAt(t *testing.T, upTo int) *formFixture {
 			kept = append(kept, prompt)
 		}
 	}
+	// The autobiography is the test bed of the portrait layer: its model is on here.
+	f.service.portraits.autobiographyModel = true
 	f.service.RegisterPrompts(kept...)
 	f.service.portraits.pause = 0
 	t.Cleanup(f.service.Close)
 	return f
+}
+
+// Since 6 November 2026 the program writes the autobiography conclusion: the
+// model is asked neither after the submission nor at startup.
+func TestAutobiographyModelIsNotAsked(t *testing.T) {
+	f := newFormFixture(t)
+	prompts, err := promptbank.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.service.RegisterPrompts(prompts...)
+	f.service.portraits.pause = 0
+	t.Cleanup(f.service.Close)
+	m := portraitModel(nil)
+	f.service.UseModel(m)
+	f.submit()
+	f.idle()
+	if m.count() != 0 {
+		t.Fatalf("%d calls of the model", m.count())
+	}
 }
 
 func (f *formFixture) submit() {

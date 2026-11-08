@@ -142,8 +142,9 @@ func TestPlatoonConclusionIsMadeByTheButtonOfThreeStudents(t *testing.T) {
 	}
 
 	f := newPlatoonFixture(t, 3)
-	// The portraits of the students are made on their own; the conclusion by
-	// the platoon is made only by the button.
+	// Since 6 November 2026 neither the portraits of the students nor the
+	// conclusion by the platoon are made on their own: the platoon one only by
+	// the button.
 	var user string
 	platoonCalls := 0
 	m := &fakeModel{name: "fake", reply: func(_ int, c Completion) (string, error) {
@@ -168,7 +169,7 @@ func TestPlatoonConclusionIsMadeByTheButtonOfThreeStudents(t *testing.T) {
 	if view, _ = f.service.PortraitFor(f.teacherID, testPlatoonTask, "101"); view.Status != portraitReady {
 		t.Fatalf("after: %+v", view)
 	}
-	if platoonCalls != 1 || m.count() != 4 || !strings.Contains(user, `"студентов": 3`) || !strings.Contains(user, `"образ_защитника"`) || !strings.Contains(user, `"среда_по_главе_1"`) {
+	if platoonCalls != 1 || m.count() != 1 || !strings.Contains(user, `"студентов": 3`) || !strings.Contains(user, `"образ_защитника"`) || !strings.Contains(user, `"среда_по_главе_1"`) {
 		t.Fatalf("%d calls, input: %.400s", m.count(), user)
 	}
 	for _, name := range f.names {

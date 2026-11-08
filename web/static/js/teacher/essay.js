@@ -238,7 +238,7 @@ ${unlisted.length ? `<div class="essay-teacher"><b>Не сопоставлены
         box.innerHTML = `<h2>Сводка по выпуску</h2><p class="muted">В сводке эссе с готовым разбором: ${c.analysed}. Сдано ${c.submitted}, не сдано ${c.notSubmitted}, у ${c.withPrevious} есть прежнее эссе${c.withoutAnalysis ? `, без разбора ${c.withoutAnalysis} (в сводку не вошли)` : ''}.</p>
   <div class="toolbar"><button id="compose" ${!summary.canCompose || busy || summary.status === 'off' ? 'disabled' : ''}>${label}</button> ${note}</div><div id="summary-error" role="alert"></div>
   ${sm ? summaryBody(sm) : ''}<h2 style="margin-top:1.5rem">Преподаватели</h2>${teachersConclusion(sm)}<p class="muted">${summary.teachers.positions ? 'Что сказали о преподавателях — по должностям и фамилиям, как их написали студенты. Считает программа по разборам; сводка модели для этого не нужна.' : 'Что сказали о преподавателях из списка ВУЦ. Считает программа по разборам; сводка модели для этого не нужна.'}</p>${teachersBlock(summary.teachers)}
-  <h2 style="margin-top:1.5rem">Ценности по указу № 809</h2>${window.valuesBlock.summary(values, esc, {noun: 'авторов', of: 'сданных эссе'})}`;
+  <h2 style="margin-top:1.5rem">Ценности в эссе</h2>${window.valuesBlock.summary(values, esc, {noun: 'авторов', of: 'сданных эссе'})}`;
         box.querySelector('#compose').onclick = async e => {
             e.target.disabled = true;
             try {

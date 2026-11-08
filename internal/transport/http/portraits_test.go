@@ -95,6 +95,12 @@ func TestPortraitRoutes(t *testing.T) {
 		t.Fatalf("draft: %d", code)
 	}
 	s.submit(t)
+	// Since 6 November 2026 the program writes the autobiography conclusion:
+	// the model makes a portrait only when the teacher asks.
+	if _, view := s.portrait(t, "GET", true); view["status"] != "none" || m.calls.Load() != 0 {
+		t.Fatalf("made by itself: %v after %d calls", view, m.calls.Load())
+	}
+	s.portrait(t, "POST", true)
 	view := s.waitFor(t, "ready")
 	portrait := view["portrait"].(map[string]any)
 	output := portrait["output"].(map[string]any)
@@ -141,6 +147,7 @@ func TestPortraitStatusOffWithoutModelAndFailedUntilRetried(t *testing.T) {
 	}}
 	s.a.service.UseModel(m)
 	defer s.a.service.Close()
+	s.portrait(t, "POST", true)
 	failed := s.waitFor(t, "failed")
 	if failed["reason"] == "" || failed["portrait"] != nil {
 		t.Fatalf("failed view %v", failed)

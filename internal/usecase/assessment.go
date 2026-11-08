@@ -192,6 +192,12 @@ func (a *Service) analyze(s model.Session, all []model.SessionRecord) map[string
 	result["psychological"] = engine.psychologicalReport(s)
 	if portrait := a.TestPortrait(s); portrait != nil {
 		result["methods"] = portrait
+		// The conclusion by the program (test_conclusion.go), only on a finished test.
+		if s.Completed {
+			if c := a.testConclusion(portrait); c != nil {
+				result["conclusion"] = c
+			}
+		}
 	}
 	return result
 }

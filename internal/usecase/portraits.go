@@ -102,6 +102,14 @@ type portraitLayer struct {
 	done   chan struct{}
 	// pause is the wait between attempts of one portrait.
 	pause time.Duration
+	// autobiographyModel lets the model write the autobiography conclusion
+	// by itself. Off since 6 November 2026: the program writes it
+	// (autobiography_conclusion.go). The tests of the portrait layer turn it on.
+	autobiographyModel bool
+	// testModel lets the model write the portrait by a test by itself. Off
+	// since 6 November 2026: the program writes the conclusion
+	// (test_conclusion.go). The tests of the test portrait turn it on.
+	testModel bool
 }
 
 func newPortraitLayer() *portraitLayer {
@@ -235,7 +243,7 @@ func (a *Service) queuePortraits(s Source) {
 		return
 	}
 	for _, task := range l.tasks {
-		if task.Accepts(db, s) {
+		if !task.Manual && task.Accepts(db, s) {
 			a.enqueuePortrait(db, task, s, false)
 		}
 	}
@@ -258,7 +266,7 @@ func (a *Service) queueMissingPortraits() {
 	}
 	for _, s := range sources {
 		for _, task := range a.portraits.tasks {
-			if task.Accepts(db, s) {
+			if !task.Manual && task.Accepts(db, s) {
 				a.enqueuePortrait(db, task, s, false)
 			}
 		}

@@ -55,6 +55,8 @@ func newTestPortraitFixture(t *testing.T, methods bool) *testPortraitFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The test portrait is the subject here: its model is on.
+	s.portraits.testModel = true
 	s.RegisterPrompts(prompts...)
 	s.portraits.pause = 0
 	t.Cleanup(s.Close)

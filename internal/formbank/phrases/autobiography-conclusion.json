@@ -1,0 +1,1156 @@
+{
+  "about": "Словарь фраз вывода по автобиографии, который собирает программа без языковой модели (internal/usecase/autobiography_conclusion.go). Здесь только тексты; когда какая фраза ставится, решает код. Правила — Вики/Для руководителя/Выводы без модели — словарь фраз и ключ.md, раздел «Автобиография». Ключи — id вариантов анкеты (internal/formbank/autobiography.json и refs/). {…} — подстановки кода.",
+  "nothing": "Сведений о занятиях не указал.",
+  "levels": {
+    "physical": {
+      "high": "физически развит отлично",
+      "medium": "физически развит хорошо",
+      "initial": "имеет начальную спортивную подготовку"
+    },
+    "other": {
+      "high": "подготовлен отлично",
+      "medium": "подготовлен хорошо",
+      "initial": "имеет начальный опыт"
+    }
+  },
+  "terms": {
+    "once": "разово",
+    "y1": "до года",
+    "y13": "от одного до трёх лет",
+    "y35": "от трёх до пяти лет",
+    "y5": "больше пяти лет",
+    "y3": "больше трёх лет",
+    "m1": "до месяца",
+    "m6": "до полугода",
+    "y1p": "больше года"
+  },
+  "education": {
+    "types": {
+      "school": "школу",
+      "lyceum": "лицей",
+      "gymnasium": "гимназию",
+      "cadet": "кадетский корпус",
+      "suvorov": "довузовское военное училище (суворовское, нахимовское или президентское кадетское)",
+      "college": "колледж",
+      "university": "вуз",
+      "other": "учебное заведение"
+    },
+    "feminine": [
+      "school",
+      "gymnasium"
+    ],
+    "profiles": {
+      "fiziko_matematicheskiy": "физико-математический",
+      "informatsionno_tekhnologicheskiy": "информационно-технологический",
+      "inzhenerno_tekhnicheskiy": "инженерно-технический",
+      "estestvenno_nauchnyy": "естественно-научный",
+      "gumanitarnyy": "гуманитарный",
+      "lingvisticheskiy": "лингвистический",
+      "sotsialno_ekonomicheskiy": "социально-экономический",
+      "sportivnyy": "спортивный",
+      "art": "художественно-музыкальный"
+    },
+    "cadetClass": "Окончил школу с кадетским классом",
+    "finished": "Окончил",
+    "notFinished": "Учился в",
+    "medal": "с медалью",
+    "honours": "с отличием",
+    "speciality": "по специальности «{speciality}»",
+    "typesIn": {
+      "school": "школе",
+      "lyceum": "лицее",
+      "gymnasium": "гимназии",
+      "cadet": "кадетском корпусе",
+      "suvorov": "довузовском военном училище",
+      "college": "колледже",
+      "university": "вузе",
+      "other": "учебном заведении"
+    }
+  },
+  "patriotic": {
+    "forms": {
+      "yunarmia": "«Юнармии»",
+      "zarnitsa": "«Зарнице»",
+      "first": "«Движении первых»",
+      "cadet_class": "кадетском классе",
+      "club": "военно-патриотическом клубе",
+      "camps": "военно-спортивных сборах",
+      "dosaaf": "занятиях ДОСААФ",
+      "school_camps": "учебных военных сборах",
+      "search": "поисковом отряде",
+      "honor": "Почётном карауле",
+      "games": "спартакиаде допризывной молодёжи",
+      "reenact": "военно-исторической реконструкции"
+    },
+    "levels": {
+      "school": "на школьном уровне",
+      "city": "на городском уровне",
+      "region": "на региональном уровне",
+      "russia": "на всероссийском уровне"
+    },
+    "roles": {
+      "leader": "в должности командира отделения или отряда",
+      "organizer": "в роли организатора, инструктора"
+    },
+    "lineRoles": {
+      "member": "участника",
+      "leader": "командира отделения или отряда",
+      "organizer": "организатора, инструктора"
+    },
+    "skills": {
+      "fire": "огневую",
+      "drill": "строевую",
+      "medicine": "первую помощь и тактическую медицину",
+      "drones": "управление беспилотниками",
+      "topography": "топографию и ориентирование на местности",
+      "comms": "связь",
+      "parachute": "парашютные прыжки",
+      "driving": "вождение"
+    },
+    "training": "прошёл начальную военную подготовку — {skills}",
+    "own": "Его ",
+    "ownWords": [
+      "отделение",
+      "отряд",
+      "команда",
+      "взвод"
+    ],
+    "responsible": "готов отвечать за свои поступки и брать на себя ответственность за других",
+    "heritage": "с уважением относится к культурно-историческому наследию страны",
+    "other": ", а также — {other}",
+    "onlyOther": "Участвовал в военно-патриотической деятельности — {other}"
+  },
+  "science": {
+    "forms": {
+      "society": "занимался в научном обществе",
+      "olympiads": "участвовал в олимпиадах",
+      "conferences": "участвовал в конференциях и конкурсах проектов",
+      "publications": "имеет публикации",
+      "lab": "работал в лаборатории или научном проекте",
+      "tech": "занимался в технических кружках по робототехнике и программированию"
+    },
+    "areas": {
+      "math": "математики",
+      "it": "информационных технологий",
+      "physics": "физики и техники",
+      "natural": "естественных наук",
+      "humanities": "гуманитарных наук",
+      "social": "социально-экономических наук"
+    },
+    "levels": {
+      "school": "школьного уровня",
+      "city": "городского уровня",
+      "region": "регионального уровня",
+      "russia": "всероссийского уровня",
+      "world": "международного уровня"
+    },
+    "results": {
+      "prize": "Призёр научных конкурсов {level}",
+      "winner": "Победитель научных конкурсов {level}"
+    },
+    "inArea": "в области {area}",
+    "analytic": "Имеет аналитический склад ума, способен самостоятельно решать сложные {tasks} задачи",
+    "tasks": {
+      "math": "математические",
+      "it": "технические",
+      "physics": "технические"
+    }
+  },
+  "sport": {
+    "now": "занимается",
+    "before": "занимался",
+    "earlier": "раньше",
+    "ranks": {
+      "junior": "имеет юношеский разряд",
+      "r3": "имеет третий разряд",
+      "r2": "имеет второй разряд",
+      "r1": "имеет первый разряд",
+      "kms": "кандидат в мастера спорта",
+      "ms": "мастер спорта",
+      "msmk": "мастер спорта международного класса"
+    },
+    "shortRanks": {
+      "junior": "юношеский разряд",
+      "r3": "III разряд",
+      "r2": "II разряд",
+      "r1": "I разряд",
+      "kms": "КМС",
+      "ms": "МС",
+      "msmk": "МСМК"
+    },
+    "contests": "выступал на соревнованиях {level}",
+    "levels": {
+      "school": "школьного уровня",
+      "city": "городского уровня",
+      "region": "регионального уровня",
+      "russia": "всероссийского уровня",
+      "world": "международного уровня"
+    },
+    "gto": {
+      "gold": "имеет золотой знак ГТО",
+      "silver": "имеет серебряный знак ГТО",
+      "bronze": "имеет бронзовый знак ГТО"
+    },
+    "professional": "профессиональный уровень",
+    "amateur": "любительский уровень",
+    "developed": "развиты {qualities}",
+    "experience": "есть опыт соревнований {level}",
+    "fighter": "Целеустремлён, морально-психологически устойчив, обладает бойцовскими качествами.",
+    "physical": "Физически развит отлично: {traits}.",
+    "lookAhead": "умеет просчитывать свои действия наперёд",
+    "groups": {
+      "martial": {
+        "physical": true,
+        "qualities": "сила, выносливость, координация, навыки самозащиты без оружия",
+        "traits": "сильный, выносливый, с хорошей координацией"
+      },
+      "fencing": {
+        "physical": true,
+        "qualities": "быстрота реакции, координация, тактическое мышление",
+        "traits": "быстрый, с хорошей реакцией и координацией"
+      },
+      "endurance": {
+        "physical": true,
+        "qualities": "выносливость, скорость",
+        "traits": "выносливый, быстрый"
+      },
+      "swimming": {
+        "physical": true,
+        "qualities": "общая выносливость, навыки плавания",
+        "traits": "выносливый, уверенно держится на воде"
+      },
+      "team": {
+        "physical": true,
+        "qualities": "выносливость, скорость, умение действовать в команде",
+        "traits": "выносливый, быстрый, умеет действовать в команде"
+      },
+      "strength": {
+        "physical": true,
+        "qualities": "сила, силовая выносливость",
+        "traits": "сильный, выносливый"
+      },
+      "applied": {
+        "physical": true,
+        "qualities": "общая физическая подготовка, выносливость, сила",
+        "traits": "разносторонне физически подготовлен"
+      },
+      "coordination": {
+        "physical": true,
+        "qualities": "координация, гибкость, точность движений",
+        "traits": "ловкий, с хорошей координацией"
+      },
+      "racket": {
+        "physical": true,
+        "qualities": "быстрота реакции, координация, выносливость",
+        "traits": "быстрый, с хорошей реакцией"
+      },
+      "outdoor": {
+        "physical": true,
+        "qualities": "выносливость, умение действовать в природных условиях",
+        "traits": "выносливый, умеет действовать в природных условиях"
+      },
+      "orienteering": {
+        "physical": true,
+        "qualities": "навыки ориентирования на местности, выносливость",
+        "traits": "выносливый, ориентируется на местности по карте"
+      },
+      "board": {
+        "physical": true,
+        "qualities": "координация, равновесие",
+        "traits": "ловкий, с хорошей координацией"
+      },
+      "tactical": {
+        "physical": true,
+        "qualities": "выносливость, умение действовать в команде по общему замыслу",
+        "traits": "выносливый, умеет действовать в команде"
+      },
+      "general": {
+        "physical": true,
+        "qualities": "",
+        "traits": ""
+      },
+      "shooting": {
+        "physical": false,
+        "qualities": "точность, устойчивость внимания, контроль дыхания и движений",
+        "traits": ""
+      },
+      "motor": {
+        "physical": false,
+        "qualities": "быстрота реакции, внимание, техническая подготовка",
+        "traits": ""
+      },
+      "technical": {
+        "physical": false,
+        "qualities": "техническое мышление, точность",
+        "traits": ""
+      },
+      "intellectual": {
+        "physical": false,
+        "qualities": "логическое мышление, умение оценивать обстановку и планировать действия на несколько ходов вперёд, концентрация внимания",
+        "traits": ""
+      },
+      "programming": {
+        "physical": false,
+        "qualities": "алгоритмическое мышление, умение решать задачи в ограниченное время",
+        "traits": ""
+      },
+      "cyber": {
+        "physical": false,
+        "qualities": "скорость реакции, распределение внимания, согласованность действий в команде",
+        "traits": ""
+      },
+      "other": {
+        "physical": true,
+        "qualities": "",
+        "traits": ""
+      }
+    },
+    "fighters": [
+      "martial"
+    ],
+    "fighterRanks": [
+      "r1",
+      "kms",
+      "ms",
+      "msmk"
+    ],
+    "lookAheadGroups": [
+      "intellectual"
+    ],
+    "professionalRanks": [
+      "kms",
+      "ms",
+      "msmk"
+    ],
+    "experienceLevels": [
+      "region",
+      "russia",
+      "world"
+    ],
+    "kinds": {
+      "aviamodelnyy_sport": {
+        "name": "авиамодельным спортом",
+        "group": "technical"
+      },
+      "avtosport": {
+        "name": "автоспортом",
+        "group": "motor"
+      },
+      "aykido": {
+        "name": "айкидо",
+        "group": "martial"
+      },
+      "akademicheskaya_greblya": {
+        "name": "академической греблей",
+        "group": "endurance"
+      },
+      "akrobatika": {
+        "name": "акробатикой",
+        "group": "coordination"
+      },
+      "alpinizm": {
+        "name": "альпинизмом",
+        "group": "outdoor"
+      },
+      "armeyskiy_rukopashnyy_boy": {
+        "name": "армейским рукопашным боем",
+        "group": "martial"
+      },
+      "armrestling": {
+        "name": "армрестлингом",
+        "group": "strength"
+      },
+      "badminton": {
+        "name": "бадминтоном",
+        "group": "racket"
+      },
+      "basketbol": {
+        "name": "баскетболом",
+        "group": "team"
+      },
+      "batut": {
+        "name": "прыжками на батуте",
+        "group": "coordination"
+      },
+      "beysbol": {
+        "name": "бейсболом",
+        "group": "team"
+      },
+      "biatlon": {
+        "name": "биатлоном",
+        "group": "endurance"
+      },
+      "bilyard": {
+        "name": "бильярдом",
+        "group": "general"
+      },
+      "bobsley": {
+        "name": "бобслеем",
+        "group": "board"
+      },
+      "bodibilding_i_fitnes": {
+        "name": "бодибилдингом и фитнесом",
+        "group": "strength"
+      },
+      "boks": {
+        "name": "боксом",
+        "group": "martial"
+      },
+      "bolshoy_tennis": {
+        "name": "большим теннисом",
+        "group": "racket"
+      },
+      "bouling": {
+        "name": "боулингом",
+        "group": "general"
+      },
+      "bridzh": {
+        "name": "бриджем",
+        "group": "intellectual"
+      },
+      "velosport_mauntinbayk_bmx": {
+        "name": "велоспортом (маунтинбайк, BMX)",
+        "group": "endurance"
+      },
+      "velosport_shosse_trek": {
+        "name": "велоспортом (шоссе, трек)",
+        "group": "endurance"
+      },
+      "vodnoe_polo": {
+        "name": "водным поло",
+        "group": "team"
+      },
+      "vodnye_lyzhi": {
+        "name": "водными лыжами",
+        "group": "board"
+      },
+      "voenno_prikladnoe_mnogobore": {
+        "name": "военно-прикладным многоборьем",
+        "group": "applied"
+      },
+      "voleybol": {
+        "name": "волейболом",
+        "group": "team"
+      },
+      "volnaya_borba": {
+        "name": "вольной борьбой",
+        "group": "martial"
+      },
+      "vorkaut": {
+        "name": "воркаутом",
+        "group": "strength"
+      },
+      "gandbol": {
+        "name": "гандболом",
+        "group": "team"
+      },
+      "gimnastika_sportivnaya": {
+        "name": "спортивной гимнастикой",
+        "group": "coordination"
+      },
+      "gimnastika_khudozhestvennaya": {
+        "name": "художественной гимнастикой",
+        "group": "coordination"
+      },
+      "girevoy_sport": {
+        "name": "гиревым спортом",
+        "group": "strength"
+      },
+      "go": {
+        "name": "го",
+        "group": "intellectual"
+      },
+      "golf": {
+        "name": "гольфом",
+        "group": "general"
+      },
+      "gornye_lyzhi": {
+        "name": "горными лыжами",
+        "group": "board"
+      },
+      "gornyy_turizm": {
+        "name": "горным туризмом",
+        "group": "outdoor"
+      },
+      "greblya_na_baydarkakh_i_kanoe": {
+        "name": "греблей на байдарках и каноэ",
+        "group": "endurance"
+      },
+      "grebnoy_slalom": {
+        "name": "гребным слаломом",
+        "group": "outdoor"
+      },
+      "greko_rimskaya_borba": {
+        "name": "греко-римской борьбой",
+        "group": "martial"
+      },
+      "dayving": {
+        "name": "дайвингом",
+        "group": "swimming"
+      },
+      "darts": {
+        "name": "дартсом",
+        "group": "general"
+      },
+      "deltaplanerizm": {
+        "name": "дельтапланеризмом",
+        "group": "outdoor"
+      },
+      "dzhiu_dzhitsu": {
+        "name": "джиу-джитсу",
+        "group": "martial"
+      },
+      "dzyudo": {
+        "name": "дзюдо",
+        "group": "martial"
+      },
+      "yoga": {
+        "name": "йогой",
+        "group": "general"
+      },
+      "karate": {
+        "name": "карате",
+        "group": "martial"
+      },
+      "karting": {
+        "name": "картингом",
+        "group": "motor"
+      },
+      "kekusinkay": {
+        "name": "кёкусинкай",
+        "group": "martial"
+      },
+      "kerling": {
+        "name": "керлингом",
+        "group": "general"
+      },
+      "kibersport": {
+        "name": "киберспортом",
+        "group": "cyber"
+      },
+      "kikboksing": {
+        "name": "кикбоксингом",
+        "group": "martial"
+      },
+      "konnyy_sport": {
+        "name": "конным спортом",
+        "group": "general"
+      },
+      "konkobezhnyy_sport": {
+        "name": "конькобежным спортом",
+        "group": "endurance"
+      },
+      "kross_i_beg_na_dlinnye_distantsii": {
+        "name": "кроссом и бегом на длинные дистанции",
+        "group": "endurance"
+      },
+      "krossfit": {
+        "name": "кроссфитом",
+        "group": "strength"
+      },
+      "kudo": {
+        "name": "кудо",
+        "group": "martial"
+      },
+      "lapta": {
+        "name": "лаптой",
+        "group": "team"
+      },
+      "legkaya_atletika": {
+        "name": "лёгкой атлетикой",
+        "group": "endurance"
+      },
+      "lyzhnye_gonki": {
+        "name": "лыжными гонками",
+        "group": "endurance"
+      },
+      "mini_futbol": {
+        "name": "мини-футболом",
+        "group": "team"
+      },
+      "mnogobore_gto": {
+        "name": "многоборьем ГТО",
+        "group": "applied"
+      },
+      "motokross": {
+        "name": "мотокроссом",
+        "group": "motor"
+      },
+      "motosport": {
+        "name": "мотоспортом",
+        "group": "motor"
+      },
+      "nastolnyy_tennis": {
+        "name": "настольным теннисом",
+        "group": "racket"
+      },
+      "parashyutnyy_sport": {
+        "name": "парашютным спортом",
+        "group": "outdoor"
+      },
+      "parkur": {
+        "name": "паркуром",
+        "group": "coordination"
+      },
+      "parusnyy_sport": {
+        "name": "парусным спортом",
+        "group": "outdoor"
+      },
+      "pauerlifting": {
+        "name": "пауэрлифтингом",
+        "group": "strength"
+      },
+      "peyntbol": {
+        "name": "пейнтболом",
+        "group": "tactical"
+      },
+      "plavanie": {
+        "name": "плаванием",
+        "group": "swimming"
+      },
+      "plyazhnyy_voleybol": {
+        "name": "пляжным волейболом",
+        "group": "team"
+      },
+      "podvodnyy_sport": {
+        "name": "подводным спортом",
+        "group": "swimming"
+      },
+      "poliatlon": {
+        "name": "полиатлоном",
+        "group": "applied"
+      },
+      "prakticheskaya_strelba": {
+        "name": "практической стрельбой",
+        "group": "shooting"
+      },
+      "pryzhki_v_vodu": {
+        "name": "прыжками в воду",
+        "group": "coordination"
+      },
+      "pryzhki_na_lyzhakh_s_tramplina": {
+        "name": "прыжками на лыжах с трамплина",
+        "group": "board"
+      },
+      "pulevaya_strelba": {
+        "name": "пулевой стрельбой",
+        "group": "shooting"
+      },
+      "radiosport": {
+        "name": "радиоспортом",
+        "group": "technical"
+      },
+      "rafting": {
+        "name": "рафтингом",
+        "group": "outdoor"
+      },
+      "regbi": {
+        "name": "регби",
+        "group": "team"
+      },
+      "rolikovye_konki": {
+        "name": "роликовыми коньками",
+        "group": "board"
+      },
+      "rukopashnyy_boy": {
+        "name": "рукопашным боем",
+        "group": "martial"
+      },
+      "sambo": {
+        "name": "самбо",
+        "group": "martial"
+      },
+      "sannyy_sport": {
+        "name": "санным спортом",
+        "group": "board"
+      },
+      "serfing": {
+        "name": "сёрфингом",
+        "group": "board"
+      },
+      "silovoe_troebore": {
+        "name": "силовым троеборьем",
+        "group": "strength"
+      },
+      "skalolazanie": {
+        "name": "скалолазанием",
+        "group": "outdoor"
+      },
+      "skvosh": {
+        "name": "сквошем",
+        "group": "racket"
+      },
+      "skeytbording": {
+        "name": "скейтбордингом",
+        "group": "board"
+      },
+      "skeleton": {
+        "name": "скелетоном",
+        "group": "board"
+      },
+      "ski_alpinizm": {
+        "name": "ски-альпинизмом",
+        "group": "outdoor"
+      },
+      "sluzhebno_prikladnye_vidy_sporta": {
+        "name": "служебно-прикладными видами спорта",
+        "group": "applied"
+      },
+      "smeshannye_edinoborstva_mma": {
+        "name": "смешанными единоборствами (MMA)",
+        "group": "martial"
+      },
+      "snoubord": {
+        "name": "сноубордом",
+        "group": "board"
+      },
+      "sovremennoe_pyatibore": {
+        "name": "современным пятиборьем",
+        "group": "applied"
+      },
+      "sportivnaya_aerobika": {
+        "name": "спортивной аэробикой",
+        "group": "coordination"
+      },
+      "sportivnaya_rybalka": {
+        "name": "спортивной рыбалкой",
+        "group": "general"
+      },
+      "sportivnaya_khodba": {
+        "name": "спортивной ходьбой",
+        "group": "endurance"
+      },
+      "sportivnoe_orientirovanie": {
+        "name": "спортивным ориентированием",
+        "group": "orienteering"
+      },
+      "sportivnoe_programmirovanie": {
+        "name": "спортивным программированием",
+        "group": "programming"
+      },
+      "sportivnyy_turizm": {
+        "name": "спортивным туризмом",
+        "group": "outdoor"
+      },
+      "stendovaya_strelba": {
+        "name": "стендовой стрельбой",
+        "group": "shooting"
+      },
+      "straykbol": {
+        "name": "страйкболом",
+        "group": "tactical"
+      },
+      "strelba_iz_luka": {
+        "name": "стрельбой из лука",
+        "group": "shooting"
+      },
+      "sumo": {
+        "name": "сумо",
+        "group": "martial"
+      },
+      "tayskiy_boks": {
+        "name": "тайским боксом",
+        "group": "martial"
+      },
+      "tantsevalnyy_sport": {
+        "name": "танцевальным спортом",
+        "group": "coordination"
+      },
+      "triatlon": {
+        "name": "триатлоном",
+        "group": "endurance"
+      },
+      "tkhekvondo": {
+        "name": "тхэквондо",
+        "group": "martial"
+      },
+      "tyazhelaya_atletika": {
+        "name": "тяжёлой атлетикой",
+        "group": "strength"
+      },
+      "ushu": {
+        "name": "ушу",
+        "group": "martial"
+      },
+      "fekhtovanie": {
+        "name": "фехтованием",
+        "group": "fencing"
+      },
+      "figurnoe_katanie": {
+        "name": "фигурным катанием",
+        "group": "coordination"
+      },
+      "florbol": {
+        "name": "флорболом",
+        "group": "team"
+      },
+      "fristayl": {
+        "name": "фристайлом",
+        "group": "board"
+      },
+      "futbol": {
+        "name": "футболом",
+        "group": "team"
+      },
+      "khokkey_na_rolikakh": {
+        "name": "хоккеем на роликах",
+        "group": "team"
+      },
+      "khokkey_na_trave": {
+        "name": "хоккеем на траве",
+        "group": "team"
+      },
+      "khokkey_s_myachom": {
+        "name": "хоккеем с мячом",
+        "group": "team"
+      },
+      "khokkey_s_shayboy": {
+        "name": "хоккеем с шайбой",
+        "group": "team"
+      },
+      "chir_sport": {
+        "name": "чир-спортом",
+        "group": "coordination"
+      },
+      "shakhmaty": {
+        "name": "шахматами",
+        "group": "intellectual"
+      },
+      "shashki": {
+        "name": "шашками",
+        "group": "intellectual"
+      },
+      "short_trek": {
+        "name": "шорт-треком",
+        "group": "endurance"
+      },
+      "other": {
+        "name": "",
+        "group": "other"
+      }
+    },
+    "otherKind": "видом спорта «{kind}»"
+  },
+  "creative": {
+    "directions": {
+      "instrument": {
+        "name": "музыкой",
+        "qualities": "музыкальный слух, чувство ритма, память и внимание"
+      },
+      "vocal": {
+        "name": "вокалом",
+        "qualities": "музыкальный слух, владение голосом, умение выступать перед аудиторией"
+      },
+      "dance": {
+        "name": "танцами",
+        "qualities": "координация, чувство ритма, выносливость"
+      },
+      "theatre": {
+        "name": "театром",
+        "qualities": "умение выступать перед аудиторией, владение голосом"
+      },
+      "art": {
+        "name": "изобразительным искусством",
+        "qualities": "наблюдательность, внимание к деталям"
+      },
+      "writing": {
+        "name": "литературным творчеством",
+        "qualities": "умение ясно излагать мысли письменно"
+      },
+      "media": {
+        "name": "фото и видео",
+        "qualities": "наблюдательность, внимание к деталям"
+      },
+      "kvn": {
+        "name": "КВН и ведением мероприятий",
+        "qualities": "умение выступать перед аудиторией, находчивость"
+      },
+      "other": {
+        "name": "творчеством",
+        "qualities": ""
+      }
+    },
+    "instrumentSchool": "Окончил школу искусств по классу {detail}",
+    "learning": {
+      "art_school_done": "Окончил школу искусств, занимался {direction}",
+      "art_school_not": "Учился в школе искусств, занимался {direction}",
+      "studio": "Занимался {direction} в кружке или студии",
+      "college": "Учился в колледже, занимался {direction}",
+      "self": "Самостоятельно занимается {direction}"
+    },
+    "contests": "участвовал в {level} конкурсах",
+    "levels": {
+      "school": "школьных",
+      "city": "городских",
+      "region": "региональных",
+      "russia": "всероссийских",
+      "world": "международных"
+    },
+    "developed": "развиты {qualities}"
+  },
+  "languages": {
+    "fluent": "Свободно владеет {instr}",
+    "talk": "На {prep} читает и может объясняться",
+    "dict": "На {prep} читает и переводит со словарём",
+    "lineDegrees": {
+      "fluent": "свободно",
+      "talk": "читает и может объясняться",
+      "dict": "читает и переводит со словарём"
+    },
+    "practice": {
+      "school_regular": "изучал в школе",
+      "school_advanced": "изучал углублённо",
+      "university": "изучает в вузе",
+      "courses": "{term} занимался на курсах или с репетитором",
+      "exam": "сдал экзамен {exam} — {result}",
+      "abroad": "{term} проходил стажировку {country}",
+      "env": "жил в языковой среде {country}",
+      "work": "использует в работе",
+      "native": "общается с носителями языка",
+      "second": "это его второй родной язык"
+    },
+    "summary": "{lead} {list}.",
+    "summaryFluent": "Свободно владеет",
+    "summaryItem": "{instr} на уровне {level}",
+    "summaryNext": "{short} — на уровне {level}",
+    "native": "общается с носителями",
+    "abroadLine": "стажировался {country}",
+    "summaryPlain": "Владеет",
+    "summaryBare": "{instr}",
+    "levelExam": "уровень {level} ({exam})",
+    "examOnly": "{exam}"
+  },
+  "volunteering": {
+    "directions": {
+      "social": "социальном волонтёрстве — помощи пожилым, детям и людям с инвалидностью",
+      "events": "событийном волонтёрстве — на мероприятиях и форумах",
+      "patriotic": "патриотическом волонтёрстве — помощи ветеранам и акциях памяти",
+      "svo": "помощи участникам СВО и их семьям",
+      "eco": "экологическом волонтёрстве",
+      "rescue": "поисково-спасательном волонтёрстве",
+      "animals": "помощи животным",
+      "donor": "донорстве",
+      "medical": "медицинском волонтёрстве"
+    },
+    "sentence": "{term} участвовал в {directions}",
+    "coordinator": ", был координатором и организатором",
+    "organizer": "Обладает организаторскими способностями: координировал волонтёрские акции, умеет принимать решения и брать ответственность на себя."
+  },
+  "trips": {
+    "purposes": {
+      "tourism": "в туристическую поездку",
+      "study": "на учёбу или стажировку",
+      "work": "на работу",
+      "relatives": "к родственникам",
+      "sport": "на соревнования",
+      "other": ""
+    },
+    "sentence": "Выезжал {purpose} {country}",
+    "lived": "Жил {country}"
+  },
+  "hobbies": {
+    "items": {
+      "reading": "чтением",
+      "tech": "техникой, авто и мото",
+      "coding": "программированием",
+      "games": "компьютерными играми и киберспортом",
+      "hiking": "туризмом и походами",
+      "hunting": "охотой и рыбалкой",
+      "chess": "шахматами и настольными играми",
+      "history": "историей",
+      "radio": "моделированием и радиотехникой",
+      "cooking": "кулинарией",
+      "collecting": "коллекционированием"
+    },
+    "sentence": "Увлекается {list}.",
+    "own": "Ещё одно увлечение — {own}."
+  },
+  "routine": "Имеет представление о распорядке дня и требованиях военной службы.",
+  "leader": "Обладает организаторскими способностями на уровне командира отделения: умеет принимать решения и брать ответственность на себя.",
+  "patriotOrganizer": "Обладает организаторскими способностями: был организатором и инструктором в военно-патриотической деятельности, умеет принимать решения и брать ответственность на себя.",
+  "attention": {
+    "military": "{Parent} — военнослужащий{position}. Военная среда знакома ему с детства; у юношей из семей военных отношение к службе в среднем положительнее, а выбор военной подготовки нередко — продолжение семейной традиции. В беседе важно выяснить, собственный ли это выбор или ожидание семьи: от этого зависит, насколько устойчивой останется мотивация, если подготовка окажется труднее ожиданий.",
+    "noFather": "Воспитывался матерью{unknown}. У юношей, выросших без отца, отношение к армии в среднем настороженнее, но при постоянном общении с отцом или другим близким мужчиной это сглаживается. В беседе важно выяснить, с какого возраста он рос без отца{contact}, есть ли рядом взрослый мужчина, на которого он опирается (отчим, дед{coach}), и как он воспринимает требования командира.",
+    "unknownFather": ", сведений об отце не имеет",
+    "contactFather": ", общается ли с отцом",
+    "coach": ", тренер",
+    "noMother": "Воспитывался отцом{unknown}. В беседе важно выяснить, с какого возраста он рос без матери и кто из взрослых был ему близок.",
+    "unknownMother": ", сведений о матери не имеет",
+    "guardians": "Воспитывался опекунами или в приёмной семье. В беседе важно выяснить, кто из взрослых ему близок и на кого он опирается.",
+    "relatives": "Воспитывался бабушкой, дедушкой или другими родственниками. В беседе важно выяснить, кто из взрослых ему близок и на кого он опирается.",
+    "orphanage": "Воспитывался в детском доме или интернате. У выпускников детских домов чаще трудности с выбором профессии и с близкими отношениями, при этом самооценка обычно в норме. В беседе важно выяснить, есть ли у него близкий взрослый, на которого он может опереться, и насколько осознанно он выбрал военную подготовку.",
+    "died": "{Parent} умер{a} в {year} году{age}. В беседе важно выяснить, кто после этого стал для него опорой в семье, и учитывать эту утрату.",
+    "age": ", когда студенту было около {age}",
+    "parents": {
+      "father": "Отец",
+      "mother": "Мать"
+    }
+  },
+  "training": {
+    "served": "Служил в {branch}{details}: знаком с воинским порядком и требованиями службы.",
+    "servedOther": "Вооружённых силах",
+    "position": "должность — {position}",
+    "rank": "звание — {rank}",
+    "work": "До вуза работал ({positions}): привык к труду и ответственности за порученное дело.",
+    "workNoPosition": "До вуза работал: привык к труду и ответственности за порученное дело.",
+    "married": "Женат{children}: привык отвечать не только за себя, но и за близких.",
+    "children": "Есть {children}: привык отвечать не только за себя, но и за близких.",
+    "child": "ребёнок",
+    "kids": "дети",
+    "withChildren": ", есть {children}",
+    "branches": {
+      "sukhoputnye_voyska": "Сухопутных войсках",
+      "motostrelkovye_voyska": "мотострелковых войсках",
+      "tankovye_voyska": "танковых войсках",
+      "raketnye_voyska_i_artilleriya": "ракетных войсках и артиллерии",
+      "voyska_protivovozdushnoy_oborony": "войсках противовоздушной обороны",
+      "vozdushno_desantnye_voyska": "Воздушно-десантных войсках",
+      "voenno_vozdushnye_sily": "Военно-воздушных силах",
+      "voenno_kosmicheskie_sily": "Военно-космических силах",
+      "kosmicheskie_voyska": "Космических войсках",
+      "voenno_morskoy_flot": "Военно-Морском Флоте",
+      "morskaya_pekhota": "морской пехоте",
+      "beregovye_voyska": "береговых войсках",
+      "raketnye_voyska_strategicheskogo_naznacheniya": "Ракетных войсках стратегического назначения",
+      "voyska_svyazi": "войсках связи",
+      "inzhenernye_voyska": "инженерных войсках",
+      "voyska_radiatsionnoy_khimicheskoy_i_biologicheskoy_zashchity": "войсках радиационной, химической и биологической защиты",
+      "radioelektronnaya_borba": "войсках радиоэлектронной борьбы",
+      "zheleznodorozhnye_voyska": "железнодорожных войсках",
+      "voyska_materialno_tekhnicheskogo_obespecheniya": "войсках материально-технического обеспечения",
+      "avtomobilnye_voyska": "автомобильных войсках",
+      "topograficheskaya_sluzhba": "топографической службе",
+      "voennaya_politsiya": "военной полиции",
+      "meditsinskaya_sluzhba": "медицинской службе",
+      "pogranichnye_voyska": "пограничных войсках",
+      "vnutrennie_voyska_rosgvardiya": "войсках национальной гвардии (внутренних войсках)",
+      "spetsialnye_voyska_razvedka_spetsnaz": "специальных войсках (разведка, спецназ)"
+    }
+  },
+  "consider": {
+    "own": "Привлекался к уголовной ответственности; подробности — в ответах студента.",
+    "relative": "{Who} {was} к уголовной ответственности{what}.",
+    "foreign": "У {whom} иностранное гражданство: {country}.",
+    "who": {
+      "father": "Отец",
+      "mother": "Мать",
+      "brother": "Брат",
+      "sister": "Сестра",
+      "guardian": "Опекун (приёмный родитель)",
+      "grandmother": "Бабушка",
+      "grandfather": "Дедушка",
+      "other": "Другой близкий родственник"
+    },
+    "whom": {
+      "father": "отца",
+      "mother": "матери",
+      "brother": "брата",
+      "sister": "сестры",
+      "guardian": "опекуна (приёмного родителя)",
+      "grandmother": "бабушки",
+      "grandfather": "дедушки",
+      "other": "другого близкого родственника"
+    },
+    "feminine": [
+      "mother",
+      "sister",
+      "grandmother"
+    ],
+    "was": "привлекался",
+    "wasFeminine": "привлекалась"
+  },
+  "countries": {
+    "in": {
+      "DE": "в Германии",
+      "FR": "во Франции",
+      "GB": "в Великобритании",
+      "US": "в США",
+      "IT": "в Италии",
+      "ES": "в Испании",
+      "CN": "в Китае",
+      "JP": "в Японии",
+      "KR": "в Южной Корее",
+      "TR": "в Турции",
+      "KZ": "в Казахстане",
+      "BY": "в Беларуси",
+      "UZ": "в Узбекистане",
+      "AM": "в Армении",
+      "AZ": "в Азербайджане",
+      "GE": "в Грузии",
+      "KG": "в Киргизии",
+      "TJ": "в Таджикистане",
+      "AE": "в ОАЭ",
+      "EG": "в Египте",
+      "TH": "в Таиланде",
+      "IN": "в Индии",
+      "VN": "во Вьетнаме",
+      "CZ": "в Чехии",
+      "PL": "в Польше",
+      "FI": "в Финляндии",
+      "AT": "в Австрии",
+      "CH": "в Швейцарии",
+      "CY": "на Кипре",
+      "GR": "в Греции",
+      "RS": "в Сербии",
+      "IL": "в Израиле",
+      "CA": "в Канаде",
+      "AB": "в Абхазии",
+      "MN": "в Монголии"
+    },
+    "to": {
+      "DE": "в Германию",
+      "FR": "во Францию",
+      "GB": "в Великобританию",
+      "US": "в США",
+      "IT": "в Италию",
+      "ES": "в Испанию",
+      "CN": "в Китай",
+      "JP": "в Японию",
+      "KR": "в Южную Корею",
+      "TR": "в Турцию",
+      "KZ": "в Казахстан",
+      "BY": "в Беларусь",
+      "UZ": "в Узбекистан",
+      "AM": "в Армению",
+      "AZ": "в Азербайджан",
+      "GE": "в Грузию",
+      "KG": "в Киргизию",
+      "TJ": "в Таджикистан",
+      "AE": "в ОАЭ",
+      "EG": "в Египет",
+      "TH": "в Таиланд",
+      "IN": "в Индию",
+      "VN": "во Вьетнам",
+      "CZ": "в Чехию",
+      "PL": "в Польшу",
+      "FI": "в Финляндию",
+      "AT": "в Австрию",
+      "CH": "в Швейцарию",
+      "CY": "на Кипр",
+      "GR": "в Грецию",
+      "RS": "в Сербию",
+      "IL": "в Израиль",
+      "CA": "в Канаду",
+      "AB": "в Абхазию",
+      "MN": "в Монголию"
+    },
+    "fallback": "за рубежом ({country})"
+  },
+  "forbidden": [
+    "понимает долг",
+    "отвечать за людей",
+    "ровный",
+    "по-товарищески",
+    "держит темп",
+    "корректен",
+    "умеренно",
+    "держать удар",
+    "откликается",
+    "готов помогать",
+    "систематически заниматься",
+    "нарабатывает",
+    "по опыту",
+    "это показывает",
+    "пригодится"
+  ]
+}

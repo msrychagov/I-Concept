@@ -92,7 +92,9 @@ func (a *Service) FormSubmissionDetailFor(teacherID, id string) (any, error) {
 		}
 		result := map[string]any{"submission": submission, "form": form, "student": student, "progress": formProgress(form, submission)}
 		if submission.FormID == autobiographyForm && submission.Completed {
-			result["potential"] = autobiographyPotential(form, submission.Answers)
+			potential := autobiographyPotential(form, submission.Answers)
+			result["potential"] = potential
+			result["conclusion"] = autobiographyConclusion(form, submission.Answers, potential)
 		}
 		if submission.FormID == essayForm {
 			result["essay"] = essayContext(db, submission)

@@ -64,8 +64,12 @@ func (a *Service) autobiographyTask(prompt promptbank.Prompt) portraitTask {
 	case n == 4:
 		check, attempts = checkAutobiographyAnswerV4, 5
 	}
+	// Since 6 November 2026 the conclusion is written by the program
+	// (autobiography_conclusion.go) and the model is not asked: the task is
+	// manual, so nothing is queued after a submission or at startup, and the
+	// window «Анкета» no longer asks for it. The task stays for a retry by hand.
 	return portraitTask{
-		ID: autobiographyForm, Version: prompt.Version, Prompt: prompt, Attempts: attempts, MaxTokens: tokens,
+		ID: autobiographyForm, Version: prompt.Version, Prompt: prompt, Attempts: attempts, MaxTokens: tokens, Manual: !a.portraits.autobiographyModel,
 		Accepts: func(db model.Database, s Source) bool {
 			submission, ok := findSubmission(db, s)
 			return ok && submission.FormID == autobiographyForm && submission.Completed
@@ -603,7 +607,10 @@ func (a *Service) testTask(prompt promptbank.Prompt) portraitTask {
 		ID: testPortraitTask, Version: prompt.Version, Prompt: prompt,
 		// The portrait has nine sections: about 2000 tokens of Russian text.
 		// More rules than in the autobiography: more tries, each with the notes.
-		MaxTokens: 4000, Attempts: 5,
+		// Since 6 November 2026 the conclusion is written by the program
+		// (test_conclusion.go) and the model is not asked: the task is manual,
+		// nothing is queued after a test or at startup. It stays for a retry by hand.
+		MaxTokens: 4000, Attempts: 5, Manual: !a.portraits.testModel,
 		Accepts: func(db model.Database, s Source) bool {
 			session, ok := findSession(db, s)
 			return ok && session.Completed && session.Methods && a.TestPortrait(session) != nil
