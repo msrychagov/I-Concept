@@ -392,7 +392,7 @@ func TestV5AnswerThatBreaksTheRulesFailsAfterFiveTries(t *testing.T) {
 		t.Fatalf("retry: %+v %v", retry, err)
 	}
 	f.idle()
-	if view := f.portrait(f.submission); view.Status != portraitReady || view.Portrait.Version != "v5" {
+	if view := f.portrait(f.submission); view.Status != portraitReady || view.Portrait.Version != "v6" {
 		t.Fatalf("after retry: %+v", view)
 	}
 }
@@ -413,7 +413,7 @@ func TestV4IsShownWhileV5IsMade(t *testing.T) {
 	}
 	f.service.UseModel(nil)
 	f.service.portraits.tasks = nil
-	f.service.RegisterPrompts(prompts...)
+	f.service.RegisterPrompts(upTo(prompts, autobiographyForm, 5)...)
 	if view := f.portrait(f.submission); view.Status != portraitReady || view.Portrait.Version != "v4" {
 		t.Fatalf("v4 while v5 is not made: %+v", view)
 	}

@@ -333,7 +333,8 @@ func TestPortraitV6IsShownWhileV7IsMade(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	older := slices.DeleteFunc(slices.Clone(prompts), func(p promptbank.Prompt) bool { return p.Task == testPortraitTask && p.Version == "v7" })
+	prompts = upTo(prompts, testPortraitTask, 7)
+	older := upTo(prompts, testPortraitTask, 6)
 	f.service.portraits.tasks = nil
 	f.service.RegisterPrompts(older...)
 	answer := func(_ int, c Completion) (string, error) {

@@ -274,9 +274,9 @@ func TestPortraitV5IsShownWhileV6IsMade(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Without v7, the newest version: this test is about v6.
-	prompts = slices.DeleteFunc(prompts, func(p promptbank.Prompt) bool { return p.Task == testPortraitTask && p.Version == "v7" })
-	older := slices.DeleteFunc(slices.Clone(prompts), func(p promptbank.Prompt) bool { return p.Task == testPortraitTask && p.Version == "v6" })
+	// Without the versions after v6: this test is about v6.
+	prompts = upTo(prompts, testPortraitTask, 6)
+	older := upTo(prompts, testPortraitTask, 5)
 	f.service.portraits.tasks = nil
 	f.service.RegisterPrompts(older...)
 	answer := func(_ int, c Completion) (string, error) {

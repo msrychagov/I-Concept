@@ -246,7 +246,7 @@ func TestEarlierEssayOfTheSameAuthorGoesWithTheNewOne(t *testing.T) {
 		} `json:"formation"`
 	}
 	_ = json.Unmarshal(view.Portrait.Output, &output)
-	if len(output.Formation.Before) != 1 || output.Formation.Before[0].Question != "1.1" || view.Portrait.Version != "v3" {
+	if len(output.Formation.Before) != 1 || output.Formation.Before[0].Question != "1.1" || view.Portrait.Version != "v4" {
 		t.Fatalf("quotes of the earlier essay: %+v", output.Formation)
 	}
 }
