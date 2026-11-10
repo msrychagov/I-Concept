@@ -64,6 +64,14 @@ func TestAutobiographyConclusionWords(t *testing.T) {
 		texts := slices.Concat(c.Paragraphs, c.Attention, c.Training, c.Consider)
 		for _, area := range c.Areas {
 			texts = append(texts, area.Text)
+			if area.ID != "patriotic" {
+				continue
+			}
+			for _, word := range p.Levels["other"] {
+				if strings.Contains(area.Text, word) {
+					t.Errorf("%s: a level word in the patriotic line %q", name, area.Text)
+				}
+			}
 		}
 		for _, text := range texts {
 			lower := strings.ToLower(text)
@@ -139,7 +147,7 @@ func TestAutobiographyPhraseBook(t *testing.T) {
 	known := []string{"skills", "other", "level", "area", "forms", "tasks", "qualities", "traits", "kind", "detail", "direction",
 		"instr", "prep", "term", "exam", "result", "country", "lead", "list", "short", "directions", "purpose", "own",
 		"Parent", "position", "unknown", "contact", "coach", "a", "year", "age", "branch", "details", "rank", "positions",
-		"children", "Who", "was", "what", "whom", "speciality"}
+		"children", "Who", "was", "what", "whom", "speciality", "role"}
 	for _, key := range regexp.MustCompile(`\{([A-Za-z]+)\}`).FindAllStringSubmatch(data, -1) {
 		if !slices.Contains(known, key[1]) && !slices.Contains(known, strings.ToUpper(key[1][:1])+key[1][1:]) {
 			t.Errorf("unknown placeholder {%s}", key[1])
@@ -202,6 +210,42 @@ func TestAutobiographyConclusionCases(t *testing.T) {
 		}
 		if len(c.Areas) != 1 || strings.Contains(c.Areas[0].Text, "развиты") {
 			t.Fatalf("%+v", c.Areas)
+		}
+	})
+	// Remarks of 10 November 2026: no «разово», no level word in the patriotic line.
+	patrioticLine := func(t *testing.T, c AutobiographyConclusion) string {
+		t.Helper()
+		for _, area := range c.Areas {
+			if area.ID == "patriotic" {
+				return area.Text
+			}
+		}
+		t.Fatalf("no patriotic line in %+v", c.Areas)
+		return ""
+	}
+	t.Run("one-off participation", func(t *testing.T) {
+		values := base()
+		values["patriot_has"], values["patriot_what"], values["patriot_role"], values["patriot_term"], values["patriot_level"] = "yes", []string{"yunarmia"}, "member", "once", "school"
+		c := conclusionOf(t, values)
+		if !strings.Contains(c.Paragraphs[0], "Участвовал в «Юнармии» на школьном уровне.") {
+			t.Fatalf("%q", c.Paragraphs[0])
+		}
+		if line := patrioticLine(t, c); line != "имеет опыт участника в «Юнармии»." {
+			t.Fatalf("%q", line)
+		}
+	})
+	t.Run("the service alone", func(t *testing.T) {
+		values := base()
+		values["served"] = "yes"
+		if line := patrioticLine(t, conclusionOf(t, values)); line != "имеет опыт военной службы." {
+			t.Fatalf("%q", line)
+		}
+	})
+	t.Run("the cadet school alone", func(t *testing.T) {
+		values := base()
+		values["education_list"] = []record{{"edu_type": "cadet", "edu_profile": "none", "edu_year": "2025", "edu_medal": "no"}}
+		if line := patrioticLine(t, conclusionOf(t, values)); line != "окончил кадетский корпус." {
+			t.Fatalf("%q", line)
 		}
 	})
 }
