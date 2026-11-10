@@ -197,7 +197,7 @@ func TestAutobiographyConclusionCases(t *testing.T) {
 		values["sport_has"] = "yes"
 		values["sport_list"] = []record{{"sport_kind": "other", "sport_kind_other": "Городки", "sport_now": "now", "sport_years": "y13", "sport_rank": "none", "sport_level": "city"}}
 		c := conclusionOf(t, values)
-		if !strings.Contains(c.Paragraphs[0], "От одного до трёх лет занимается видом спорта «Городки», выступал на соревнованиях городского уровня.") {
+		if !strings.Contains(c.Paragraphs[0], "До трёх лет занимается видом спорта «Городки», выступал на соревнованиях городского уровня.") {
 			t.Fatalf("%q", c.Paragraphs[0])
 		}
 		if len(c.Areas) != 1 || strings.Contains(c.Areas[0].Text, "развиты") {

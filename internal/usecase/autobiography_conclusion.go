@@ -102,7 +102,6 @@ type conclusionPhrases struct {
 	Sport struct {
 		Now               string                `json:"now"`
 		Before            string                `json:"before"`
-		Earlier           string                `json:"earlier"`
 		Ranks             map[string]string     `json:"ranks"`
 		ShortRanks        map[string]string     `json:"shortRanks"`
 		Contests          string                `json:"contests"`
@@ -612,10 +611,8 @@ func (w conclusionWriter) sport() string {
 		if r.is("sport_now", "before") {
 			verb = s.Before
 		}
+		// No «раньше» for a sport given up: «занимался» says it (remark of 10 November 2026).
 		clause := strings.TrimSpace(w.term(r.text("sport_years")) + " " + verb + " " + w.sportName(r))
-		if r.is("sport_now", "before") {
-			clause = s.Earlier + " " + clause
-		}
 		if rank := s.Ranks[r.text("sport_rank")]; rank != "" {
 			clause += ", " + rank
 		}
