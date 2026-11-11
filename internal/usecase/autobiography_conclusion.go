@@ -77,18 +77,21 @@ type conclusionPhrases struct {
 		Speciality  string            `json:"speciality"`
 	} `json:"education"`
 	Patriotic struct {
-		Forms       map[string]string `json:"forms"`
-		Levels      map[string]string `json:"levels"`
-		Roles       map[string]string `json:"roles"`
-		LineRoles   map[string]string `json:"lineRoles"`
-		Skills      map[string]string `json:"skills"`
-		Training    string            `json:"training"`
-		Own         string            `json:"own"`
-		OwnWords    []string          `json:"ownWords"`
-		Responsible string            `json:"responsible"`
-		Heritage    string            `json:"heritage"`
-		Other       string            `json:"other"`
-		OnlyOther   string            `json:"onlyOther"`
+		Forms           map[string]string `json:"forms"`
+		Levels          map[string]string `json:"levels"`
+		Roles           map[string]string `json:"roles"`
+		LineRoles       map[string]string `json:"lineRoles"`
+		Skills          map[string]string `json:"skills"`
+		Training        string            `json:"training"`
+		Own             string            `json:"own"`
+		OwnWords        []string          `json:"ownWords"`
+		Responsible     string            `json:"responsible"`
+		Heritage        string            `json:"heritage"`
+		Other           string            `json:"other"`
+		OnlyOther       string            `json:"onlyOther"`
+		Experience      string            `json:"experience"`
+		ExperienceOther string            `json:"experienceOther"`
+		Served          string            `json:"served"`
 	} `json:"patriotic"`
 	Science struct {
 		Forms    map[string]string `json:"forms"`
@@ -102,7 +105,6 @@ type conclusionPhrases struct {
 	Sport struct {
 		Now               string                `json:"now"`
 		Before            string                `json:"before"`
-		Earlier           string                `json:"earlier"`
 		Ranks             map[string]string     `json:"ranks"`
 		ShortRanks        map[string]string     `json:"shortRanks"`
 		Contests          string                `json:"contests"`
@@ -390,31 +392,41 @@ func (w conclusionWriter) education() string {
 		if !(kind == "cadet" || kind == "suvorov" || profile == "cadet" || adjective != "" || medal || (higher && speciality != "")) {
 			continue
 		}
-		// The medal goes right after «Окончил»: «Окончил с медалью
-		// физико-математический лицей», not «лицей с медалью».
-		finished := e.Finished
-		if medal && !r.is("edu_finished", "no") {
-			if higher {
-				finished += " " + e.Honours
-			} else {
-				finished += " " + e.Medal
-			}
-		}
-		var text string
-		switch {
-		case profile == "cadet" && kind != "cadet" && kind != "suvorov":
-			text = strings.Replace(e.CadetClass, e.Finished, finished, 1)
-		case r.is("edu_finished", "no"):
-			text = e.NotFinished + " " + w.profiled(kind, adjective, e.TypesIn[kind], true)
-		default:
-			text = finished + " " + w.profiled(kind, adjective, e.Types[kind], false)
-		}
-		if higher && speciality != "" {
-			text += " " + fill(e.Speciality, map[string]string{"speciality": speciality})
-		}
-		out = append(out, fullSentence(text))
+		out = append(out, w.schooling(r))
 	}
 	return strings.Join(out, " ")
+}
+
+// schooling is the sentence about one school: «Окончил кадетский корпус.»
+func (w conclusionWriter) schooling(r formAnswers) string {
+	e := w.p.Education
+	kind, profile := r.text("edu_type"), r.text("edu_profile")
+	higher := kind == "college" || kind == "university"
+	speciality := w.typed(r, "edu_speciality")
+	adjective := e.Profiles[profile]
+	// The medal goes right after «Окончил»: «Окончил с медалью
+	// физико-математический лицей», not «лицей с медалью».
+	finished := e.Finished
+	if r.is("edu_medal", "yes") && !r.is("edu_finished", "no") {
+		if higher {
+			finished += " " + e.Honours
+		} else {
+			finished += " " + e.Medal
+		}
+	}
+	var text string
+	switch {
+	case profile == "cadet" && kind != "cadet" && kind != "suvorov":
+		text = strings.Replace(e.CadetClass, e.Finished, finished, 1)
+	case r.is("edu_finished", "no"):
+		text = e.NotFinished + " " + w.profiled(kind, adjective, e.TypesIn[kind], true)
+	default:
+		text = finished + " " + w.profiled(kind, adjective, e.Types[kind], false)
+	}
+	if higher && speciality != "" {
+		text += " " + fill(e.Speciality, map[string]string{"speciality": speciality})
+	}
+	return fullSentence(text)
 }
 
 // profiled puts the profile before the school: «физико-математический лицей»,
@@ -511,15 +523,35 @@ func (w conclusionWriter) patriotic() string {
 	return out
 }
 
-func (w conclusionWriter) patrioticLine(level string) string {
+// patrioticLine has no level word, only the experience: «имеет опыт командира
+// отделения в …» (remark of 10 November 2026). Without a form of participation
+// the level comes from the service or the cadet school, and the line says so.
+func (w conclusionWriter) patrioticLine(string) string {
 	pp := w.p.Patriotic
-	text := w.levelWord("other", level) + "."
-	if forms := w.patrioticForms(); len(forms) > 0 {
+	other := ""
+	if w.a.is("patriot_has", "yes") && slices.Contains(w.a.list("patriot_what"), "other") {
+		other = w.typed(w.a, "patriot_other")
+	}
+	var text string
+	switch forms := w.patrioticForms(); {
+	case w.a.is("patriot_has", "yes") && len(forms) > 0:
 		role := pp.LineRoles[w.a.text("patriot_role")]
 		if role == "" {
 			role = pp.LineRoles["member"]
 		}
-		text += " " + fullSentence("имеет опыт "+role+" в "+joinAnd(forms))
+		text = fill(pp.Experience, map[string]string{"role": role, "forms": joinAnd(forms)}) + "."
+	case other != "":
+		text = pp.ExperienceOther + " — " + other + "."
+	case w.a.is("served", "yes"):
+		text = pp.Served + "."
+	default:
+		text = pp.ExperienceOther + "."
+		for _, r := range w.a.records("education_list") {
+			if r.is("edu_type", "cadet", "suvorov") || r.is("edu_profile", "cadet") {
+				text = lowerFirst(w.schooling(r))
+				break
+			}
+		}
 	}
 	traits := []string{}
 	if w.a.is("patriot_role", "leader", "organizer") {
@@ -612,10 +644,8 @@ func (w conclusionWriter) sport() string {
 		if r.is("sport_now", "before") {
 			verb = s.Before
 		}
+		// No «раньше» for a sport given up: «занимался» says it (remark of 10 November 2026).
 		clause := strings.TrimSpace(w.term(r.text("sport_years")) + " " + verb + " " + w.sportName(r))
-		if r.is("sport_now", "before") {
-			clause = s.Earlier + " " + clause
-		}
 		if rank := s.Ranks[r.text("sport_rank")]; rank != "" {
 			clause += ", " + rank
 		}
