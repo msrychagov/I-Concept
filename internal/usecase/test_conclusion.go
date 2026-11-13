@@ -3,7 +3,6 @@ package usecase
 import (
 	"cmp"
 	"encoding/json"
-	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -58,6 +57,28 @@ type testGroupWords struct {
 type testCase struct {
 	Accusative string `json:"accusative"`
 	Genitive   string `json:"genitive"`
+	Can        string `json:"can"`
+}
+
+// testAnswerPhrases are the phrases by the level of the answer to one
+// question of the questionnaire of the activity component (module K).
+type testAnswerPhrases struct {
+	Question string `json:"question"`
+	High     string `json:"high"`
+	Medium   string `json:"medium"`
+	Low      string `json:"low"`
+}
+
+func (a testAnswerPhrases) of(level string) string {
+	switch level {
+	case "high":
+		return a.High
+	case "medium":
+		return a.Medium
+	case "low":
+		return a.Low
+	}
+	return ""
 }
 
 // testPhraseBook mirrors the phrase book.
@@ -68,80 +89,140 @@ type testPhraseBook struct {
 	WillSide         string            `json:"willSide"`
 	WillNames        map[string]string `json:"willNames"`
 	EmotionalMethod  string            `json:"emotionalMethod"`
-	Will             map[string]string `json:"will"`
-	ExperienceSide   string            `json:"experienceSide"`
-	Experience       []struct {
+	Will             struct {
+		Emotional         map[string]string `json:"emotional"`
+		RegulationMethods []string          `json:"regulationMethods"`
+		Regulation        map[string]string `json:"regulation"`
+		QualitiesMethod   string            `json:"qualitiesMethod"`
+		Qualities         map[string]string `json:"qualities"`
+	} `json:"will"`
+	ExperienceSide string `json:"experienceSide"`
+	Experience     []struct {
 		Method string `json:"method"`
-		Good   string `json:"good"`
-		Poor   string `json:"poor"`
 	} `json:"experience"`
+	Practice struct {
+		StudyText string              `json:"studyText"`
+		Study     []testAnswerPhrases `json:"study"`
+		Ready     testAnswerPhrases   `json:"ready"`
+		Expect    testAnswerPhrases   `json:"expect"`
+		Value     testAnswerPhrases   `json:"value"`
+	} `json:"practice"`
 	Self struct {
-		Military     string            `json:"military"`
-		Civil        string            `json:"civil"`
-		MilitaryText map[string]string `json:"militaryText"`
-		CivilText    map[string]string `json:"civilText"`
-		Summary      map[string]string `json:"summary"`
+		Military        string            `json:"military"`
+		Civil           string            `json:"civil"`
+		MilitaryText    map[string]string `json:"militaryText"`
+		CivilText       map[string]string `json:"civilText"`
+		Graduate        testAnswerPhrases `json:"graduate"`
+		Need            testAnswerPhrases `json:"need"`
+		Use             testAnswerPhrases `json:"use"`
+		UseAfterLow     string            `json:"useAfterLow"`
+		Contradiction   string            `json:"contradiction"`
+		Summary         map[string]string `json:"summary"`
+		SummaryGraduate map[string]string `json:"summaryGraduate"`
 	} `json:"self"`
 	Relations struct {
-		People       string            `json:"people"`
-		Platoon      string            `json:"platoon"`
-		Country      string            `json:"country"`
-		Low          float64           `json:"low"`
-		PeopleTop    string            `json:"peopleTop"`
-		PeopleLow    string            `json:"peopleLow"`
-		PlatoonTop   string            `json:"platoonTop"`
-		PlatoonLow   string            `json:"platoonLow"`
-		Together     string            `json:"together"`
-		CountryTop   string            `json:"countryTop"`
-		CountryLow   string            `json:"countryLow"`
-		InDeeds      string            `json:"inDeeds"`
-		Names        map[string]string `json:"names"`
-		CountryVerbs map[string]string `json:"countryVerbs"`
-		CountryNames map[string]string `json:"countryNames"`
+		People           string            `json:"people"`
+		Platoon          string            `json:"platoon"`
+		Country          string            `json:"country"`
+		Gap              float64           `json:"gap"`
+		High             float64           `json:"high"`
+		Low              float64           `json:"low"`
+		Max              int               `json:"max"`
+		MaxWeak          int               `json:"maxWeak"`
+		PeopleStrong     map[string]string `json:"peopleStrong"`
+		PeopleWeak       map[string]string `json:"peopleWeak"`
+		PeopleNames      map[string]string `json:"peopleNames"`
+		PeopleStrongText string            `json:"peopleStrongText"`
+		PeopleWeakText   string            `json:"peopleWeakText"`
+		PeopleEvenText   string            `json:"peopleEvenText"`
+		PeopleAllEven    string            `json:"peopleAllEven"`
+		PeopleAllHigh    string            `json:"peopleAllHigh"`
+		PeopleAllLow     string            `json:"peopleAllLow"`
+		Teachers         struct {
+			Activity      testAnswerPhrases `json:"activity"`
+			Opening       string            `json:"opening"`
+			Tones         map[string]string `json:"tones"`
+			Trust         string            `json:"trust"`
+			Attention     string            `json:"attention"`
+			Example       string            `json:"example"`
+			TrustText     map[string]string `json:"trustText"`
+			AttentionText map[string]string `json:"attentionText"`
+			ExampleText   map[string]string `json:"exampleText"`
+			Lacking       string            `json:"lacking"`
+		} `json:"teachers"`
+		Overall           map[string]string `json:"overall"`
+		Work              testAnswerPhrases `json:"work"`
+		PlatoonNames      map[string]string `json:"platoonNames"`
+		PlatoonStrong     string            `json:"platoonStrong"`
+		PlatoonWeak       string            `json:"platoonWeak"`
+		PlatoonWeakOnly   string            `json:"platoonWeakOnly"`
+		Together          string            `json:"together"`
+		PlatoonEven       map[string]string `json:"platoonEven"`
+		CountryStrong     map[string]string `json:"countryStrong"`
+		CountryWeak       map[string]string `json:"countryWeak"`
+		CountryNames      map[string]string `json:"countryNames"`
+		CountryOrder      []string          `json:"countryOrder"`
+		CountryMiddle     string            `json:"countryMiddle"`
+		CountryMiddleOne  string            `json:"countryMiddleOne"`
+		CountryMiddleHigh string            `json:"countryMiddleHigh"`
+		CountryEven       map[string]string `json:"countryEven"`
 	} `json:"relations"`
 	Image struct {
 		Congruence      map[string]string         `json:"congruence"`
+		Whole           string                    `json:"whole"`
+		WholeEven       string                    `json:"wholeEven"`
+		How             map[string]string         `json:"how"`
+		Confident       float64                   `json:"confident"`
+		Gap             float64                   `json:"gap"`
 		AllAtOnce       string                    `json:"allAtOnce"`
-		Expected        string                    `json:"expected"`
-		SeenAsIs        string                    `json:"seenAsIs"`
-		SeenAsIsSense   string                    `json:"seenAsIsSense"`
+		Pressure        string                    `json:"pressure"`
+		Seen            map[string]string         `json:"seen"`
+		SeenSense       map[string]string         `json:"seenSense"`
+		Strong          string                    `json:"strong"`
+		Weak            string                    `json:"weak"`
+		WeakOnly        string                    `json:"weakOnly"`
 		Change          string                    `json:"change"`
-		StrongWeak      string                    `json:"strongWeak"`
+		ChangeOnly      string                    `json:"changeOnly"`
+		Even            string                    `json:"even"`
 		Groups          map[string]testGroupWords `json:"groups"`
 		Achieved        string                    `json:"achieved"`
-		AllAchieved     string                    `json:"allAchieved"`
 		Far             string                    `json:"far"`
-		AllFar          string                    `json:"allFar"`
 		NotAccepted     string                    `json:"notAccepted"`
 		Below           string                    `json:"below"`
-		AchievedList    string                    `json:"achievedList"`
-		FarList         string                    `json:"farList"`
-		RestFar         string                    `json:"restFar"`
 		NotAcceptedList string                    `json:"notAcceptedList"`
+		NotAcceptedAll  string                    `json:"notAcceptedAll"`
 		BelowList       string                    `json:"belowList"`
 	} `json:"image"`
 	Environment struct {
-		Living       string              `json:"living"`
-		Training     string              `json:"training"`
-		LivingText   map[string]string   `json:"livingText"`
-		TrainingText map[string]string   `json:"trainingText"`
-		TrainingLow  string              `json:"trainingLow"`
-		Above        string              `json:"above"`
-		Lacking      string              `json:"lacking"`
-		Below        string              `json:"below"`
-		Stories      string              `json:"stories"`
-		Story        string              `json:"story"`
-		StoriesMax   int                 `json:"storiesMax"`
-		Ratings      map[string]string   `json:"ratings"`
-		Conditions   map[string]testCase `json:"conditions"`
+		Kinds     map[string]string `json:"kinds"`
+		AllKinds  map[string]string `json:"allKinds"`
+		KindsText map[string]string `json:"kindsText"`
+		Satisfied []struct {
+			Question string `json:"question"`
+			Name     string `json:"name"`
+		} `json:"satisfied"`
+		SatisfiedText map[string]string   `json:"satisfiedText"`
+		Verbs         map[string]string   `json:"verbs"`
+		Patriotic     testAnswerPhrases   `json:"patriotic"`
+		Lacking       string              `json:"lacking"`
+		Above         string              `json:"above"`
+		AboveMax      int                 `json:"aboveMax"`
+		LackingMax    int                 `json:"lackingMax"`
+		Stories       string              `json:"stories"`
+		Story         string              `json:"story"`
+		StoriesMax    int                 `json:"storiesMax"`
+		Ratings       map[string]string   `json:"ratings"`
+		Conditions    map[string]testCase `json:"conditions"`
 	} `json:"environment"`
 	Summary struct {
 		Reliable          string            `json:"reliable"`
 		ReliableNoChoice  string            `json:"reliableNoChoice"`
 		Motivated         string            `json:"motivated"`
 		MotivatedTeam     string            `json:"motivatedTeam"`
+		Even              string            `json:"even"`
 		Medium            string            `json:"medium"`
 		Low               string            `json:"low"`
+		WholeEven         string            `json:"wholeEven"`
 		AllAtOnce         string            `json:"allAtOnce"`
 		Strong            string            `json:"strong"`
 		StrongGrowing     string            `json:"strongGrowing"`
@@ -156,6 +237,10 @@ type testPhraseBook struct {
 		GroupConditions   map[string]string `json:"groupConditions"`
 		Requirements      string            `json:"requirements"`
 		RequirementsTrust string            `json:"requirementsTrust"`
+		Needs             string            `json:"needs"`
+		Goals             map[string]string `json:"goals"`
+		NeedOf            map[string]string `json:"needOf"`
+		NeedsMax          int               `json:"needsMax"`
 	} `json:"summary"`
 	Advice struct {
 		Support      string   `json:"support"`
@@ -241,17 +326,9 @@ type testView struct {
 		Items []testRatedItem `json:"показатели"`
 	} `json:"условия_среды"`
 	Life []struct {
-		Answers []struct {
-			Title string `json:"название"`
-			Level string `json:"уровень_ответа"`
-		} `json:"ответы_анкеты"`
+		Side  string `json:"сторона"`
+		Level string `json:"уровень"`
 	} `json:"жизнь_в_ВУЦ"`
-	Environment []struct {
-		Data []struct {
-			Question string `json:"вопрос_анкеты"`
-			Level    string `json:"уровень"`
-		} `json:"данные"`
-	} `json:"среда_по_главе_1"`
 	Stories []struct {
 		Answer string `json:"ответ"`
 	} `json:"рассказы_о_деятельности"`
@@ -263,7 +340,7 @@ type testFacts struct {
 	tense      bool     // emotional stability low beside strong will
 	unsure     bool     // the military speciality is not chosen by himself
 	support    []int    // groups of the image he leans on
-	weakest    int      // the group he rates lowest, 0 when none
+	weakest    int      // the group he rates clearly lowest, 0 when none
 	lacking    []string // conditions rated lacking or below the others
 	advice     []string // codes of his recommendations
 }
@@ -284,7 +361,12 @@ func (a *Service) testConclusionOf(data *TestPortraitData) (*TestConclusion, tes
 	if err := json.Unmarshal(raw, &v); err != nil {
 		return nil, testFacts{}, err
 	}
-	w := testWriter{p: p, v: v}
+	var all any
+	if err := json.Unmarshal(raw, &all); err != nil {
+		return nil, testFacts{}, err
+	}
+	w := testWriter{p: p, v: v, answers: map[string]string{}}
+	w.collectAnswers(all)
 	return w.conclusion(), w.facts, nil
 }
 
@@ -301,9 +383,43 @@ func (a *Service) testConclusion(data *TestPortraitData) *TestConclusion {
 }
 
 type testWriter struct {
-	p     *testPhraseBook
-	v     testView
-	facts testFacts
+	p       *testPhraseBook
+	v       testView
+	answers map[string]string // the level of the answer by the question of the questionnaire
+	facts   testFacts
+}
+
+// collectAnswers finds the answers of the questionnaire of the activity
+// component wherever the input has them: {вопрос_анкеты, уровень} or
+// {название, ответ, уровень_ответа}.
+func (w *testWriter) collectAnswers(node any) {
+	switch x := node.(type) {
+	case map[string]any:
+		question, _ := x["вопрос_анкеты"].(string)
+		level, _ := x["уровень"].(string)
+		if question == "" {
+			if _, ok := x["ответ"]; ok {
+				question, _ = x["название"].(string)
+				level, _ = x["уровень_ответа"].(string)
+			}
+		}
+		if question != "" && russianLevels[level] != "" && w.answers[question] == "" {
+			w.answers[question] = russianLevels[level]
+		}
+		for _, value := range x {
+			w.collectAnswers(value)
+		}
+	case []any:
+		for _, value := range x {
+			w.collectAnswers(value)
+		}
+	}
+}
+
+// answer is the phrase of the level of the answer to a question; empty when
+// there is no answer.
+func (w *testWriter) answer(a testAnswerPhrases) string {
+	return a.of(w.answers[a.Question])
 }
 
 func (w *testWriter) level(method string) string {
@@ -351,16 +467,14 @@ func (w *testWriter) willKind() (kind string, strong, weak []string, tense bool)
 	return "strong", strong, weak, false
 }
 
-func (w *testWriter) experience() (good, poor []string) {
+// experienceHigh is true when all three indicators of the experience are high.
+func (w *testWriter) experienceHigh() bool {
 	for _, e := range w.p.Experience {
-		switch w.level(e.Method) {
-		case "high", "medium":
-			good = append(good, e.Good)
-		case "low":
-			poor = append(poor, e.Poor)
+		if w.level(e.Method) != "high" {
+			return false
 		}
 	}
-	return good, poor
+	return len(w.p.Experience) > 0
 }
 
 func (w *testWriter) self(profession string) string {
@@ -372,58 +486,328 @@ func (w *testWriter) self(profession string) string {
 	return ""
 }
 
-func sameScore(x, y float64) bool { return math.Abs(x-y) < 0.005 }
-
-// topItems are the indicators with the highest score; when only one has it,
-// those with the next score too; at most three.
-func topItems(items []testScoredItem) []testScoredItem {
-	scored := slices.DeleteFunc(slices.Clone(items), func(i testScoredItem) bool { return i.Score == nil })
-	if len(scored) == 0 {
-		return nil
+// joinPhrases is «A, B и C»; when the phrase before the last has its own
+// comma, the last «и» gets one too: «уважает достоинство каждого, отделяя поступок от личности,
+// и учитывает…».
+func joinPhrases(items []string) string {
+	switch len(items) {
+	case 0:
+		return ""
+	case 1:
+		return items[0]
 	}
-	slices.SortStableFunc(scored, func(x, y testScoredItem) int { return cmp.Compare(*y.Score, *x.Score) })
-	top := []testScoredItem{}
-	levels := 0
-	for n, item := range scored {
-		if n > 0 && !sameScore(*item.Score, *scored[n-1].Score) {
-			levels++
-			if levels == 2 || len(top) > 1 {
-				break
-			}
-		}
-		top = append(top, item)
-		if len(top) == 3 {
-			break
-		}
+	last := " и "
+	if strings.Contains(items[len(items)-2], ",") {
+		last = ", и "
 	}
-	return top
+	return strings.Join(items[:len(items)-1], ", ") + last + items[len(items)-1]
 }
 
-// lowItems are the two lowest indicators at or below the threshold, lowest first.
-func lowItems(items []testScoredItem, top []testScoredItem, threshold float64) []testScoredItem {
-	low := []testScoredItem{}
-	for _, item := range items {
-		if item.Score != nil && *item.Score <= threshold+0.005 && !slices.ContainsFunc(top, func(t testScoredItem) bool { return t.Name == item.Name }) {
-			low = append(low, item)
+// joinNouns is «A, B и C» always.
+func joinNouns(items []string) string {
+	switch len(items) {
+	case 0:
+		return ""
+	case 1:
+		return items[0]
+	}
+	return strings.Join(items[:len(items)-1], ", ") + " и " + items[len(items)-1]
+}
+
+// standOut splits the indicators by the student's own middle: strong are at
+// least gap above it, weak at least gap below, the rest are even; strong
+// from the highest, weak from the lowest, at most max of each. mean is the
+// middle of all scored ones.
+func standOut(items []testScoredItem, gap float64, max int) (strong, weak, even []testScoredItem, mean float64) {
+	scored := slices.DeleteFunc(slices.Clone(items), func(i testScoredItem) bool { return i.Score == nil })
+	if len(scored) == 0 {
+		return nil, nil, nil, 0
+	}
+	for _, item := range scored {
+		mean += *item.Score
+	}
+	mean /= float64(len(scored))
+	for _, item := range scored {
+		switch {
+		case *item.Score >= mean+gap-0.005:
+			strong = append(strong, item)
+		case *item.Score <= mean-gap+0.005:
+			weak = append(weak, item)
+		default:
+			even = append(even, item)
 		}
 	}
-	slices.SortStableFunc(low, func(x, y testScoredItem) int { return cmp.Compare(*x.Score, *y.Score) })
-	if len(low) > 2 {
-		low = low[:2]
+	slices.SortStableFunc(strong, func(x, y testScoredItem) int { return cmp.Compare(*y.Score, *x.Score) })
+	slices.SortStableFunc(weak, func(x, y testScoredItem) int { return cmp.Compare(*x.Score, *y.Score) })
+	if len(strong) > max {
+		strong = strong[:max]
 	}
-	return low
+	if len(weak) > max {
+		weak = weak[:max]
+	}
+	return strong, weak, even, mean
 }
 
 func hasItem(items []testScoredItem, name string) bool {
 	return slices.ContainsFunc(items, func(i testScoredItem) bool { return i.Name == name })
 }
 
-func (w *testWriter) itemNames(items []testScoredItem, names map[string]string) []string {
+func itemPhrases(items []testScoredItem, phrases map[string]string) []string {
 	out := []string{}
 	for _, item := range items {
-		out = append(out, cmp.Or(names[item.Name], strings.ToLower(item.Name)))
+		if phrase := phrases[item.Name]; phrase != "" {
+			out = append(out, phrase)
+		}
 	}
 	return out
+}
+
+// height is high, medium or low by the middle score of a list of 1–5.
+func (w *testWriter) height(mean float64) string {
+	switch r := w.p.Relations; {
+	case mean >= r.High-0.005:
+		return "high"
+	case mean <= r.Low+0.005:
+		return "low"
+	}
+	return "medium"
+}
+
+func (w *testWriter) values() string {
+	sentences := []string{}
+	if text := w.p.Motivation[w.level(w.p.MotivationMethod)]; text != "" {
+		sentences = append(sentences, text)
+	}
+	r := w.p.Relations
+	for _, relation := range w.v.Relations {
+		switch relation.Name {
+		case r.People:
+			sentences = append(sentences, w.people(relation.Items)...)
+		case r.Platoon:
+			sentences = append(sentences, w.platoon(relation.Items)...)
+		case r.Country:
+			sentences = append(sentences, w.country(relation.Items)...)
+		}
+	}
+	return strings.Join(sentences, " ")
+}
+
+// people are three or four sentences on the relations in the ВУЦ: with the
+// comrades of the platoon, with the teachers, and what it says of him.
+func (w *testWriter) people(items []testScoredItem) []string {
+	r := w.p.Relations
+	strong, weak, even, mean := standOut(items, r.Gap, r.Max)
+	if mean == 0 {
+		return nil
+	}
+	if len(weak) > r.MaxWeak {
+		weak = weak[:r.MaxWeak]
+	}
+	sentences := []string{}
+	evenNames := []string{}
+	for _, name := range []string{"Отзывчивость", "Взаимопомощь", "Ответственность", "Доброта", "Порядочность", "Уважение", "Честность", "Человечность", "Эмпатия"} {
+		if hasItem(even, name) && len(evenNames) < 3 {
+			evenNames = append(evenNames, r.PeopleNames[name])
+		}
+	}
+	switch {
+	case len(strong) == 0 && len(weak) == 0:
+		switch w.height(mean) {
+		case "high":
+			sentences = append(sentences, r.PeopleAllHigh)
+		case "low":
+			sentences = append(sentences, r.PeopleAllLow)
+		}
+		if len(evenNames) > 0 {
+			sentences = append(sentences, fill(r.PeopleAllEven, map[string]string{"list": strings.Join(evenNames, ", ")}))
+		}
+	default:
+		if phrases := itemPhrases(strong, r.PeopleStrong); len(phrases) > 0 {
+			sentences = append(sentences, fill(r.PeopleStrongText, map[string]string{"list": joinPhrases(phrases)}))
+		}
+		if phrases := itemPhrases(weak, r.PeopleWeak); len(phrases) > 0 {
+			sentences = append(sentences, upperFirst(fill(r.PeopleWeakText, map[string]string{"list": joinPhrases(phrases)})))
+		} else if len(evenNames) > 0 {
+			sentences = append(sentences, fill(r.PeopleEvenText, map[string]string{"list": strings.Join(evenNames, ", ")}))
+		}
+	}
+	if text := w.teachers(); text != "" {
+		sentences = append(sentences, text)
+	}
+	switch {
+	case len(strong) > len(weak):
+		sentences = append(sentences, r.Overall["warm"])
+	case len(weak) > len(strong):
+		sentences = append(sentences, r.Overall["cold"])
+	case len(strong) == 0:
+		sentences = append(sentences, r.Overall["even"])
+	default:
+		sentences = append(sentences, r.Overall["mixed"])
+	}
+	return sentences
+}
+
+// rating is above, equal or lacking by the rating of a condition; empty
+// when the condition is not rated.
+func (w *testWriter) rating(name string) string {
+	e := w.p.Environment
+	switch {
+	case w.ratedAs(name, e.Ratings["above"]):
+		return "above"
+	case w.ratedAs(name, e.Ratings["equal"]):
+		return "equal"
+	case w.ratedAs(name, e.Ratings["lacking"], e.Ratings["below"]):
+		return "lacking"
+	}
+	return ""
+}
+
+// teachers is the sentence on the relations with the teachers: how they
+// notice him in class and how he feels the trust, the attention and the
+// example of the elders.
+func (w *testWriter) teachers() string {
+	t := w.p.Relations.Teachers
+	parts, lacking, above := []string{}, []string{}, 0
+	if text := w.answer(t.Activity); text != "" {
+		parts = append(parts, text)
+	}
+	for _, c := range []struct {
+		name  string
+		texts map[string]string
+	}{{t.Trust, t.TrustText}, {t.Attention, t.AttentionText}, {t.Example, t.ExampleText}} {
+		rating := w.rating(c.name)
+		if rating == "above" {
+			above++
+		}
+		if rating == "lacking" {
+			lacking = append(lacking, w.conditionWords([]string{c.name}, true))
+		} else if text := c.texts[rating]; text != "" {
+			parts = append(parts, text)
+		}
+	}
+	if len(parts) == 0 && len(lacking) == 0 {
+		return ""
+	}
+	tone := t.Tones["even"]
+	switch {
+	case len(lacking) >= 2:
+		tone = t.Tones["reserved"]
+	case len(lacking) == 0 && above > 0:
+		tone = t.Tones["trust"]
+	}
+	text := strings.Join(append([]string{fill(t.Opening, map[string]string{"tone": tone})}, parts...), ", ")
+	if len(lacking) > 0 {
+		text += ", " + fill(t.Lacking, map[string]string{"list": joinNouns(lacking)})
+	}
+	return fullSentence(text)
+}
+
+// platoon are two sentences: how he works in the platoon and which values of
+// the collective are closest to him.
+func (w *testWriter) platoon(items []testScoredItem) []string {
+	r := w.p.Relations
+	sentences := []string{}
+	if text := w.answer(r.Work); text != "" {
+		sentences = append(sentences, text)
+	}
+	strong, weak, _, mean := standOut(items, r.Gap, r.Max)
+	if mean == 0 {
+		return sentences
+	}
+	names := func(items []testScoredItem) string { return joinNouns(itemPhrases(items, r.PlatoonNames)) }
+	var text string
+	switch {
+	case len(strong) > 0:
+		text = fill(r.PlatoonStrong, map[string]string{"list": names(strong)})
+		if len(weak) > 0 {
+			text += ", " + fill(r.PlatoonWeak, map[string]string{"list": names(weak)})
+		}
+		if hasItem(strong, "Работа в коллективе") && hasItem(weak, "Готовность брать ответственность") {
+			text += ", " + r.Together
+		}
+	case len(weak) > 0:
+		text = upperFirst(fill(r.PlatoonWeakOnly, map[string]string{"list": names(weak)}))
+	default:
+		return append(sentences, r.PlatoonEven[w.height(mean)])
+	}
+	return append(sentences, fullSentence(text))
+}
+
+// country are the sentences on the attitude to the Fatherland by the three
+// sides of patriotism of chapter 1: the value of the Fatherland, the
+// responsibility for its defence and the conscientious fulfilment of duties.
+func (w *testWriter) country(items []testScoredItem) []string {
+	r := w.p.Relations
+	strong, weak, even, mean := standOut(items, r.Gap, 2)
+	if mean == 0 {
+		return nil
+	}
+	if hasItem(strong, "Личная ответственность за защиту") {
+		strong = slices.DeleteFunc(strong, func(i testScoredItem) bool { return i.Name == "Ответственность" })
+		even = slices.DeleteFunc(even, func(i testScoredItem) bool { return i.Name == "Ответственность" })
+	}
+	if len(strong) == 0 && len(weak) == 0 {
+		return []string{r.CountryEven[w.height(mean)]}
+	}
+	// «Патриотизм в делах» and the conscientiousness say the same from two
+	// sides: when one is strong, the other is not called weak beside it.
+	for _, pair := range [][2]string{{"Добросовестность", "Деятельностная направленность позиции"}, {"Деятельностная направленность позиции", "Добросовестность"}} {
+		if hasItem(strong, pair[0]) {
+			weak = slices.DeleteFunc(weak, func(i testScoredItem) bool { return i.Name == pair[1] })
+		}
+	}
+	sentences := itemPhrases(strong, r.CountryStrong)
+	middle, sum := []string{}, 0.0
+	for _, name := range r.CountryOrder {
+		for _, item := range even {
+			if item.Name == name && len(middle) < 3 {
+				middle = append(middle, r.CountryNames[name])
+				sum += *item.Score
+			}
+		}
+	}
+	if len(middle) > 0 {
+		phrase := r.CountryMiddle
+		if len(middle) == 1 {
+			phrase = r.CountryMiddleOne
+		}
+		if sum/float64(len(middle)) >= r.High-0.005 {
+			phrase = r.CountryMiddleHigh
+		}
+		sentences = append(sentences, upperFirst(fill(phrase, map[string]string{"list": joinNouns(middle)})))
+	}
+	return append(sentences, itemPhrases(weak, r.CountryWeak)...)
+}
+
+func (w *testWriter) will() string {
+	sentences := []string{}
+	wl := w.p.Will
+	if text := wl.Emotional[w.level(w.p.EmotionalMethod)]; text != "" {
+		sentences = append(sentences, text)
+	}
+	byLevel := map[string][]string{}
+	for _, method := range wl.RegulationMethods {
+		if level := w.level(method); level != "" {
+			byLevel[level] = append(byLevel[level], cmp.Or(w.p.WillNames[method], strings.ToLower(method)))
+		}
+	}
+	verb := func(names []string) string { return expressed(len(names)) }
+	switch {
+	case len(byLevel) == 1:
+		for level := range byLevel {
+			sentences = append(sentences, wl.Regulation[level])
+		}
+	case len(byLevel["high"]) > 0:
+		rest := append(slices.Clone(byLevel["medium"]), byLevel["low"]...)
+		sentences = append(sentences, fullSentence(fill(wl.Regulation["mixedHigh"], map[string]string{"strong": upperFirst(joinNouns(byLevel["high"])), "verb": verb(byLevel["high"]), "weak": joinNouns(rest)})))
+	case len(byLevel) > 1:
+		sentences = append(sentences, fullSentence(fill(wl.Regulation["mixedLow"], map[string]string{"weak": upperFirst(joinNouns(byLevel["low"])), "verb": verb(byLevel["low"]), "strong": joinNouns(byLevel["medium"])})))
+	}
+	if text := wl.Qualities[w.level(wl.QualitiesMethod)]; text != "" {
+		sentences = append(sentences, text)
+	}
+	sentences = append(sentences, w.practice()...)
+	return strings.Join(append(sentences, w.choice()...), " ")
 }
 
 func expressed(n int) string {
@@ -433,81 +817,74 @@ func expressed(n int) string {
 	return "выражены"
 }
 
-func (w *testWriter) values() string {
-	r := w.p.Relations
+var answerRank = map[string]int{"low": 1, "medium": 2, "high": 3}
+
+// practice are the sentences on his experience in the ВУЦ by the answers of
+// the questionnaire: how he studies and what the experience means for him.
+func (w *testWriter) practice() []string {
+	pr := w.p.Practice
 	sentences := []string{}
-	if text := w.p.Motivation[w.level(w.p.MotivationMethod)]; text != "" {
-		sentences = append(sentences, text)
+	study := []string{}
+	for _, a := range pr.Study {
+		if text := w.answer(a); text != "" {
+			study = append(study, text)
+		}
 	}
-	for _, relation := range w.v.Relations {
-		top := topItems(relation.Items)
-		if len(top) == 0 {
-			continue
+	if len(study) > 0 {
+		sentences = append(sentences, fill(pr.StudyText, map[string]string{"list": joinPhrases(study)}))
+	}
+	clauses := []string{}
+	for _, a := range []testAnswerPhrases{pr.Ready, pr.Expect} {
+		if text := w.answer(a); text != "" {
+			clauses = append(clauses, text)
 		}
-		low := lowItems(relation.Items, top, r.Low)
-		var text string
-		switch relation.Name {
-		case r.People:
-			text = fill(r.PeopleTop, map[string]string{"top": joinAnd(w.itemNames(top, r.Names))})
-			if len(low) > 0 {
-				text += "; " + fill(r.PeopleLow, map[string]string{"low": joinAnd(w.itemNames(low, r.Names))})
-			}
-		case r.Platoon:
-			text = fill(r.PlatoonTop, map[string]string{"top": joinAnd(w.itemNames(top, r.Names))})
-			if len(low) > 0 {
-				text += "; " + fill(r.PlatoonLow, map[string]string{"low": joinAnd(w.itemNames(low, r.Names)), "verb": expressed(len(low))})
-				if hasItem(top, "Работа в коллективе") && hasItem(low, "Готовность брать ответственность") {
-					text += " — " + r.Together
-				}
-			}
-		case r.Country:
-			if hasItem(top, "Личная ответственность за защиту") {
-				top = slices.DeleteFunc(top, func(i testScoredItem) bool { return i.Name == "Ответственность" })
-				low = slices.DeleteFunc(low, func(i testScoredItem) bool { return i.Name == "Ответственность" })
-			}
-			text = fill(r.CountryTop, map[string]string{"top": joinAnd(w.itemNames(top, r.CountryVerbs))})
-			if len(low) > 0 {
-				text += "; " + fill(r.CountryLow, map[string]string{"low": joinAnd(w.itemNames(low, r.CountryNames)), "verb": expressed(len(low))})
-				if hasItem(low, "Деятельностная направленность позиции") {
-					text += " — " + r.InDeeds
-				}
-			}
+	}
+	text := strings.Join(clauses, ", и ")
+	if value := w.answer(pr.Value); value != "" {
+		best := max(answerRank[w.answers[pr.Ready.Question]], answerRank[w.answers[pr.Expect.Question]])
+		switch {
+		case text == "":
+			text = value
+		case answerRank[w.answers[pr.Value.Question]] < best:
+			text += ", но " + value
 		default:
-			continue
+			text += ", а " + value
 		}
+	}
+	if text != "" {
 		sentences = append(sentences, fullSentence(text))
 	}
-	return strings.Join(sentences, " ")
+	return sentences
 }
 
-func (w *testWriter) will() string {
+// choice are the sentences on the military speciality — chosen consciously
+// or not — and on how he links the military training with his civil work.
+func (w *testWriter) choice() []string {
+	s := w.p.Self
 	sentences := []string{}
-	kind, strong, weak, tense := w.willKind()
-	switch kind {
-	case "strong", "medium", "weak":
-		sentences = append(sentences, w.p.Will[kind])
-	case "mixed":
-		phrase := w.p.Will["mixed"]
-		if tense {
-			phrase = w.p.Will["mixedTense"]
-		}
-		sentences = append(sentences, fullSentence(fill(phrase, map[string]string{"strong": upperFirst(joinAnd(strong)), "weak": joinAnd(weak)})))
+	if text := s.MilitaryText[w.self(s.Military)]; text != "" {
+		sentences = append(sentences, text)
 	}
-	if good, poor := w.experience(); len(good)+len(poor) > 0 {
-		text := joinAnd(good)
-		if len(poor) > 0 {
-			text = strings.TrimPrefix(text+"; "+joinAnd(poor), "; ")
-		}
-		sentences = append(sentences, fullSentence(text))
+	civil := s.CivilText[w.self(s.Civil)]
+	if graduate := w.answer(s.Graduate); civil != "" && graduate != "" {
+		sentences = append(sentences, fullSentence(civil+", "+graduate))
+	} else if civil != "" {
+		sentences = append(sentences, fullSentence(civil))
 	}
-	military, civil := w.p.Self.MilitaryText[w.self(w.p.Self.Military)], w.p.Self.CivilText[w.self(w.p.Self.Civil)]
+	need, use := w.answers[s.Need.Question], w.answers[s.Use.Question]
 	switch {
-	case military != "" && civil != "":
-		sentences = append(sentences, fullSentence(military+"; "+civil))
-	case military != "" || civil != "":
-		sentences = append(sentences, fullSentence(military+civil))
+	case need == "high" && use == "low":
+		sentences = append(sentences, s.Contradiction)
+	case need != "" && use != "":
+		phrase := s.Use.of(use)
+		if need == "low" && use == "high" {
+			phrase = s.UseAfterLow
+		}
+		sentences = append(sentences, fullSentence(s.Need.of(need)+", "+phrase))
+	case need != "":
+		sentences = append(sentences, fullSentence(s.Need.of(need)))
 	}
-	return strings.Join(sentences, " ")
+	return sentences
 }
 
 // groups are the groups of the image with a rating, by number.
@@ -515,14 +892,17 @@ func (w *testWriter) groups() []testGroupView {
 	return slices.DeleteFunc(slices.Clone(w.v.Groups), func(g testGroupView) bool { return g.Now == nil })
 }
 
-// extremes are the groups rated highest and lowest; the first by number on a tie.
-func (w *testWriter) extremes() (strongest, weakest testGroupView, ok bool) {
+// extremes are the group rated clearly highest and the one rated clearly
+// lowest: at least the gap of the phrase book above or below the middle of
+// his ratings; the first by number on a tie.
+func (w *testWriter) extremes() (strongest testGroupView, hasStrong bool, weakest testGroupView, hasWeak bool, mean float64) {
 	groups := w.groups()
 	if len(groups) < 2 {
-		return testGroupView{}, testGroupView{}, false
+		return testGroupView{}, false, testGroupView{}, false, 0
 	}
 	strongest, weakest = groups[0], groups[0]
-	for _, g := range groups[1:] {
+	for _, g := range groups {
+		mean += *g.Now
 		if *g.Now > *strongest.Now+0.005 {
 			strongest = g
 		}
@@ -530,40 +910,54 @@ func (w *testWriter) extremes() (strongest, weakest testGroupView, ok bool) {
 			weakest = g
 		}
 	}
-	return strongest, weakest, strongest.Number != weakest.Number
+	mean /= float64(len(groups))
+	gap := w.p.Image.Gap
+	return strongest, *strongest.Now >= mean+gap-0.005, weakest, *weakest.Now <= mean-gap+0.005, mean
 }
 
 func (w *testWriter) groupWords(g testGroupView) testGroupWords {
 	return w.p.Image.Groups[strconv.Itoa(g.Number)]
 }
 
+// even is true when no group of the image stands out.
+func (w *testWriter) even() bool {
+	_, hasStrong, _, hasWeak, mean := w.extremes()
+	return mean > 0 && !hasStrong && !hasWeak
+}
+
 func (w *testWriter) image() string {
 	im := w.p.Image
 	sentences := []string{}
-	if text := im.Congruence[w.v.Congruence.Sense]; text != "" {
+	_, _, _, _, mean := w.extremes()
+	if w.v.Congruence.Sense == im.Whole && w.even() {
+		how := im.How["low"]
+		if mean >= im.Confident-0.005 {
+			how = im.How["high"]
+		}
+		sentences = append(sentences, fill(im.WholeEven, map[string]string{"how": how}))
+	} else if text := im.Congruence[w.v.Congruence.Sense]; text != "" {
 		sentences = append(sentences, text)
 	}
 	pressure, seen := false, ""
 	for _, side := range w.v.Images.Sides {
 		pressure = pressure || strings.Contains(side.Sense, humanPressure)
 		if seen == "" {
-			for _, s := range []string{im.SeenAsIsSense, adequacyTexts["better"], adequacyTexts["worse"]} {
-				if strings.Contains(side.Sense, s) {
-					seen = s
+			for kind, sense := range im.SeenSense {
+				if strings.Contains(side.Sense, sense) {
+					seen = im.Seen[kind]
 				}
 			}
 		}
 	}
-	if seen == im.SeenAsIsSense {
-		seen = im.SeenAsIs
+	about := []string{}
+	if pressure {
+		about = append(about, im.Pressure)
 	}
-	switch {
-	case pressure && seen != "":
-		sentences = append(sentences, fullSentence(im.Expected+", и "+seen))
-	case pressure:
-		sentences = append(sentences, fullSentence(im.Expected))
-	case seen != "":
-		sentences = append(sentences, fullSentence(seen))
+	if seen != "" {
+		about = append(about, seen)
+	}
+	if len(about) > 0 {
+		sentences = append(sentences, fullSentence("Он "+joinPhrases(about)))
 	}
 	names := []string{}
 	for _, row := range w.v.Images.Change {
@@ -571,48 +965,48 @@ func (w *testWriter) image() string {
 			names = append(names, accusativeQuality(strings.ToLower(row.Name)))
 		}
 	}
-	if len(names) > 0 {
-		sentences = append(sentences, fill(im.Change, map[string]string{"names": joinAnd(names)}))
+	strongest, hasStrong, weakest, hasWeak, _ := w.extremes()
+	parts := []string{}
+	if hasStrong {
+		parts = append(parts, fill(im.Strong, map[string]string{"group": w.groupWords(strongest).Prepositional}))
 	}
-	if strongest, weakest, ok := w.extremes(); ok {
-		text := fill(im.StrongWeak, map[string]string{"strong": w.groupWords(strongest).Accusative, "weak": w.groupWords(weakest).Accusative})
-		means := map[string][]testGroupView{}
-		for _, g := range w.groups() {
-			means[g.Means] = append(means[g.Means], g)
+	if hasWeak {
+		phrase := im.Weak
+		if !hasStrong {
+			phrase = im.WeakOnly
 		}
-		switch {
-		case len(means) == 1 && means[im.Achieved] != nil:
-			text += "; " + im.AllAchieved
-		case len(means) == 1 && means[im.Far] != nil:
-			text += "; " + im.AllFar
+		parts = append(parts, fill(phrase, map[string]string{"group": w.groupWords(weakest).Accusative}))
+	}
+	switch {
+	case len(parts) > 0:
+		if len(names) > 0 {
+			parts = append(parts, fill(im.Change, map[string]string{"names": joinNouns(names)}))
 		}
-		sentences = append(sentences, fullSentence(text))
-		if len(means) > 1 {
-			names := func(groups []testGroupView, form func(testGroupWords) string) string {
-				out := []string{}
-				for _, g := range groups {
-					out = append(out, form(w.groupWords(g)))
-				}
-				return joinAnd(out)
-			}
-			nominative := func(g testGroupWords) string { return g.Nominative }
-			if groups := means[im.Achieved]; len(groups) > 0 {
-				sentences = append(sentences, upperFirst(fill(im.AchievedList, map[string]string{"names": names(groups, nominative)})))
-			}
-			if groups := means[im.Far]; len(groups) > 0 {
-				if len(groups) >= 3 && len(means) == 2 {
-					sentences = append(sentences, im.RestFar)
-				} else {
-					sentences = append(sentences, upperFirst(fill(im.FarList, map[string]string{"names": names(groups, nominative)})))
-				}
-			}
-			if groups := means[im.NotAccepted]; len(groups) > 0 {
-				sentences = append(sentences, upperFirst(fill(im.NotAcceptedList, map[string]string{"names": names(groups, func(g testGroupWords) string { return g.Accusative })})))
-			}
-			if groups := means[im.Below]; len(groups) > 0 {
-				sentences = append(sentences, fill(im.BelowList, map[string]string{"names": names(groups, func(g testGroupWords) string { return g.Prepositional })}))
-			}
+		sentences = append(sentences, fullSentence(strings.Join(parts, ", ")))
+	case mean > 0:
+		sentences = append(sentences, im.Even)
+		if len(names) > 0 {
+			sentences = append(sentences, fill(im.ChangeOnly, map[string]string{"names": joinNouns(names)}))
 		}
+	}
+	means := map[string][]testGroupView{}
+	for _, g := range w.groups() {
+		means[g.Means] = append(means[g.Means], g)
+	}
+	list := func(groups []testGroupView, form func(testGroupWords) string) string {
+		out := []string{}
+		for _, g := range groups {
+			out = append(out, form(w.groupWords(g)))
+		}
+		return joinNouns(out)
+	}
+	if groups := means[im.NotAccepted]; len(groups) > 0 && len(groups) == len(w.groups()) && len(groups) > 1 {
+		sentences = append(sentences, im.NotAcceptedAll)
+	} else if len(groups) > 0 {
+		sentences = append(sentences, upperFirst(fill(im.NotAcceptedList, map[string]string{"names": list(groups, func(g testGroupWords) string { return g.Accusative })})))
+	}
+	if groups := means[im.Below]; len(groups) > 0 {
+		sentences = append(sentences, fill(im.BelowList, map[string]string{"names": list(groups, func(g testGroupWords) string { return g.Prepositional })}))
 	}
 	return strings.Join(sentences, " ")
 }
@@ -665,49 +1059,76 @@ func (w *testWriter) conditionWords(names []string, genitive bool) string {
 		}
 		words = append(words, word)
 	}
-	return joinAnd(words)
+	return joinNouns(words)
 }
 
+// environment is one paragraph on how he feels in the ВУЦ: in the four kinds
+// of activity of chapter 1, what of it satisfies him, how far he is from the
+// ideal image of the student — the conditions he lacks — and what he values.
 func (w *testWriter) environment() string {
 	e := w.p.Environment
 	sentences := []string{}
-	living, training := "", ""
-	for _, sign := range w.v.Environment {
-		for _, d := range sign.Data {
-			if d.Question == e.Living && living == "" {
-				living = russianLevels[d.Level]
-			}
-		}
-	}
+	byLevel, kinds := map[string][]string{}, 0
 	for _, side := range w.v.Life {
-		for _, answer := range side.Answers {
-			if answer.Title == e.Training && training == "" {
-				training = russianLevels[answer.Level]
+		if kind, level := e.Kinds[side.Side], russianLevels[side.Level]; kind != "" && level != "" {
+			byLevel[level] = append(byLevel[level], kind)
+			kinds++
+		}
+	}
+	if len(byLevel) == 1 && kinds == len(e.Kinds) {
+		for level := range byLevel {
+			sentences = append(sentences, e.AllKinds[level])
+		}
+	} else {
+		for _, level := range []string{"high", "medium", "low"} {
+			if names := byLevel[level]; len(names) > 0 {
+				sentences = append(sentences, fill(e.KindsText[level], map[string]string{"list": joinNouns(names)}))
 			}
 		}
 	}
-	first := e.LivingText[living]
-	if t := e.TrainingText[training]; t != "" {
-		if first != "" {
-			first += ", " + t
+	clauses := []string{}
+	for _, level := range []string{"high", "medium", "low"} {
+		names := []string{}
+		for _, s := range e.Satisfied {
+			if w.answers[s.Question] == level {
+				names = append(names, s.Name)
+			}
+		}
+		if len(names) == 0 {
+			continue
+		}
+		verb := e.Verbs["one"]
+		if len(names) > 1 {
+			verb = e.Verbs["many"]
+		}
+		clauses = append(clauses, fill(e.SatisfiedText[level], map[string]string{"list": joinNouns(names), "verb": verb}))
+	}
+	text := strings.Join(clauses, ", ")
+	if patriotic := w.answer(e.Patriotic); patriotic != "" {
+		if text == "" {
+			text = patriotic
 		} else {
-			first = upperFirst(t)
+			text += ", а " + patriotic
 		}
 	}
-	if first != "" {
-		sentences = append(sentences, fullSentence(first))
+	if text != "" {
+		sentences = append(sentences, fullSentence(text))
 	}
-	if names := w.rated(e.Ratings["above"]); len(names) > 0 {
-		sentences = append(sentences, fill(e.Above, map[string]string{"list": w.conditionWords(names, false)}))
+	lacking := append(w.rated(e.Ratings["lacking"]), w.rated(e.Ratings["below"])...)
+	if len(lacking) > e.LackingMax {
+		lacking = lacking[:e.LackingMax]
 	}
-	if names := w.rated(e.Ratings["lacking"]); len(names) > 0 {
-		sentences = append(sentences, fill(e.Lacking, map[string]string{"list": w.conditionWords(names, true)}))
+	if len(lacking) > 0 {
+		sentences = append(sentences, fill(e.Lacking, map[string]string{"list": w.conditionWords(lacking, true)}))
 	}
-	if names := w.rated(e.Ratings["below"]); len(names) > 0 {
-		sentences = append(sentences, fullSentence(upperFirst(fill(e.Below, map[string]string{"list": w.conditionWords(names, false)}))))
+	can := []string{}
+	for _, name := range w.rated(e.Ratings["above"]) {
+		if phrase := e.Conditions[name].Can; phrase != "" && len(can) < e.AboveMax {
+			can = append(can, phrase)
+		}
 	}
-	if training == "low" {
-		sentences = append(sentences, e.TrainingLow)
+	if len(can) > 0 {
+		sentences = append(sentences, fill(e.Above, map[string]string{"list": joinPhrases(can)}))
 	}
 	stories := []string{}
 	for _, story := range w.v.Stories {
@@ -717,7 +1138,7 @@ func (w *testWriter) environment() string {
 		}
 	}
 	if len(stories) > 0 {
-		sentences = append(sentences, fill(e.Stories, map[string]string{"list": strings.Join(stories, "; ")}))
+		sentences = append(sentences, fill(e.Stories, map[string]string{"list": joinNouns(stories)}))
 	}
 	return strings.Join(sentences, " ")
 }
@@ -794,10 +1215,14 @@ func (w *testWriter) summary(advice []ConclusionAdvice) string {
 	sentences := []string{}
 	groups := w.groups()
 	allSupport := len(groups) > 0 && !slices.ContainsFunc(groups, func(g testGroupView) bool { return g.Type != w.p.Advice.Support })
-	_, lowest, spread := w.extremes()
-	teamSupport := slices.ContainsFunc(groups, func(g testGroupView) bool { return g.Number == 3 && g.Type == w.p.Advice.Support }) && !(spread && lowest.Number == 3)
+	_, _, lowest, hasWeak, _ := w.extremes()
+	teamSupport := slices.ContainsFunc(groups, func(g testGroupView) bool { return g.Number == 3 && g.Type == w.p.Advice.Support }) && !(hasWeak && lowest.Number == 3)
 	military := w.self(w.p.Self.Military)
-	switch w.level(w.p.MotivationMethod) {
+	motivation := w.level(w.p.MotivationMethod)
+	if motivation != "high" && w.even() && w.level(w.p.EmotionalMethod) == "high" {
+		sentences = append(sentences, s.Even)
+	}
+	switch motivation {
 	case "high":
 		switch {
 		case allSupport && military == selfFormed.phrase:
@@ -814,13 +1239,16 @@ func (w *testWriter) summary(advice []ConclusionAdvice) string {
 	case "low":
 		sentences = append(sentences, s.Low)
 	}
-	if w.v.Congruence.Sense == w.p.Image.AllAtOnce {
+	switch {
+	case w.v.Congruence.Sense == w.p.Image.AllAtOnce:
 		sentences = append(sentences, s.AllAtOnce)
+	case w.v.Congruence.Sense == w.p.Image.Whole && w.even():
+		sentences = append(sentences, s.WholeEven)
 	}
 	kind, _, weak, tense := w.willKind()
 	switch kind {
 	case "strong":
-		if good, poor := w.experience(); len(good) == len(w.p.Experience) && len(poor) == 0 {
+		if w.experienceHigh() {
 			sentences = append(sentences, s.StrongGrowing)
 		} else {
 			sentences = append(sentences, s.Strong)
@@ -829,16 +1257,20 @@ func (w *testWriter) summary(advice []ConclusionAdvice) string {
 		if tense {
 			sentences = append(sentences, s.Tense)
 		} else {
-			sentences = append(sentences, fill(s.WeakSides, map[string]string{"list": joinAnd(weak)}))
+			sentences = append(sentences, fill(s.WeakSides, map[string]string{"list": joinNouns(weak)}))
 		}
 	case "weak":
 		sentences = append(sentences, s.Weak)
 	}
 	if text := w.p.Self.Summary[military]; text != "" {
-		sentences = append(sentences, text)
+		if military == selfFormed.phrase {
+			if graduate := w.p.Self.SummaryGraduate[w.answers[w.p.Self.Graduate.Question]]; graduate != "" {
+				text += ", " + graduate
+			}
+		}
+		sentences = append(sentences, fullSentence(text))
 	}
-	example := allSupport || w.level(w.p.MotivationMethod) == "high"
-	if example && slices.ContainsFunc(advice, func(a ConclusionAdvice) bool { return a.Code == "R16" }) {
+	if motivation == "high" && slices.ContainsFunc(advice, func(a ConclusionAdvice) bool { return a.Code == "R16" }) {
 		sentences = append(sentences, s.Example)
 	}
 	below, lacking := w.p.Environment.Ratings["below"], w.p.Environment.Ratings["lacking"]
@@ -862,6 +1294,18 @@ func (w *testWriter) summary(advice []ConclusionAdvice) string {
 			sentences = append(sentences, s.Requirements)
 		}
 	}
+	needs := []string{}
+	for _, name := range append(w.rated(below), w.rated(lacking)...) {
+		if requirements && name == "Доверие и уважение к нему" {
+			continue
+		}
+		if need := s.NeedOf[name]; need != "" && !slices.Contains(needs, need) && len(needs) < s.NeedsMax {
+			needs = append(needs, need)
+		}
+	}
+	if goal := s.Goals[motivation]; goal != "" && len(needs) > 0 {
+		sentences = append(sentences, fill(s.Needs, map[string]string{"goal": goal, "list": joinPhrases(needs)}))
+	}
 	return strings.Join(sentences, " ")
 }
 
@@ -870,7 +1314,7 @@ func (w *testWriter) summary(advice []ConclusionAdvice) string {
 // Why is empty when it is the lowest of all — «здесь он оценивает себя
 // скромнее всего»; otherwise it is said by what the group means for him.
 func (w *testWriter) attentionGroup() (testGroupView, string, bool) {
-	_, weakest, ok := w.extremes()
+	_, _, weakest, ok, _ := w.extremes()
 	if !ok {
 		return testGroupView{}, "", false
 	}
@@ -900,7 +1344,10 @@ func (w *testWriter) conclusion() *TestConclusion {
 			c.Details = append(c.Details, ConclusionPart{ID: part.id, Title: w.p.Titles[part.id], Text: part.text})
 		}
 	}
-	_, weakest, _ := w.extremes()
+	_, _, weakest, hasWeak, _ := w.extremes()
+	if !hasWeak {
+		weakest = testGroupView{}
+	}
 	_, _, _, tense := w.willKind()
 	w.facts = testFacts{
 		motivation: w.level(w.p.MotivationMethod),

@@ -108,9 +108,15 @@ func TestTestConclusionWords(t *testing.T) {
 			if strings.Contains(text, "{") || strings.Contains(text, "  ") || strings.Contains(text, " ,") || strings.Contains(text, "..") || strings.Contains(text, ";.") {
 				t.Errorf("%s: a broken phrase %q", name, text)
 			}
-			// The stories of the student may have numbers; the rest may not.
-			if before, _, _ := strings.Cut(text, "Из ответов о деятельности"); digits.MatchString(before) {
+			// The stories of the student may have numbers and any marks; the
+			// rest may not, and has no colon, dash or semicolon (decided 13
+			// November 2026).
+			before, _, _ := strings.Cut(text, "В ответах о деятельности")
+			if digits.MatchString(before) {
 				t.Errorf("%s: a number in %q", name, text)
+			}
+			if strings.ContainsAny(before, ":;—–") || strings.Contains(before, " - ") {
+				t.Errorf("%s: a colon or a dash in %q", name, text)
 			}
 		}
 		codes := []string{}
@@ -160,6 +166,30 @@ func TestTestPhraseBook(t *testing.T) {
 			t.Errorf("condition %q: no cases", name)
 		}
 	}
+	var book map[string]any
+	if err := json.Unmarshal(formbank.TestPhrases(), &book); err != nil {
+		t.Fatal(err)
+	}
+	delete(book, "about")
+	delete(book, "forbidden")
+	var marks func(path string, node any)
+	marks = func(path string, node any) {
+		switch x := node.(type) {
+		case map[string]any:
+			for k, v := range x {
+				marks(path+"/"+k, v)
+			}
+		case []any:
+			for _, v := range x {
+				marks(path, v)
+			}
+		case string:
+			if strings.ContainsAny(x, ":;—–") {
+				t.Errorf("%s: a colon or a dash in %q", path, x)
+			}
+		}
+	}
+	marks("", book)
 	lower := strings.ToLower(string(formbank.TestPhrases()))
 	_, phrases, _ := strings.Cut(lower, `"titles"`)
 	phrases, _, _ = strings.Cut(phrases, `"forbidden"`)
@@ -262,5 +292,36 @@ func TestPlatoonConclusionOfDemoPlatoons(t *testing.T) {
 	}
 	if seen == 0 {
 		t.Fatal("no demo platoon of two students")
+	}
+}
+
+// A quality stands out only by the gap from the student's own middle; an
+// even profile has neither strong nor weak ones (decided 13 November 2026).
+func TestStandOut(t *testing.T) {
+	score := func(name string, v float64) testScoredItem { return testScoredItem{Name: name, Score: &v} }
+	even := []testScoredItem{score("А", 3.67), score("Б", 3.33), score("В", 3.33), score("Г", 3), score("Д", 3)}
+	if strong, weak, _, _ := standOut(even, 0.5, 3); len(strong)+len(weak) != 0 {
+		t.Fatalf("an even profile stands out: %v %v", strong, weak)
+	}
+	items := []testScoredItem{score("А", 4.67), score("Б", 4.33), score("В", 3.67), score("Г", 3), score("Д", 3), score("Е", 2)}
+	strong, weak, _, _ := standOut(items, 0.5, 3)
+	if len(strong) != 2 || strong[0].Name != "А" || len(weak) != 1 || weak[0].Name != "Е" {
+		t.Fatalf("strong %v, weak %v", strong, weak)
+	}
+}
+
+func TestJoinPhrases(t *testing.T) {
+	for _, c := range []struct {
+		items []string
+		want  string
+	}{
+		{[]string{"а"}, "а"},
+		{[]string{"а", "б", "в"}, "а, б и в"},
+		{[]string{"а, отделяя б", "в"}, "а, отделяя б, и в"},
+		{[]string{"а", "б", "в, отделяя г"}, "а, б и в, отделяя г"},
+	} {
+		if got := joinPhrases(c.items); got != c.want {
+			t.Errorf("%v: %q, want %q", c.items, got, c.want)
+		}
 	}
 }
