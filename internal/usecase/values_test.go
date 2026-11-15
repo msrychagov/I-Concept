@@ -235,7 +235,7 @@ func valuesPrompt(t *testing.T) promptbank.Prompt {
 }
 
 // A submitted essay is marked by itself; the teacher who gave it sees the
-// numbers and the summary of the assignment; the patronymic of the essay stays.
+// numbers and the summary of the assignment; the people of the essay go as labels.
 func TestEssayIsMarkedByItselfAndCountedOverTheAssignment(t *testing.T) {
 	f := newEssayFixture(t)
 	f.service.RegisterPrompts(valuesPrompt(t))
@@ -249,7 +249,7 @@ func TestEssayIsMarkedByItselfAndCountedOverTheAssignment(t *testing.T) {
 	if m.count() != 2 {
 		t.Fatalf("%d calls for two essays", m.count())
 	}
-	if call := m.calls[0]; !strings.Contains(call.User, `"онтограф"`) || !strings.Contains(call.User, "Иваном Петровичем") || strings.Contains(call.User, `"блок"`) || call.MaxTokens != 4000 {
+	if call := m.calls[0]; !strings.Contains(call.User, `"онтограф"`) || !strings.Contains(call.User, "с другом [человек 1].") || strings.Contains(call.User, "Иван") || strings.Contains(call.User, `"блок"`) || call.MaxTokens != 4000 {
 		t.Fatalf("input: %.200s", call.User)
 	}
 	view, err := f.service.ValuesFor(f.owner, first, false)
