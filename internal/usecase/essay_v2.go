@@ -246,6 +246,38 @@ func nameInQuotes(name string, quotes any) bool {
 // there is one, written in the quotes, with no label and no rank; one person —
 // one entry. A problem never repeats the name: it goes to the journal.
 func teacherProblemsV2(output map[string]any, current map[string]string) []string {
+	return teacherProblemsWith(output, current, writtenNameProblem)
+}
+
+// writtenNameProblem is what is wrong with a name of v2–v4: a surname or a
+// first name with the patronymic as the author wrote it, found in the quotes.
+func writtenNameProblem(where, name string, quotes any) string {
+	switch {
+	case strings.Contains(name, "[") || militaryRank.MatchString(name):
+		return where + ": в name только фамилия или имя и отчество, без меток и званий"
+	case !nameInQuotes(name, quotes):
+		return where + ": name нет в цитатах записи — пиши фамилию так, как её написал автор, и дай цитату, где он её пишет, или оставь name пустым"
+	}
+	return ""
+}
+
+// labelNameProblem is what is wrong with a name since v5: the label of a
+// person exactly as in the input, found in a quote of the record.
+func labelNameProblem(where, name string, quotes any) string {
+	if !personLabels.MatchString(name) || personLabels.FindString(name) != name {
+		return where + ": в name — только метка человека из ответов, например [человек 2], без звания и должности, или пустая строка"
+	}
+	for _, quote := range quoteList(quotes) {
+		if strings.Contains(quoteForm(textOf(quote["quote"])), quoteForm(name)) {
+			return ""
+		}
+	}
+	return where + ": метки из name нет в цитатах записи — дай цитату, где автор называет этого человека, или оставь name пустым"
+}
+
+// teacherProblemsWith checks the teachers of v2 and later; nameProblem checks
+// a name that is not empty.
+func teacherProblemsWith(output map[string]any, current map[string]string, nameProblem func(where, name string, quotes any) string) []string {
 	teachers, ok := asList(output["teachers"])
 	if !ok {
 		return []string{"teachers: нет списка"}
@@ -271,10 +303,10 @@ func teacherProblemsV2(output map[string]any, current map[string]string) []strin
 		case !isText:
 			problems = append(problems, where+": нет поля name")
 		case name == "":
-		case strings.Contains(name, "[") || militaryRank.MatchString(name):
-			problems = append(problems, where+": в name только фамилия или имя и отчество, без меток и званий")
-		case !nameInQuotes(name, record["quotes"]):
-			problems = append(problems, where+": name нет в цитатах записи — пиши фамилию так, как её написал автор, и дай цитату, где он её пишет, или оставь name пустым")
+		default:
+			if p := nameProblem(where, name, record["quotes"]); p != "" {
+				problems = append(problems, p)
+			}
 		}
 		if name != "" {
 			key := textOf(record["position"]) + "|" + normalWord(name)

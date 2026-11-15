@@ -156,6 +156,17 @@ func tooLongV3(words int) []string {
 // 250 words, no names or ranks of the teachers in the texts, no copy of an
 // example, the words a text must not hold and the teachers as in v2.
 func checkEssayAnswerV3(output map[string]any, payload *object) []string {
+	return essayV3Problems(output, payload, false)
+}
+
+// checkEssayAnswerV5 is the check of v3 for an input with the people behind
+// labels: a label stands only in teachers.name, and a name is a label from the
+// quotes of its record or empty.
+func checkEssayAnswerV5(output map[string]any, payload *object) []string {
+	return essayV3Problems(output, payload, true)
+}
+
+func essayV3Problems(output map[string]any, payload *object, marked bool) []string {
 	current, previous := essayAnswers(payload, "эссе"), essayAnswers(payload, "прежнее_эссе")
 	problems := []string{}
 	for _, p := range []struct {
@@ -227,9 +238,17 @@ func checkEssayAnswerV3(output map[string]any, payload *object) []string {
 	}
 
 	words, names := 0, teacherNameWords(output)
+	if marked {
+		names = nil
+	}
 	for _, t := range essayTextsV3(output) {
 		text := textOf(t.raw)
 		words += countWords(text)
+		if marked {
+			if p := labelProblem(t.where, text); p != "" {
+				problems = append(problems, p)
+			}
+		}
 		if namesIn(text, names) {
 			problems = append(problems, t.where+": фамилия или имя преподавателя в тексте — называй его по должности: преподаватель, куратор взвода, начальник цикла; фамилия — только в teachers")
 		}
@@ -241,6 +260,9 @@ func checkEssayAnswerV3(output map[string]any, payload *object) []string {
 		}
 	}
 	problems = append(problems, tooLongV3(words)...)
+	if marked {
+		return append(problems, teacherProblemsWith(output, current, labelNameProblem)...)
+	}
 	return append(problems, teacherProblemsV2(output, current)...)
 }
 
