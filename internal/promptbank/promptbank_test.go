@@ -48,7 +48,8 @@ func TestLatestVersionMatchesTheWikiWhenItIsThere(t *testing.T) {
 		{"test-platoon", "v3", "../../../Вики/Тестирование/Инструкция по взводу v3.md"},
 		{"test-platoon", "v2", "../../../Вики/Тестирование/Инструкция по взводу v2.md"},
 		{"test-platoon", "v1", "../../../Вики/Тестирование/Инструкция по взводу.md"},
-		{"essay", "", "../../../Вики/Эссе выпускника/Инструкция v4.md"},
+		{"essay", "", "../../../Вики/Эссе выпускника/Инструкция v5.md"},
+		{"essay", "v4", "../../../Вики/Эссе выпускника/Инструкция v4.md"},
 		{"essay", "v3", "../../../Вики/Эссе выпускника/Инструкция v3.md"},
 		{"essay", "v2", "../../../Вики/Эссе выпускника/Инструкция v2.md"},
 		{"essay", "v1", "../../../Вики/Эссе выпускника/Инструкция.md"},
@@ -159,15 +160,15 @@ func TestVersionFoldersMustBeNamedVN(t *testing.T) {
 }
 
 // The newest versions of the tasks that write text have one block about the
-// style word for word (Вики/Языковая модель/План стиля ответа.md), and so the
-// essay goes on with v4.
+// style word for word (Вики/Языковая модель/План стиля ответа.md); the essay
+// v5 keeps the block of v4 and hides the people behind labels.
 func TestNewestVersionsHaveOneStyleBlock(t *testing.T) {
 	prompts, err := Load()
 	if err != nil {
 		t.Fatal(err)
 	}
 	block := ""
-	for task, version := range map[string]string{"test": "v8", "test-platoon": "v6", "autobiography": "v6", "essay": "v4", "essay-cohort": "v4"} {
+	for task, version := range map[string]string{"test": "v8", "test-platoon": "v6", "autobiography": "v6", "essay": "v5", "essay-cohort": "v4"} {
 		prompt, ok := Latest(prompts, task)
 		if !ok || prompt.Version != version {
 			t.Fatalf("%s: the newest version is %s, not %s", task, prompt.Version, version)

@@ -49,12 +49,15 @@ func goodEssay(user string) map[string]any {
 	if len(input.Previous) > 0 {
 		before = []any{quoteOf(input.Previous[0])}
 	}
-	// A teacher named in answer 2.4 is thanked, by the surname the author wrote.
+	// A teacher named in answer 2.4 is thanked, by the surname the author wrote
+	// or, since v5, by the label of the person.
 	teachers := []any{}
 	for _, row := range input.Essay {
 		name := ""
 		switch {
 		case row.Number != "2.4":
+		case personLabels.MatchString(row.Answer):
+			name = personLabels.FindString(row.Answer)
 		case strings.Contains(row.Answer, "Сидоров"):
 			name = "Сидоров"
 		case strings.Contains(row.Answer, "Иванов"):
@@ -184,7 +187,7 @@ func TestSubmittedEssayGetsAnAnalysisFromTheInputOfItsOwn(t *testing.T) {
 	if !strings.HasPrefix(call.System, "Ты помогаешь преподавателю военного учебного центра") || !strings.Contains(string(call.Schema), `"formation"`) || call.MaxTokens != 6000 {
 		t.Fatalf("instruction or schema: %.80s", call.System)
 	}
-	// The order of the keys, the cut data, the patronymic kept and nothing of the person.
+	// The order of the keys, the cut data, the people as labels and nothing of the author.
 	if !strings.HasPrefix(call.User, "{\n \"эссе\": [") {
 		t.Fatalf("keys: %.60s", call.User)
 	}
@@ -195,7 +198,7 @@ func TestSubmittedEssayGetsAnAnalysisFromTheInputOfItsOwn(t *testing.T) {
 	if got := input.Essay[0].Answer; got != "Хотел служить. Родился [скрыто] в городе." {
 		t.Fatalf("answer 1.1: %q", got)
 	}
-	if got := input.Essay[7].Answer; input.Essay[7].Number != "2.4" || got != "Благодарю Игоря Петровича за помощь, пишите мне на [скрыто]." {
+	if got := input.Essay[7].Answer; input.Essay[7].Number != "2.4" || got != "Благодарю [человек 1] за помощь, пишите мне на [скрыто]." {
 		t.Fatalf("answer 2.4: %q", got)
 	}
 	// The list of the instructors does not go: v2 tells them by positions (decided 25 October 2026).
@@ -246,7 +249,7 @@ func TestEarlierEssayOfTheSameAuthorGoesWithTheNewOne(t *testing.T) {
 		} `json:"formation"`
 	}
 	_ = json.Unmarshal(view.Portrait.Output, &output)
-	if len(output.Formation.Before) != 1 || output.Formation.Before[0].Question != "1.1" || view.Portrait.Version != "v4" {
+	if len(output.Formation.Before) != 1 || output.Formation.Before[0].Question != "1.1" || view.Portrait.Version != "v5" {
 		t.Fatalf("quotes of the earlier essay: %+v", output.Formation)
 	}
 }
@@ -492,4 +495,47 @@ func roundTrip(t *testing.T, output map[string]any) map[string]any {
 		t.Fatal(err)
 	}
 	return back
+}
+
+// The analysis of v4, made of the essay as written, is shown while the one of
+// v5 is made of the essay with the people as labels; the analysis of v5 shows
+// the surname as the author wrote it, and the model never got it.
+func TestAnalysisOfV4IsShownWhileV5HidesThePeople(t *testing.T) {
+	f := newEssayPortraitFixtureAt(t, "v4")
+	m := essayModel(nil)
+	f.service.UseModel(m)
+	_, id := f.submitted("essay-v5@example.test", "2401", f.assignment, map[string]string{"2.4": "Благодарю полковника Иванова Игоря Петровича за помощь."})
+	f.idle()
+	if m.count() != 1 || !strings.Contains(m.calls[0].User, "Иванова Игоря Петровича") {
+		t.Fatalf("%d calls of v4", m.count())
+	}
+	f.service.UseModel(nil)
+	f.service.portraits.tasks = nil
+	prompts, _ := promptbank.Load()
+	for _, task := range []string{essayForm, essayCohortTask} {
+		prompt, _ := promptbank.Latest(prompts, task)
+		f.service.RegisterPrompts(prompt)
+	}
+	view, err := f.portrait(f.owner, id)
+	if err != nil || view.Status != portraitReady || view.Portrait.Version != "v4" {
+		t.Fatalf("the analysis of v4 is not shown: %+v %v", view, err)
+	}
+	f.service.UseModel(m)
+	f.idle()
+	if m.count() != 2 || !strings.Contains(m.calls[1].User, "полковника [человек 1] за помощь") || strings.Contains(m.calls[1].User, "Иванов") {
+		t.Fatalf("%d calls: input of v5 %.300s", m.count(), m.calls[len(m.calls)-1].User)
+	}
+	view, err = f.portrait(f.owner, id)
+	if err != nil || view.Status != portraitReady || view.Portrait.Version != "v5" {
+		t.Fatalf("%+v %v", view, err)
+	}
+	var output struct {
+		Teachers []struct {
+			Name   string
+			Quotes []struct{ Quote string }
+		}
+	}
+	if json.Unmarshal(view.Portrait.Output, &output) != nil || len(output.Teachers) != 1 || output.Teachers[0].Name != "Иванов" || !strings.Contains(output.Teachers[0].Quotes[0].Quote, "Иванова Игоря Петровича") {
+		t.Fatalf("teachers: %+v", output.Teachers)
+	}
 }
