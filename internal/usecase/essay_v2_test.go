@@ -30,14 +30,6 @@ func goodEssayV2For(payload *object) map[string]any {
 	}
 }
 
-func TestCountWords(t *testing.T) {
-	for text, want := range map[string]int{"": 0, "Автор — пришёл, 2 раза.": 4, "  слово  ": 1, "«а» - б": 2} {
-		if got := countWords(text); got != want {
-			t.Errorf("%q: %d, want %d", text, got, want)
-		}
-	}
-}
-
 func TestCheckEssayAnswerV2(t *testing.T) {
 	answers := map[string]string{"1.1": "Я пошёл «в ВУЦ» ради «службы» и отсрочки.", "1.2": "Первые дни было   очень  страшно, ЁЛКИ-палки.", "2.4": "Хочу поблагодарить полковника Иванова за помощь."}
 	earlier := map[string]string{"1.1": "Раньше я хотел только отсрочку от армии.", "1.2": "Раньше было совсем страшно.", "2.4": "Раньше никого не помню."}
@@ -111,25 +103,29 @@ func TestCheckEssayAnswerV2(t *testing.T) {
 	}
 }
 
-// The limit is 250 words of the paragraphs and the recommendations; a quote is not counted.
-func TestEssayAnswerOfV2HasNotMoreThan250Words(t *testing.T) {
+// longText is a text far over the 250 words the instructions ask for.
+var longText = strings.TrimSpace(strings.Repeat("слово ", 400))
+
+// The limit of 250 words is only in the instructions: since 18 November 2026 an
+// analysis of any version is not refused for its length.
+func TestLongEssayAnswerIsAccepted(t *testing.T) {
 	payload := essayPayloadFor(map[string]string{"1.1": "Я пошёл «в ВУЦ» ради «службы» и отсрочки.", "1.2": "Первые дни было очень страшно.", "2.4": "Хочу поблагодарить полковника Иванова."}, nil)
-	output := goodEssayV2For(payload)
-	rest := 0
-	for _, key := range []string{"moments", "environment"} {
-		rest += countWords(output[key].(map[string]any)["text"].(string))
+	v2 := goodEssayV2For(payload)
+	v2["formation"].(map[string]any)["text"] = longText
+	if problems := checkEssayAnswerV2(roundTrip(t, v2), payload); len(problems) != 0 {
+		t.Errorf("v2: %v", problems)
 	}
-	for _, item := range output["recommendations"].([]any) {
-		rest += countWords(item.(map[string]any)["text"].(string))
+	v3 := goodEssayV3For(payload)
+	v3["moments"].(map[string]any)["text"] = longText
+	if problems := checkEssayAnswerV3(roundTrip(t, v3), payload); len(problems) != 0 {
+		t.Errorf("v3: %v", problems)
 	}
-	words := func(n int) string { return strings.TrimSpace(strings.Repeat("слово — ", n)) }
-	output["formation"].(map[string]any)["text"] = words(essayWordsMost - rest)
-	if problems := checkEssayAnswerV2(roundTrip(t, output), payload); len(problems) != 0 {
-		t.Fatalf("250 words: %v", problems)
-	}
-	output["formation"].(map[string]any)["text"] = words(essayWordsMost - rest + 1)
-	if problems := strings.Join(checkEssayAnswerV2(roundTrip(t, output), payload), " | "); !strings.Contains(problems, "вместе 251 слов, нужно не больше 250") {
-		t.Fatalf("251 words: %s", problems)
+	// v5 is the check of v3 for an input with the people behind labels: the
+	// answer names no teacher, as one of an essay without them.
+	v3["teachers"] = []any{}
+	v3["teachersConclusion"] = map[string]any{"text": "", "quotes": []any{}}
+	if problems := checkEssayAnswerV5(roundTrip(t, v3), payload); len(problems) != 0 {
+		t.Errorf("v5: %v", problems)
 	}
 }
 
@@ -207,7 +203,7 @@ func TestCheckCohortAnswerV2(t *testing.T) {
 		"a repeated recommendation": {func(o map[string]any) {
 			o["recommendations"].([]any)[1].(map[string]any)["text"] = "поддерживать новичков в первые недели."
 		}, "recommendations, пункт 2: повторяет пункт 1"},
-		"too many words": {text("formation", strings.TrimSpace(strings.Repeat("слово ", essayWordsMost))), "нужно не больше 250"},
+		"a long text": {text("formation", longText), ""},
 	}
 	for name, c := range cases {
 		output := goodCohortV2("")
