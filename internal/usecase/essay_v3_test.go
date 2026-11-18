@@ -288,9 +288,29 @@ func TestSummaryOfV3IsComposedOnTheButtonOfTheAnalysesOfV3(t *testing.T) {
 	if _, ok := common["teachersConclusion"].(map[string]any); !ok {
 		t.Fatalf("no group of the conclusion about the teachers: %+v", common)
 	}
-	// The block of instructors stands on the analyses of v3.
-	if positions := done["teachers"].(map[string]any)["positions"].([]any); len(positions) != 1 {
+	// The block of instructors stands on the analyses of v3. The model got the
+	// people as labels (v5); the block shows the surnames as the authors wrote
+	// them, the colonel of two authors in one line and the quotes as written.
+	positions := done["teachers"].(map[string]any)["positions"].([]any)
+	if len(positions) != 1 {
 		t.Fatalf("positions: %+v", positions)
+	}
+	people := positions[0].(map[string]any)["people"].([]any)
+	names := []string{}
+	for _, raw := range people {
+		names = append(names, fmt.Sprintf("%v %d", raw.(map[string]any)["name"], len(raw.(map[string]any)["lines"].([]any))))
+	}
+	if strings.Join(names, ", ") != "Иванов 2, Сидоров 1" {
+		t.Fatalf("people: %v", names)
+	}
+	quote := people[0].(map[string]any)["lines"].([]any)[0].(map[string]any)["quotes"].([]any)[0].(map[string]any)["quote"]
+	if q := fmt.Sprint(quote); !strings.Contains(q, "Иванов") || strings.Contains(q, "человек") {
+		t.Fatalf("quote: %v", quote)
+	}
+	for _, call := range m.calls {
+		if strings.Contains(call.User, "Иванов") || strings.Contains(call.User, "Сидоров") {
+			t.Fatalf("a surname went to the model: %.200s", call.User)
+		}
 	}
 }
 

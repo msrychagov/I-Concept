@@ -62,9 +62,33 @@ type portraitTask struct {
 	// nil when the input did not change between the versions.
 	Earlier func(a *Service, db model.Database, s Source) []*object
 	// Keep lists the kinds of personal data (labels of personalPatterns) that
-	// are not cut out of the input of this task: the essay keeps the patronymic,
-	// or the model could not tell «Игорь Петрович» from the list of instructors.
+	// are not cut out of the input of this task: the essay up to v4 kept the
+	// patronymic, or the model could not tell «Игорь Петрович» from the list of
+	// instructors.
 	Keep []string
+	// EarlierKeep is Keep for the inputs of Earlier when it differs: the essay
+	// since v5 hides the people, the analyses before were made with the
+	// patronymic kept. nil takes Keep.
+	EarlierKeep []string
+	// Show mends a stored answer before the teacher sees it: the essay puts back
+	// the people the program hid from the model (people_mask.go). nil shows it as stored.
+	Show func(a *Service, db model.Database, s Source, output []byte) []byte
+}
+
+// earlierKeep is what the inputs of the earlier versions of the task keep.
+func (t portraitTask) earlierKeep() []string {
+	if t.EarlierKeep != nil {
+		return t.EarlierKeep
+	}
+	return t.Keep
+}
+
+// shown is a stored answer as the teacher sees it.
+func (a *Service) shown(db model.Database, task portraitTask, s Source, output []byte) []byte {
+	if task.Show == nil {
+		return output
+	}
+	return task.Show(a, db, s, output)
 }
 
 const (
@@ -217,7 +241,7 @@ func (a *Service) shownPortrait(db model.Database, task portraitTask, s Source, 
 		return model.Portrait{}, false
 	}
 	for _, earlier := range task.Earlier(a, db, s) {
-		if _, err := maskPersonal(earlier, task.Keep...); err != nil {
+		if _, err := maskPersonal(earlier, task.earlierKeep()...); err != nil {
 			continue
 		}
 		if old, ok := storedPortrait(db, task, payloadFingerprint(earlier)); ok {
@@ -722,7 +746,7 @@ func (a *Service) portraitView(teacherID, taskID, sourceID string, retry bool) (
 		return PortraitView{Status: portraitFailed, Reason: "Не удалось собрать сведения для модели."}, nil
 	}
 	ready := func(p model.Portrait) PortraitView {
-		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: p.Output, Created: p.Created, Version: p.TaskVersion}}
+		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: a.shown(db, task, s, p.Output), Created: p.Created, Version: p.TaskVersion}}
 	}
 	if m != nil {
 		if portrait, ok := findPortrait(db, portraitKey(task, m.Name(), payload)); ok {
@@ -789,7 +813,7 @@ func (a *Service) portraitNow(db model.Database, task portraitTask, s Source) (P
 		return PortraitView{Status: portraitFailed, Reason: "Не удалось собрать сведения для модели."}, nil
 	}
 	ready := func(p model.Portrait) (PortraitView, *model.Portrait) {
-		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: p.Output, Created: p.Created, Version: p.TaskVersion}}, &p
+		return PortraitView{Status: portraitReady, Portrait: &PortraitText{Output: a.shown(db, task, s, p.Output), Created: p.Created, Version: p.TaskVersion}}, &p
 	}
 	if m != nil {
 		if portrait, ok := findPortrait(db, portraitKey(task, m.Name(), payload)); ok {

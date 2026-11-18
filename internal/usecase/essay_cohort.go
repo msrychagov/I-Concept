@@ -122,15 +122,14 @@ func (a *Service) cohortAuthorsOf(db model.Database, assignmentID string, shape 
 // version of the instruction for its input now: a summary of v1 shows the
 // quotes of the analyses of v1 it was made of.
 func (a *Service) essayAnalysisOf(db model.Database, submission model.FormSubmission, version string) map[string]any {
-	task, ok := a.portraits.task(essayForm)
-	if !ok {
+	if _, ok := a.portraits.task(essayForm); !ok {
 		return nil
 	}
-	payload, err := a.essayPayload(db, submission, essayShape(version) == 1)
+	payload, marks, err := a.essayInput(db, submission, version)
 	if err != nil {
 		return nil
 	}
-	if _, err = maskPersonal(payload, task.Keep...); err != nil {
+	if _, err = maskPersonal(payload, essayKeep(version)...); err != nil {
 		return nil
 	}
 	fingerprint := payloadFingerprint(payload)
@@ -142,7 +141,7 @@ func (a *Service) essayAnalysisOf(db model.Database, submission model.FormSubmis
 		}
 	}
 	var output map[string]any
-	if !found || json.Unmarshal(newest.Output, &output) != nil {
+	if !found || json.Unmarshal(marks.restore(newest.Output), &output) != nil {
 		return nil
 	}
 	return output

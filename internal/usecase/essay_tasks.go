@@ -42,17 +42,18 @@ func (a *Service) essayTask(prompt promptbank.Prompt) portraitTask {
 			return nil
 		}
 	}
-	return portraitTask{
+	task := portraitTask{
 		ID: essayForm, Version: prompt.Version, Prompt: prompt,
 		MaxTokens: tokens, Attempts: 5,
-		Keep: []string{"отчество"},
+		Keep: essayKeep(prompt.Version),
 		Accepts: func(db model.Database, s Source) bool {
 			submission, ok := findSubmission(db, s)
 			return ok && submission.FormID == essayForm && submission.Completed
 		},
 		Payload: func(a *Service, db model.Database, s Source) (*object, error) {
 			submission, _ := findSubmission(db, s)
-			return a.essayPayload(db, submission, shape == 1)
+			payload, _, err := a.essayInput(db, submission, prompt.Version)
+			return payload, err
 		},
 		Clean: clean, Check: check, Earlier: earlier,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
@@ -60,6 +61,57 @@ func (a *Service) essayTask(prompt promptbank.Prompt) portraitTask {
 			return ok && teacherOwnsSubmission(db, teacherID, submission)
 		},
 	}
+	// Since v5 the people of the essay go as labels (people_mask.go): the
+	// analyses of v2–v4, made of the essay as written with the patronymic kept,
+	// are shown while the new one is made, and the answer gets the people back.
+	if essayMarked(prompt.Version) {
+		task.Check = checkEssayAnswerV5
+		task.EarlierKeep = []string{"отчество"}
+		task.Earlier = func(a *Service, db model.Database, s Source) []*object {
+			submission, _ := findSubmission(db, s)
+			list := []*object{}
+			for _, withList := range []bool{false, true} {
+				if payload, err := a.essayPayload(db, submission, withList); err == nil {
+					list = append(list, payload)
+				}
+			}
+			return list
+		}
+		task.Show = func(a *Service, db model.Database, s Source, output []byte) []byte {
+			submission, _ := findSubmission(db, s)
+			if _, marks, err := a.essayInput(db, submission, prompt.Version); err == nil {
+				return marks.restore(output)
+			}
+			return output
+		}
+	}
+	return task
+}
+
+// essayMarked says whether the input of a version of the instruction hides the
+// people of the essay behind labels (since v5, decided 13 November 2026).
+func essayMarked(version string) bool {
+	n, _ := promptbank.Number(version)
+	return n >= 5
+}
+
+// essayKeep is the personal data the input of a version keeps: the patronymic
+// up to v4 (decision Д13 of 25 October), nothing since v5.
+func essayKeep(version string) []string {
+	if essayMarked(version) {
+		return nil
+	}
+	return []string{"отчество"}
+}
+
+// essayInput is the input of the analysis of an essay by a version of the
+// instruction, with the people replaced by labels since v5, and the labels.
+func (a *Service) essayInput(db model.Database, submission model.FormSubmission, version string) (*object, *peopleMarks, error) {
+	payload, err := a.essayPayload(db, submission, essayShape(version) == 1)
+	if err != nil || !essayMarked(version) {
+		return payload, nil, err
+	}
+	return payload, markRows(payload, "эссе", "прежнее_эссе"), nil
 }
 
 const (

@@ -33,9 +33,9 @@ var (
 	valueCounted = []string{"своё", "одобряет у других"}
 )
 
-// valuesTask marks the essays and the open answers of the tests. The essay keeps
-// the patronymic, as its analysis does; the open answers of a test are cut as
-// for the portrait by the test, by valuesRows. Since v2 (decided 5 November
+// valuesTask marks the essays and the open answers of the tests. The people of
+// the text go as labels, as in the analysis of the essay; the open answers of a
+// test are also cut as for the portrait by the test, by valuesRows. Since v2 (decided 5 November
 // 2026 after the run) the notions go with their definitions and the program
 // refuses a marking that puts most marks on one value or takes no notion; the
 // marking of v1, made for another input, is shown while the one of v2 is made.
@@ -55,30 +55,54 @@ func (a *Service) valuesTask(prompt promptbank.Prompt, o *valuebank.Ontograph) p
 		payload.set("текст", rows)
 		return payload, nil
 	}
+	// Since 16 November 2026 the people of the text go as labels, as in the
+	// analysis of the essay (people_mask.go); a marking made before, of the text
+	// as written with the patronymic kept, is shown while the new one is made.
+	marked := func(a *Service, db model.Database, s Source) (*object, *peopleMarks, error) {
+		payload, err := payloadOf(a, db, s, second)
+		if err != nil {
+			return nil, nil, err
+		}
+		return payload, markRows(payload, "текст"), nil
+	}
 	check := func(output map[string]any, payload *object) []string { return checkValuesAnswer(o, output, payload) }
-	var earlier func(a *Service, db model.Database, s Source) []*object
+	earlier := func(a *Service, db model.Database, s Source) []*object {
+		list := []*object{}
+		if payload, err := payloadOf(a, db, s, second); err == nil {
+			list = append(list, payload)
+		}
+		if second {
+			if payload, err := payloadOf(a, db, s, false); err == nil {
+				list = append(list, payload)
+			}
+		}
+		return list
+	}
 	if second {
 		check = func(output map[string]any, payload *object) []string {
 			return append(checkValuesAnswer(o, output, payload), spreadProblems(o, output)...)
-		}
-		earlier = func(a *Service, db model.Database, s Source) []*object {
-			if payload, err := payloadOf(a, db, s, false); err == nil {
-				return []*object{payload}
-			}
-			return nil
 		}
 	}
 	return portraitTask{
 		ID: valuesTask, Version: prompt.Version, Prompt: prompt,
 		// Up to 40 marks of five short fields with a quote each.
 		MaxTokens: 4000, Attempts: 5,
-		Keep: []string{"отчество"},
+		EarlierKeep: []string{"отчество"},
 		Accepts: func(db model.Database, s Source) bool {
 			rows, _ := a.valuesRows(db, s)
 			return len(rows) > 0
 		},
-		Payload: func(a *Service, db model.Database, s Source) (*object, error) { return payloadOf(a, db, s, second) },
-		Clean:   cleanValuesAnswer, Check: check, Earlier: earlier,
+		Payload: func(a *Service, db model.Database, s Source) (*object, error) {
+			payload, _, err := marked(a, db, s)
+			return payload, err
+		},
+		Show: func(a *Service, db model.Database, s Source, output []byte) []byte {
+			if _, marks, err := marked(a, db, s); err == nil {
+				return marks.restore(output)
+			}
+			return output
+		},
+		Clean: cleanValuesAnswer, Check: check, Earlier: earlier,
 		Visible: func(db model.Database, s Source, teacherID string) bool {
 			if submission, ok := findSubmission(db, s); ok {
 				return teacherOwnsSubmission(db, teacherID, submission)
@@ -161,7 +185,7 @@ func (a *Service) valuesRows(db model.Database, s Source) ([]any, bool) {
 		if _, answered := session.Answers[item.ID]; item.Module != "F" || item.Type != "textarea" || !answered || !storyTold(note) {
 			continue
 		}
-		// The task keeps the patronymic for the essay; a test cuts it as its portrait does.
+		// A test cuts the personal data as its portrait does; the people go as labels.
 		answer, _ := maskText(strings.TrimSpace(note))
 		rows = append(rows, row(item.ID, item.Text, answer))
 	}

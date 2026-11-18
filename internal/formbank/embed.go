@@ -29,3 +29,12 @@ var testPhrases []byte
 
 // TestPhrases returns the phrase book of the test conclusion.
 func TestPhrases() []byte { return testPhrases }
+
+// The first names and their short forms the program looks for in an essay to
+// hide the people the author names before the text goes to the model.
+//
+//go:embed names.json
+var personNames []byte
+
+// PersonNames returns the list of first names as it is built into the binary.
+func PersonNames() []byte { return personNames }
