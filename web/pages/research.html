@@ -17,23 +17,10 @@
 <script src="/assets/js/shared/splash.js"></script>
 <script src="/assets/js/shared/loader.js"></script>
 <script src="/assets/js/shared/api.js"></script>
-<div class="research-layout">
-    <aside class="research-nav" id="main-sidebar" aria-label="Основная навигация">
-        <a class="brand" href="/" aria-label="На главную"><img class="brand-mark" src="/assets/images/reference/crest.png" alt="Эмблема ВУЦ" width="99" height="93"></a>
-        <nav id="nav">
-            <button data-tab="overview" class="active"><img class="ui-icon" src="/assets/images/icons/home.svg" alt="" aria-hidden="true" width="20" height="20"><span>Главная</span></button>
-            <button data-tab="autobiography"><img class="ui-icon" src="/assets/images/icons/file.svg" alt="" aria-hidden="true" width="20" height="20"><span>Автобиография</span></button>
-            <button data-tab="essay"><img class="ui-icon" src="/assets/images/icons/book.svg" alt="" aria-hidden="true" width="20" height="20"><span>Эссе</span></button>
-            <button data-tab="profiles"><img class="ui-icon" src="/assets/images/icons/target.svg" alt="" aria-hidden="true" width="20" height="20"><span>Диагностическое тестирование</span></button>
-            <button data-tab="platoons"><img class="ui-icon" src="/assets/images/icons/users.svg" alt="" aria-hidden="true" width="20" height="20"><span>Управление взводом</span></button>
-            <button data-tab="model"><img class="ui-icon" src="/assets/images/icons/book.svg" alt="" aria-hidden="true" width="20" height="20"><span>Модель и методика</span></button>
-            <button data-tab="settings"><img class="ui-icon" src="/assets/images/icons/settings.svg" alt="" aria-hidden="true" width="20" height="20"><span>Настройки</span></button>
-        </nav>
-        <div class="nav-motto"><div class="building-picture" aria-hidden="true"></div><span>«Знание<br>Ответственность<br>Служение»</span><i aria-hidden="true"></i></div>
-    </aside>
+<div class="research-layout cabinet-cards">
     <div class="research-workspace">
         <header class="app-topbar">
-            <button class="menu-toggle secondary" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="main-sidebar"><img class="ui-icon" src="/assets/images/icons/menu.svg" alt="" aria-hidden="true" width="20" height="20"></button><div class="topbar-title"><b>Электронная диагностическая система</b></div>
+            <a class="topbar-brand" id="cabinet-home" href="/research" aria-label="Главная кабинета"><img class="topbar-crest" src="/assets/images/reference/crest.png" alt="Эмблема ВУЦ" width="99" height="93"><span class="topbar-title"><b>Электронная диагностическая система</b></span></a>
             <div class="teacher-user-menu">
                 <button class="user-state teacher-user-trigger" id="teacher-user-trigger" type="button" aria-expanded="false" aria-haspopup="menu" aria-controls="teacher-user-dropdown" aria-label="Меню преподавателя">
                     <span class="user-avatar" id="teacher-avatar">П</span>
@@ -41,6 +28,7 @@
                     <img class="ui-icon teacher-user-chevron" src="/assets/images/icons/chevron-down.svg" alt="" aria-hidden="true" width="16" height="16">
                 </button>
                 <div class="teacher-user-dropdown" id="teacher-user-dropdown" role="menu" aria-label="Меню преподавателя" aria-hidden="true" inert>
+                    <button id="teacher-settings" type="button" role="menuitem"><img class="ui-icon" src="/assets/images/icons/settings.svg" alt="" aria-hidden="true" width="20" height="20"><span>Настройки</span></button>
                     <button id="teacher-logout" type="button" role="menuitem"><img class="ui-icon" src="/assets/images/icons/logout.svg" alt="" aria-hidden="true" width="20" height="20"><span>Выйти</span></button>
                 </div>
             </div>
@@ -74,6 +62,5 @@
 <script src="/assets/js/teacher/template-editor.js" defer></script>
 <script src="/assets/js/teacher/methodology.js" defer></script>
 <script src="/assets/js/teacher/research.js" defer></script>
-<script src="/assets/js/shared/reference-ui.js" defer></script>
 </body>
 </html>
