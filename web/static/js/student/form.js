@@ -182,7 +182,7 @@
             return;
         }
         if (!s.consent) {
-            app.innerHTML = `<div class="student-layout"><header class="student-header"><a href="/student">← Личный кабинет</a><span>${esc(data.form.title)}</span></header><main class="consent"><div class="eyebrow">Перед началом</div><h1>${esc(data.form.title)}</h1>${data.form.intro.split('\n\n').map(p => `<p>${esc(p)}</p>`).join('')}<button id="consent" type="button">${esc(data.form.texts?.consent || 'Согласен(на) заполнять автобиографию и сохранять сведения')}</button><div id="err"></div></main></div>`;
+            app.innerHTML = `<div class="student-layout"><header class="student-header"><a href="/student">← Личный кабинет</a><span>${esc(data.form.title)}</span></header><main class="consent"><div class="eyebrow">Перед началом</div><h1>${esc(data.form.title)}</h1>${data.form.intro.split('\n\n').map(p => `<p>${esc(p)}</p>`).join('')}<button id="consent" type="button">${esc(data.form.texts?.consent || 'Согласен заполнять автобиографию и сохранять сведения')}</button><div id="err"></div></main></div>`;
             app.querySelector('#consent').onclick = giveConsent;
             return;
         }

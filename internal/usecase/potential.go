@@ -319,7 +319,7 @@ func (p potentialScale) patriotic(a formAnswers) (int, []string) {
 	}
 	floors := []candidate{}
 	if a.is("served", "yes") {
-		floors = append(floors, candidate{levelHigh, "Служил(а) в Вооружённых силах"})
+		floors = append(floors, candidate{levelHigh, "Служил в Вооружённых силах"})
 	}
 	for _, r := range a.records("education_list") {
 		switch {
