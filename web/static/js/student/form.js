@@ -97,12 +97,12 @@
             case 'month': {
                 const [year, month] = (partial[path] || (v ? v.split('-') : ['', ''])).concat('').slice(0, 2);
                 const years = [];
-                for (let y = thisYear + 10; y >= 1950; y--) years.push(y);
+                for (let y = thisYear + (f.future ? 10 : 0); y >= 1950; y--) years.push(y);
                 return `<div class="month-pick"><select ${single} data-kind="month" data-part="m" aria-label="Месяц"><option value="">Месяц</option>${MONTHS.map((m, i) => `<option value="${String(i + 1).padStart(2, '0')}" ${month === String(i + 1).padStart(2, '0') ? 'selected' : ''}>${m}</option>`).join('')}</select><select ${attr} data-kind="month" data-part="y" aria-label="Год"><option value="">Год</option>${years.map(y => `<option value="${y}" ${year === String(y) ? 'selected' : ''}>${y}</option>`).join('')}</select></div>`;
             }
             case 'year': {
                 const years = [];
-                for (let y = thisYear + 10; y >= 1930; y--) years.push(y);
+                for (let y = thisYear + (f.future ? 10 : 0); y >= 1930; y--) years.push(y);
                 return `<select ${single} data-kind="text"><option value="">Год</option>${years.map(y => `<option value="${y}" ${v === String(y) ? 'selected' : ''}>${y}</option>`).join('')}</select>`;
             }
         }

@@ -435,6 +435,7 @@
         },
         {
           "id": "hse_start",
+          "future": true,
           "label": "Месяц и год поступления",
           "type": "month",
           "required": true,
@@ -442,6 +443,8 @@
         },
         {
           "id": "hse_end",
+          "future": true,
+          "notBefore": "hse_start",
           "label": "Месяц и год окончания",
           "type": "month",
           "hint": "Для учащегося — ожидаемый.",
@@ -532,6 +535,7 @@
             },
             {
               "id": "to",
+              "notBefore": "from",
               "label": "Работал по",
               "type": "month",
               "required": true,
@@ -636,6 +640,7 @@
         },
         {
           "id": "service_to",
+          "notBefore": "service_from",
           "label": "Служил по",
           "type": "month",
           "required": true,
@@ -1491,6 +1496,7 @@
             },
             {
               "id": "death_year",
+              "notBefore": "birth",
               "label": "Год смерти",
               "type": "year",
               "required": true,
