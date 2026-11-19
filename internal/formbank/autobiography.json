@@ -435,6 +435,7 @@
         },
         {
           "id": "hse_start",
+          "future": true,
           "label": "Месяц и год поступления",
           "type": "month",
           "required": true,
@@ -442,6 +443,8 @@
         },
         {
           "id": "hse_end",
+          "future": true,
+          "notBefore": "hse_start",
           "label": "Месяц и год окончания",
           "type": "month",
           "hint": "Для учащегося — ожидаемый.",
@@ -508,7 +511,7 @@
             },
             {
               "id": "from",
-              "label": "Работал(а) с",
+              "label": "Работал с",
               "type": "month",
               "required": true,
               "llm": true
@@ -532,7 +535,8 @@
             },
             {
               "id": "to",
-              "label": "Работал(а) по",
+              "notBefore": "from",
+              "label": "Работал по",
               "type": "month",
               "required": true,
               "llm": true,
@@ -623,7 +627,7 @@
         },
         {
           "id": "service_from",
-          "label": "Служил(а) с",
+          "label": "Служил с",
           "type": "month",
           "required": true,
           "llm": true,
@@ -636,7 +640,8 @@
         },
         {
           "id": "service_to",
-          "label": "Служил(а) по",
+          "notBefore": "service_from",
+          "label": "Служил по",
           "type": "month",
           "required": true,
           "llm": true,
@@ -845,7 +850,7 @@
               "options": [
                 {
                   "id": "school",
-                  "text": "Изучал(а) в школе"
+                  "text": "Изучал в школе"
                 },
                 {
                   "id": "university",
@@ -865,7 +870,7 @@
                 },
                 {
                   "id": "env",
-                  "text": "Жил(а) в языковой среде"
+                  "text": "Жил в языковой среде"
                 },
                 {
                   "id": "work",
@@ -1491,6 +1496,7 @@
             },
             {
               "id": "death_year",
+              "notBefore": "birth",
               "label": "Год смерти",
               "type": "year",
               "required": true,
@@ -1813,7 +1819,7 @@
                 },
                 {
                   "id": "lived",
-                  "text": "Жил(а) постоянно"
+                  "text": "Жил постоянно"
                 },
                 {
                   "id": "other",
@@ -2073,7 +2079,7 @@
                 },
                 {
                   "id": "before",
-                  "text": "Занимался(лась) раньше"
+                  "text": "Занимался раньше"
                 }
               ]
             },
@@ -2149,7 +2155,7 @@
               "options": [
                 {
                   "id": "none",
-                  "text": "Не участвовал(а)"
+                  "text": "Не участвовал"
                 },
                 {
                   "id": "school",
@@ -2312,11 +2318,11 @@
                 },
                 {
                   "id": "art_school_done",
-                  "text": "Школа искусств — окончил(а)"
+                  "text": "Школа искусств — окончил"
                 },
                 {
                   "id": "art_school_not",
-                  "text": "Школа искусств — не окончил(а)"
+                  "text": "Школа искусств — не окончил"
                 },
                 {
                   "id": "college",
@@ -2332,7 +2338,7 @@
               "options": [
                 {
                   "id": "none",
-                  "text": "Не участвовал(а)"
+                  "text": "Не участвовал"
                 },
                 {
                   "id": "school",

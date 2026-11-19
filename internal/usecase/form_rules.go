@@ -74,6 +74,15 @@ func cleanFields(form model.Form, fields []model.FormField, input map[string]jso
 		if err != nil {
 			return nil, nil, err
 		}
+		if data != nil && field.NotBefore != "" {
+			if start, ok := values[field.NotBefore]; ok && precedes(list[0], start[0]) {
+				label := field.NotBefore
+				if source, found := fieldByID(fields, field.NotBefore); found {
+					label = source.Label
+				}
+				return nil, nil, formProblem(path, field.Label, fmt.Sprintf("не может быть раньше, чем «%s».", label))
+			}
+		}
 		if data != nil {
 			cleaned[field.ID] = data
 			values[field.ID] = list
@@ -184,20 +193,42 @@ func checkScalar(field model.FormField, value string, today time.Time) error {
 	case "date":
 		date, err := time.Parse("2006-01-02", value)
 		if err != nil || date.Year() < earliestYear || date.After(calendarDay(today)) {
-			return fmt.Errorf("укажите существующую дату не позже сегодняшней (ГГГГ-ММ-ДД).")
+			return fmt.Errorf("укажите существующую дату не позже сегодняшней.")
 		}
 	case "month":
 		month, err := time.Parse("2006-01", value)
-		if err != nil || month.Year() < earliestYear || month.Year() > today.Year()+futureYears {
-			return fmt.Errorf("укажите месяц и год (ГГГГ-ММ).")
+		if err != nil || month.Year() < earliestYear || month.Year() > calendarDay(today).Year()+futureYears {
+			return fmt.Errorf("укажите месяц и год.")
+		}
+		if !field.Future && month.After(calendarDay(today)) {
+			return fmt.Errorf("месяц не может быть позже текущего.")
 		}
 	case "year":
 		year, err := time.Parse("2006", value)
-		if err != nil || year.Year() < earliestYear || year.Year() > today.Year()+futureYears {
-			return fmt.Errorf("укажите год (ГГГГ).")
+		if err != nil || year.Year() < earliestYear || year.Year() > calendarDay(today).Year()+futureYears {
+			return fmt.Errorf("укажите год.")
+		}
+		if !field.Future && year.Year() > calendarDay(today).Year() {
+			return fmt.Errorf("год не может быть позже текущего.")
 		}
 	}
 	return nil
+}
+
+// precedes tells whether a date, month or year is earlier than another one,
+// compared at the coarser of the two precisions («1970» precedes «1978-02-02»).
+func precedes(value, start string) bool {
+	n := min(len(value), len(start))
+	return value[:n] < start[:n]
+}
+
+func fieldByID(fields []model.FormField, id string) (model.FormField, bool) {
+	for _, field := range fields {
+		if field.ID == id {
+			return field, true
+		}
+	}
+	return model.FormField{}, false
 }
 
 // moscow is a fixed zone: the Alpine image may have no time zone database.

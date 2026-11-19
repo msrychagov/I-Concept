@@ -167,3 +167,24 @@ func TestEveryNationalityHasAMaleForm(t *testing.T) {
 		}
 	}
 }
+
+func TestSchoolNameAfterFinished(t *testing.T) {
+	for kind, cases := range map[string]map[string]string{
+		"school": {
+			"Школа № 17":         "школу № 17",
+			"школа-интернат № 3": "школу-интернат № 3",
+			"Средняя общеобразовательная школа № 5": "Среднюю общеобразовательную школу № 5",
+			"МБОУ «Средняя школа № 1»":              "МБОУ «Средняя школа № 1»",
+			"МБОУ СОШ № 15":                         "школу МБОУ СОШ № 15",
+			"15":                                    "школу № 15",
+		},
+		"gymnasium": {"Гимназия № 2 имени А. С. Пушкина": "гимназию № 2 имени А. С. Пушкина", "Московская гимназия": "Московскую гимназию"},
+		"lyceum":    {"Лицей № 1535": "Лицей № 1535"},
+	} {
+		for name, want := range cases {
+			if got := schoolName(kind, name); got != want {
+				t.Errorf("schoolName(%s, %q) = %q, want %q", kind, name, got, want)
+			}
+		}
+	}
+}

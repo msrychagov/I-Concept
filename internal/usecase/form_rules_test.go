@@ -337,3 +337,62 @@ func TestDatesMayNotBeLaterThanTodayInMoscow(t *testing.T) {
 		t.Error("tomorrow accepted after Moscow midnight")
 	}
 }
+
+func TestPeriodsEndAfterTheyStartAndPastFieldsStayInThePast(t *testing.T) {
+	form := autobiography(t)
+	now := time.Date(2026, 11, 20, 12, 0, 0, 0, time.UTC)
+	check := func(id string, answers obj) error {
+		in := map[string]json.RawMessage{}
+		for k, v := range answers {
+			in[k] = raw(t, v)
+		}
+		_, err := cleanSection(form, section(t, form, id), in, now)
+		return err
+	}
+	job := func(from, to string) obj {
+		return obj{"work_has": "yes", "work_list": []obj{{"org": "Кафе", "sphere": "voennaya_sluzhba", "position": "Официант", "from": from, "still": "no", "to": to}}}
+	}
+	served := func(from, to string) obj {
+		return obj{"served": "yes", "service_from": from, "service_to": to}
+	}
+	hse := func(start, end string) obj { return obj{"hse_start": start, "hse_end": end} }
+	relative := func(birth, death string) obj {
+		return obj{"rel_has": "yes", "rel_list": []obj{{"kind": "mother", "known": "yes", "birth": birth, "alive": "no", "death_year": death}}}
+	}
+	exam := func(year string) obj {
+		return obj{"lang_has": "yes", "lang_list": []obj{{"language": "angliyskiy", "practice": []string{"exam"}, "exam": "ielts", "exam_year": year}}}
+	}
+	good := map[string]obj{
+		"work":      job("2023-06", "2023-06"),
+		"military":  served("2022-11", "2023-11"),
+		"hse":       hse("2024-09", "2028-06"),
+		"relatives": relative("1978-02-02", "1978"),
+		"languages": exam("2026"),
+	}
+	bad := map[string]obj{
+		"work":      job("2023-06", "2022-08"),
+		"military":  served("2023-11", "2022-11"),
+		"hse":       hse("2024-09", "2023-06"),
+		"relatives": relative("1978-02-02", "1970"),
+		"languages": exam("2027"),
+	}
+	for id, answers := range good {
+		if err := check(id, answers); err != nil {
+			t.Errorf("%s: valid period rejected: %v", id, err)
+		}
+	}
+	for id, answers := range bad {
+		if check(id, answers) == nil {
+			t.Errorf("%s: end before start or a future year accepted", id)
+		}
+	}
+	if check("work", job("2026-12", "")) == nil {
+		t.Error("work from a future month accepted")
+	}
+	if err := check("work", job("2026-11", "2026-11")); err != nil {
+		t.Errorf("work this month rejected: %v", err)
+	}
+	if err := check("hse", hse("2026-09", "2030-06")); err != nil {
+		t.Errorf("future end of studies rejected: %v", err)
+	}
+}

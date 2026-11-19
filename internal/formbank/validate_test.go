@@ -16,6 +16,10 @@ func TestValidateRejectsBrokenDescriptions(t *testing.T) {
 	if err := Validate(build(fork, dependent("a", "yes"))); err != nil {
 		t.Fatalf("valid form rejected: %v", err)
 	}
+	period := build(model.FormField{ID: "s", Label: "S", Type: "date"}, model.FormField{ID: "e", Label: "E", Type: "year", NotBefore: "s", Future: true})
+	if err := Validate(period); err != nil {
+		t.Fatalf("period rejected: %v", err)
+	}
 	cases := map[string]model.Form{
 		"unknown field":        build(fork, dependent("zzz", "yes")),
 		"later field":          build(dependent("a", "yes"), fork),
@@ -25,6 +29,9 @@ func TestValidateRejectsBrokenDescriptions(t *testing.T) {
 		"unknown type":         build(model.FormField{ID: "a", Label: "A", Type: "number"}),
 		"suggest on choice":    build(model.FormField{ID: "a", Label: "A", Type: "choice", Suggest: true, Options: fork.Options}),
 		"group without limits": build(model.FormField{ID: "g", Label: "G", Type: "group", Fields: []model.FormField{fork}}),
+		"future date":          build(model.FormField{ID: "d", Label: "D", Type: "date", Future: true}),
+		"end before its start": build(model.FormField{ID: "e", Label: "E", Type: "month", NotBefore: "s"}, model.FormField{ID: "s", Label: "S", Type: "month"}),
+		"end after a choice":   build(fork, model.FormField{ID: "e", Label: "E", Type: "month", NotBefore: "a"}),
 		"nested group": build(model.FormField{ID: "g", Label: "G", Type: "group", Max: 2, Fields: []model.FormField{
 			{ID: "h", Label: "H", Type: "group", Max: 2, Fields: []model.FormField{fork}}}}),
 	}

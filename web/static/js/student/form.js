@@ -97,12 +97,12 @@
             case 'month': {
                 const [year, month] = (partial[path] || (v ? v.split('-') : ['', ''])).concat('').slice(0, 2);
                 const years = [];
-                for (let y = thisYear + 10; y >= 1950; y--) years.push(y);
+                for (let y = thisYear + (f.future ? 10 : 0); y >= 1950; y--) years.push(y);
                 return `<div class="month-pick"><select ${single} data-kind="month" data-part="m" aria-label="Месяц"><option value="">Месяц</option>${MONTHS.map((m, i) => `<option value="${String(i + 1).padStart(2, '0')}" ${month === String(i + 1).padStart(2, '0') ? 'selected' : ''}>${m}</option>`).join('')}</select><select ${attr} data-kind="month" data-part="y" aria-label="Год"><option value="">Год</option>${years.map(y => `<option value="${y}" ${year === String(y) ? 'selected' : ''}>${y}</option>`).join('')}</select></div>`;
             }
             case 'year': {
                 const years = [];
-                for (let y = thisYear + 10; y >= 1930; y--) years.push(y);
+                for (let y = thisYear + (f.future ? 10 : 0); y >= 1930; y--) years.push(y);
                 return `<select ${single} data-kind="text"><option value="">Год</option>${years.map(y => `<option value="${y}" ${v === String(y) ? 'selected' : ''}>${y}</option>`).join('')}</select>`;
             }
         }
@@ -120,10 +120,11 @@
                 const inner = recordFields(f, rec, outer, `${path}.${n}.`, missing);
                 return `<div class="record" data-record="${esc(path)}.${n}"><div class="record-head"><b>${esc(f.label)}${records.length > 1 || f.max > 1 ? ' · ' + (n + 1) : ''}</b><button type="button" class="secondary" data-remove="${esc(path)}" data-n="${n}">Удалить</button></div>${inner}</div>`;
             }).join('')}</div>${records.length < f.max ? `<button type="button" class="secondary add-record" data-add="${esc(path)}">＋ ${esc(f.addLabel || 'Добавить')}</button>` : ''}`;
-            const gap = missing.has(f.id);
+            // A gap from the last save is shown only while the field is still blank.
+            const gap = missing.has(f.id) && !records.length;
             return `<div class="form-field ${gap ? 'missing' : ''}" data-field="${esc(path)}"><span class="field-label">${esc(f.label)}${f.min >= 1 ? '<span class="req" aria-hidden="true">*</span>' : ''}</span>${f.hint ? `<p class="hint">${esc(f.hint)}</p>` : ''}${gap ? '<p class="field-error">Добавьте хотя бы одну запись.</p>' : ''}${html}${errorFor(path)}</div>`;
         }
-        const gap = missing.has(path);
+        const gap = missing.has(path) && isEmpty(store[f.id]);
         const wrap = ['choice', 'multi'].includes(f.type) && (optionsOf(f).length <= MAX_BUTTONS || f.type === 'multi');
         const title = (f.number ? `<span class="q-number">${esc(f.number)}</span> ` : '') + esc(f.label) + (f.required ? '<span class="req" aria-hidden="true">*</span>' : '');
         const body = control(f, store, path);
@@ -182,7 +183,7 @@
             return;
         }
         if (!s.consent) {
-            app.innerHTML = `<div class="student-layout"><header class="student-header"><a href="/student">← Личный кабинет</a><span>${esc(data.form.title)}</span></header><main class="consent"><div class="eyebrow">Перед началом</div><h1>${esc(data.form.title)}</h1>${data.form.intro.split('\n\n').map(p => `<p>${esc(p)}</p>`).join('')}<button id="consent" type="button">${esc(data.form.texts?.consent || 'Согласен(на) заполнять автобиографию и сохранять сведения')}</button><div id="err"></div></main></div>`;
+            app.innerHTML = `<div class="student-layout"><header class="student-header"><a href="/student">← Личный кабинет</a><span>${esc(data.form.title)}</span></header><main class="consent"><div class="eyebrow">Перед началом</div><h1>${esc(data.form.title)}</h1>${data.form.intro.split('\n\n').map(p => `<p>${esc(p)}</p>`).join('')}<button id="consent" type="button">${esc(data.form.texts?.consent || 'Согласен заполнять автобиографию и сохранять сведения')}</button><div id="err"></div></main></div>`;
             app.querySelector('#consent').onclick = giveConsent;
             return;
         }

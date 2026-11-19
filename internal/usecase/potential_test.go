@@ -50,14 +50,14 @@ func TestPotentialLevelsFollowTheScale(t *testing.T) {
 		{"gold GTO without sport", "sport", "medium", "Знак ГТО — Золото", answerSet{"sport_has": "no", "gto": "gold"}},
 		{"bronze GTO without sport", "sport", "initial", "Знак ГТО — Бронза", answerSet{"sport_has": "no", "gto": "bronze"}},
 		{"no sport and no GTO", "sport", "none", "", answerSet{"sport_has": "no", "gto": "none"}},
-		{"piano, art school, city contest", "creative", "medium", "Музыкальный инструмент (фортепиано): обучение — Школа искусств — окончил(а), уровень конкурсов — Город или район", answerSet{"creative_has": "yes", "creative_list": []record{
+		{"piano, art school, city contest", "creative", "medium", "Музыкальный инструмент (фортепиано): обучение — Школа искусств — окончил, уровень конкурсов — Город или район", answerSet{"creative_has": "yes", "creative_list": []record{
 			{"direction": "instrument", "detail": "фортепиано", "learning": "art_school_done", "level": "city"}}}},
 		{"creative college", "creative", "high", "Танцы: обучение — Колледж", answerSet{"creative_has": "yes", "creative_list": []record{
 			{"direction": "dance", "learning": "college", "level": "none"}}}},
 		{"self-taught without contests", "creative", "initial", "Вокал: обучение — Самостоятельно, без конкурсов", answerSet{"creative_has": "yes", "creative_list": []record{
 			{"direction": "vocal", "learning": "self", "level": "none"}}}},
 		{"yunarmia squad leader for years", "patriotic", "high", "Участие: роль — Командир отделения или отряда, как долго — Больше 3 лет, уровень — Регион", answerSet{"patriot_has": "yes", "patriot_what": []string{"yunarmia"}, "patriot_role": "leader", "patriot_term": "y3", "patriot_level": "region"}},
-		{"one-off camps but served", "patriotic", "high", "Служил(а) в Вооружённых силах: уровень не ниже высокого", answerSet{"patriot_has": "yes", "patriot_what": []string{"school_camps"}, "patriot_role": "member", "patriot_term": "once", "patriot_level": "school", "served": "yes"}},
+		{"one-off camps but served", "patriotic", "high", "Служил в Вооружённых силах: уровень не ниже высокого", answerSet{"patriot_has": "yes", "patriot_what": []string{"school_camps"}, "patriot_role": "member", "patriot_term": "once", "patriot_level": "school", "served": "yes"}},
 		{"no participation, cadet school", "patriotic", "medium", "Кадетский корпус: уровень не ниже среднего", answerSet{"patriot_has": "no", "education_list": []record{{"edu_type": "cadet", "edu_profile": "none"}}}},
 		{"suvorov school", "patriotic", "high", "Суворовское, нахимовское, президентское кадетское училище: уровень не ниже высокого", answerSet{"patriot_has": "no", "education_list": []record{{"edu_type": "school", "edu_profile": "none"}, {"edu_type": "suvorov", "edu_profile": "cadet"}}}},
 		{"cadet profile in a school", "patriotic", "medium", "Профиль «Кадетский класс»: уровень не ниже среднего", answerSet{"patriot_has": "no", "education_list": []record{{"edu_type": "lyceum", "edu_profile": "cadet"}}}},

@@ -48,14 +48,20 @@ type FormField struct {
 	ID string `json:"id"`
 	// Number is the number of the question as the author and the teacher see it
 	// («1.1»); the id cannot hold it, a dot separates group records in a path.
-	Number    string         `json:"number,omitempty"`
-	Label     string         `json:"label"`
-	Type      string         `json:"type"`
-	Hint      string         `json:"hint,omitempty"`
-	Required  bool           `json:"required,omitempty"`
-	LLM       bool           `json:"llm,omitempty"`
-	Suggest   bool           `json:"suggest,omitempty"`
-	MaxLength int            `json:"maxLength,omitempty"`
+	Number    string `json:"number,omitempty"`
+	Label     string `json:"label"`
+	Type      string `json:"type"`
+	Hint      string `json:"hint,omitempty"`
+	Required  bool   `json:"required,omitempty"`
+	LLM       bool   `json:"llm,omitempty"`
+	Suggest   bool   `json:"suggest,omitempty"`
+	MaxLength int    `json:"maxLength,omitempty"`
+	// Future lets a month or year field take a value later than today (the
+	// expected end of studies); other dates, months and years are past ones.
+	Future bool `json:"future,omitempty"`
+	// NotBefore names an earlier date, month or year field of the same level
+	// that this one may not precede («Работал по» after «Работал с»).
+	NotBefore string         `json:"notBefore,omitempty"`
 	Options   []FormOption   `json:"options,omitempty"`
 	Ref       string         `json:"ref,omitempty"`
 	ShowIf    *FormCondition `json:"showIf,omitempty"`

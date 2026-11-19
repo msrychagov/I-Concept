@@ -50,6 +50,16 @@ func validateFields(form model.Form, fields, outer []model.FormField, where stri
 		if field.Suggest && field.Type != "text" {
 			return fmt.Errorf("form %s: %s has suggestions but is not a text field", form.ID, at)
 		}
+		dated := field.Type == "date" || field.Type == "month" || field.Type == "year"
+		if field.Future && field.Type != "month" && field.Type != "year" {
+			return fmt.Errorf("form %s: %s may be in the future but is not a month or year", form.ID, at)
+		}
+		if field.NotBefore != "" {
+			start, ok := earlier[field.NotBefore]
+			if !ok || !dated || (start.Type != "date" && start.Type != "month" && start.Type != "year") {
+				return fmt.Errorf("form %s: %s must follow missing, later or undated field %q", form.ID, at, field.NotBefore)
+			}
+		}
 		if field.ShowIf != nil {
 			source, ok := earlier[field.ShowIf.Field]
 			if !ok {
