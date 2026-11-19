@@ -6,7 +6,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode"
 	"vucdiagnostic/internal/domain/model"
 	"vucdiagnostic/internal/promptbank"
 )
@@ -14,8 +13,10 @@ import (
 // The second version of the essay tasks (decided 25 October 2026 after the
 // remarks of the supervisor): the analysis of one essay and the summary of a
 // cohort are three paragraphs of conclusions and two to four recommendations,
-// not more than 250 words, with no lists, no retelling and no numbers of
-// questions. The quotes and the references stay: the teacher opens them by the
+// with no lists, no retelling and no numbers of questions. The instruction asks
+// for not more than 250 words; since 18 November 2026 the program does not
+// reject an answer for its length (decided by the user: a summary refused for
+// ten words too many is worse than a long one). The quotes and the references stay: the teacher opens them by the
 // button «Из чего вывод». The instructions, the schemas and what the program
 // checks are in Вики/Эссе выпускника/Инструкция v2.md and Инструкция по
 // выпуску v2.md. The input of the analysis did not change.
@@ -24,9 +25,6 @@ import (
 var essayParagraphs = []string{"formation", "moments", "environment"}
 
 const (
-	// essayWordsMost is the limit of the paragraphs and the recommendations
-	// together, quotes not counted (decision В1).
-	essayWordsMost   = 250
 	essayAdviceLeast = 2
 	essayAdviceMost  = 4
 )
@@ -41,18 +39,6 @@ func essayShape(version string) int {
 		return 2
 	}
 	return 1
-}
-
-// countWords counts the pieces between spaces that hold a letter or a digit: a
-// dash is not a word.
-func countWords(text string) int {
-	n := 0
-	for _, piece := range strings.Fields(text) {
-		if strings.IndexFunc(piece, func(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) }) >= 0 {
-			n++
-		}
-	}
-	return n
 }
 
 // v2Forbidden finds in a text of v2 what the teacher must not read there: the
@@ -113,22 +99,14 @@ func sameAdvice(list []any) []string {
 	return problems
 }
 
-// tooLong is the problem of an answer over the limit of words.
-func tooLong(words int) []string {
-	if words > essayWordsMost {
-		return []string{fmt.Sprintf("в абзацах и рекомендациях вместе %d слов, нужно не больше %d: сократи", words, essayWordsMost)}
-	}
-	return nil
-}
-
 // checkEssayAnswerV2 returns what is wrong with an answer to the instruction
 // essay/v2: three paragraphs with their quotes, the quotes of the earlier essay
 // only when there is one, two to four recommendations with one or two quotes,
-// not more than 250 words, the words a text must not hold and the teachers as
-// in v1.
+// the words a text must not hold and the teachers as in v1; the length is not
+// checked.
 func checkEssayAnswerV2(output map[string]any, payload *object) []string {
 	current, previous := essayAnswers(payload, "эссе"), essayAnswers(payload, "прежнее_эссе")
-	problems, words := []string{}, 0
+	problems := []string{}
 	for _, p := range []struct {
 		key       string
 		low, high int
@@ -140,7 +118,6 @@ func checkEssayAnswerV2(output map[string]any, payload *object) []string {
 		}
 		problems = append(problems, v2TextProblems(p.key, paragraph["text"])...)
 		problems = append(problems, quotesProblems(p.key, paragraph["quotes"], current, p.low, p.high)...)
-		words += countWords(textOf(paragraph["text"]))
 	}
 	if formation := asMap(output["formation"]); formation != nil {
 		before, ok := asList(formation["before"])
@@ -169,10 +146,8 @@ func checkEssayAnswerV2(output map[string]any, payload *object) []string {
 			problems = append(problems, where+": рекомендация опирается на семью автора — так нельзя (правило 5)")
 		}
 		problems = append(problems, quotesProblems(where, item["quotes"], current, 1, 2)...)
-		words += countWords(textOf(item["text"]))
 	}
 	problems = append(problems, sameAdvice(advice)...)
-	problems = append(problems, tooLong(words)...)
 	if len(previous) == 0 {
 		problems = append(problems, noEarlierProblems(output)...)
 	}
@@ -440,11 +415,11 @@ func cleanEssayAnswerV2(_ *Service, _ model.Database, _ Source, output map[strin
 
 // checkCohortAnswerV2 returns what is wrong with an answer to the instruction
 // essay-cohort/v2 after the cleaning: each paragraph with a text and at least
-// two authors, one to four recommendations with two authors each, not more
-// than 250 words, no words of quantity, digits, labels or terms.
+// two authors, one to four recommendations with two authors each, no words of
+// quantity, digits, labels or terms; the length is not checked.
 func checkCohortAnswerV2(output map[string]any, payload *object) []string {
 	known := payloadRefs(payload)
-	problems, words := []string{}, 0
+	problems := []string{}
 	text := func(where string, raw any) {
 		problems = append(problems, cohortTextProblems(where, raw)...)
 		problems = append(problems, essayTermProblems(where, textOf(raw))...)
@@ -454,7 +429,6 @@ func checkCohortAnswerV2(output map[string]any, payload *object) []string {
 		if singlesOut(textOf(raw)) {
 			problems = append(problems, where+": авторы перечислены по одному («один … другой», «первый … второй») — различия пиши группами: «у одних авторов …, у других …», без перечня авторов")
 		}
-		words += countWords(textOf(raw))
 	}
 	for _, key := range essayParagraphs {
 		paragraph := asMap(output[key])
@@ -480,8 +454,7 @@ func checkCohortAnswerV2(output map[string]any, payload *object) []string {
 		more, _ := refsOf(where, item["refs"], known, cohortV2Kinds, 2)
 		problems = append(problems, more...)
 	}
-	problems = append(problems, sameAdvice(advice)...)
-	return append(problems, tooLong(words)...)
+	return append(problems, sameAdvice(advice)...)
 }
 
 // militaryRank finds a rank in a text of the summary: with a surname it names

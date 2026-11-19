@@ -74,7 +74,7 @@ func TestCheckEssayAnswerV3(t *testing.T) {
 		"an earlier essay that is none":     {nil, point("developed", 0, "По сравнению с прежним эссе стал собраннее."), "developed, пункт 1: прежнего эссе у автора нет"},
 		"a question number":                 {nil, point("strengthen", 1, "Выдержку — по ответу 3.2."), "strengthen, пункт 2: номер вопроса"},
 		"a term":                            {nil, text("teachersConclusion", "Преподаватель укрепил Я-концепцию автора."), "термин «я-концепцию»"},
-		"too many words":                    {nil, text("moments", strings.TrimSpace(strings.Repeat("слово ", essayWordsMost))), "нужно не больше 250"},
+		"a long text":                       {nil, text("moments", longText), ""},
 	}
 	for name, c := range cases {
 		payload := essayPayloadFor(answers, c.previous)
@@ -202,7 +202,7 @@ func TestCheckCohortAnswerV3(t *testing.T) {
 			o["strengthen"].([]any)[0].(map[string]any)["text"] = "Уверенность в своих силах — давать каждому опыт самостоятельных решений с разбором после."
 		}, "strengthen, пункт 1: повторяет пример из инструкции"},
 		"a count in words": {3, text("environment", "Большинство авторов ценят порядок."), "environment: слово о количестве"},
-		"too many words":   {3, text("formation", strings.TrimSpace(strings.Repeat("слово ", essayWordsMost))), "нужно не больше 250"},
+		"a long text":      {3, text("formation", longText), ""},
 	}
 	for name, c := range cases {
 		output := goodCohortV3(payloadOf(c.teachers))

@@ -64,9 +64,9 @@ type essayText struct {
 	raw   any
 }
 
-// essayTextsV3 are the texts of an analysis or a summary of v3 the limit of
-// words and the common checks go over: the paragraphs, developed, strengthen
-// and the conclusion about the teachers.
+// essayTextsV3 are the texts of an analysis or a summary of v3 the common
+// checks go over: the paragraphs, developed, strengthen and the conclusion
+// about the teachers.
 func essayTextsV3(output map[string]any) []essayText {
 	texts := []essayText{}
 	for _, key := range essayParagraphs {
@@ -140,21 +140,14 @@ func namesIn(text string, names []string) bool {
 // and the model kept it for his position; a surname is caught apart.
 var conclusionRank = regexp.MustCompile(`(?i)(^|[^\p{L}])(лейтенант|капитан|майор|подполковник|полковник|генерал|сержант|прапорщик|ефрейтор)`)
 
-// tooLongV3 is the problem of an answer of v3 over the limit of words.
-func tooLongV3(words int) []string {
-	if words > essayWordsMost {
-		return []string{fmt.Sprintf("в абзацах, developed, strengthen и teachersConclusion вместе %d слов, нужно не больше %d: сократи", words, essayWordsMost)}
-	}
-	return nil
-}
-
 // checkEssayAnswerV3 returns what is wrong with an answer to the instruction
 // essay/v3: three paragraphs with their quotes, the quotes of the earlier essay
 // only when there is one, none to three points of what the center brought up
 // and two or three of what to strengthen with one or two quotes each, the
-// conclusion about the teachers only when the author names some, not more than
-// 250 words, no names or ranks of the teachers in the texts, no copy of an
-// example, the words a text must not hold and the teachers as in v2.
+// conclusion about the teachers only when the author names some, no names or
+// ranks of the teachers in the texts, no copy of an example, the words a text
+// must not hold and the teachers as in v2. The length is not checked: the
+// limit of 250 words is only in the instruction (decided 18 November 2026).
 func checkEssayAnswerV3(output map[string]any, payload *object) []string {
 	return essayV3Problems(output, payload, false)
 }
@@ -237,13 +230,12 @@ func essayV3Problems(output map[string]any, payload *object, marked bool) []stri
 		}
 	}
 
-	words, names := 0, teacherNameWords(output)
+	names := teacherNameWords(output)
 	if marked {
 		names = nil
 	}
 	for _, t := range essayTextsV3(output) {
 		text := textOf(t.raw)
-		words += countWords(text)
 		if marked {
 			if p := labelProblem(t.where, text); p != "" {
 				problems = append(problems, p)
@@ -259,7 +251,6 @@ func essayV3Problems(output map[string]any, payload *object, marked bool) []stri
 			problems = append(problems, t.where+": прежнего эссе у автора нет — не пиши о нём")
 		}
 	}
-	problems = append(problems, tooLongV3(words)...)
 	if marked {
 		return append(problems, teacherProblemsWith(output, current, labelNameProblem)...)
 	}
@@ -468,9 +459,9 @@ func cohortAuthorsWith(known map[string]bool, kind string) int {
 // checkCohortAnswerV3 returns what is wrong with an answer to the instruction
 // essay-cohort/v3 after the cleaning: each paragraph with a text and at least
 // two authors, up to three points of developed, one to three of strengthen,
-// the conclusion about the teachers when two authors or more have one, not
-// more than 250 words, no words of quantity, digits, labels, terms, ranks,
-// authors one by one, «Общее:» or a copy of an example.
+// the conclusion about the teachers when two authors or more have one, no
+// words of quantity, digits, labels, terms, ranks, authors one by one,
+// «Общее:» or a copy of an example; the length is not checked.
 func checkCohortAnswerV3(output map[string]any, payload *object) []string {
 	known := payloadRefs(payload)
 	problems := []string{}
@@ -535,14 +526,13 @@ func checkCohortAnswerV3(output map[string]any, payload *object) []string {
 		more, _ := refsOf("teachersConclusion", conclusion["refs"], known, kindIs("teachers"), 2)
 		problems = append(problems, more...)
 	}
-	words, earlier := 0, cohortHasEarlier(payload)
+	earlier := cohortHasEarlier(payload)
 	for _, t := range essayTextsV3(output) {
-		words += countWords(textOf(t.raw))
 		if !earlier && cohortEarlierWords.MatchString(textOf(t.raw)) {
 			problems = append(problems, t.where+": прежнего эссе нет ни у кого из авторов — не пиши о прежних эссе и о том, что меняется между эссе")
 		}
 	}
-	return append(problems, tooLongV3(words)...)
+	return problems
 }
 
 // cohortEarlierWords find words about the earlier essays in a summary: written
