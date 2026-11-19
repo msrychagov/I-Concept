@@ -270,13 +270,44 @@ func schoolName(kind, name string) string {
 	lower := strings.ToLower(name)
 	for _, word := range schoolWords {
 		if strings.Contains(lower, word) {
-			return name
+			return accusativeLead(name)
 		}
 	}
 	if strings.IndexFunc(name, func(r rune) bool { return !unicode.IsDigit(r) }) < 0 {
 		return schoolKinds[kind] + " № " + name
 	}
 	return joinNonEmpty(" ", schoolKinds[kind], name)
+}
+
+// feminineSchools are the kinds of school that change after «окончил»
+// when the name the student typed starts with them («Школа № 17»).
+var feminineSchools = map[string]string{"школа": "школу", "гимназия": "гимназию", "академия": "академию", "школа-интернат": "школу-интернат"}
+
+// accusativeLead puts a name that starts with a feminine kind of school, maybe
+// after adjectives («Средняя школа № 2»), into the form it takes after
+// «окончил»: «Среднюю школу № 2». A kind that opens the name is written in
+// lower case, as in «окончил школу № 15»; other names stay as typed.
+func accusativeLead(name string) string {
+	words := strings.Split(name, " ")
+	n := 0
+	for ; n < len(words) && feminineSchools[strings.ToLower(words[n])] == ""; n++ {
+		if !strings.HasSuffix(words[n], "ая") && !strings.HasSuffix(words[n], "яя") {
+			return name
+		}
+	}
+	if n == len(words) {
+		return name
+	}
+	for i := range n {
+		stem := strings.TrimSuffix(strings.TrimSuffix(words[i], "ая"), "яя")
+		words[i] = stem + map[bool]string{true: "ую", false: "юю"}[strings.HasSuffix(words[i], "ая")]
+	}
+	kind := []rune(feminineSchools[strings.ToLower(words[n])])
+	if n > 0 && unicode.IsUpper([]rune(words[n])[0]) {
+		kind[0] = unicode.ToUpper(kind[0])
+	}
+	words[n] = string(kind)
+	return strings.Join(words, " ")
 }
 
 func educationParagraph(r textReader) string {
