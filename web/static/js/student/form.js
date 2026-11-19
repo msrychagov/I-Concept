@@ -120,10 +120,11 @@
                 const inner = recordFields(f, rec, outer, `${path}.${n}.`, missing);
                 return `<div class="record" data-record="${esc(path)}.${n}"><div class="record-head"><b>${esc(f.label)}${records.length > 1 || f.max > 1 ? ' · ' + (n + 1) : ''}</b><button type="button" class="secondary" data-remove="${esc(path)}" data-n="${n}">Удалить</button></div>${inner}</div>`;
             }).join('')}</div>${records.length < f.max ? `<button type="button" class="secondary add-record" data-add="${esc(path)}">＋ ${esc(f.addLabel || 'Добавить')}</button>` : ''}`;
-            const gap = missing.has(f.id);
+            // A gap from the last save is shown only while the field is still blank.
+            const gap = missing.has(f.id) && !records.length;
             return `<div class="form-field ${gap ? 'missing' : ''}" data-field="${esc(path)}"><span class="field-label">${esc(f.label)}${f.min >= 1 ? '<span class="req" aria-hidden="true">*</span>' : ''}</span>${f.hint ? `<p class="hint">${esc(f.hint)}</p>` : ''}${gap ? '<p class="field-error">Добавьте хотя бы одну запись.</p>' : ''}${html}${errorFor(path)}</div>`;
         }
-        const gap = missing.has(path);
+        const gap = missing.has(path) && isEmpty(store[f.id]);
         const wrap = ['choice', 'multi'].includes(f.type) && (optionsOf(f).length <= MAX_BUTTONS || f.type === 'multi');
         const title = (f.number ? `<span class="q-number">${esc(f.number)}</span> ` : '') + esc(f.label) + (f.required ? '<span class="req" aria-hidden="true">*</span>' : '');
         const body = control(f, store, path);
