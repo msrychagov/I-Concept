@@ -1631,3 +1631,170 @@ textarea {
         flex: 1 1 0
     }
 }
+
+/* The cabinet without the side menu (decided 18 November 2026): the brand in the
+   header leads home, the home page is cards, a section shows its parts as tiles. */
+.research-layout.cabinet-cards {
+    display: block
+}
+
+.cabinet-cards .research-main {
+    max-width: 1400px
+}
+
+.part-off {
+    display: none !important
+}
+
+.topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+    border-radius: 8px
+}
+
+.topbar-brand:hover .topbar-title b {
+    color: #e8d9a8
+}
+
+.topbar-brand:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 4px
+}
+
+.topbar-crest {
+    width: 48px;
+    height: auto;
+    flex-shrink: 0
+}
+
+.testing-overview > .page-heading .home-motto {
+    margin-top: 14px;
+    color: #d7c492;
+    font: italic 15px/1.5 Georgia, serif
+}
+
+.home-cards .metric-link strong {
+    margin-bottom: 4px
+}
+
+.home-cards .metric-title {
+    display: block;
+    color: var(--forest);
+    font: 600 20px/1.2 'Roboto Condensed', sans-serif
+}
+
+.home-cards .metric-note {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font: 400 14px/1.35 'Roboto Condensed', sans-serif
+}
+
+.home-tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: 0
+}
+
+.home-tiles .path-tile {
+    min-height: 140px
+}
+
+.part-tiles {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px;
+    margin: 0 0 22px
+}
+
+.part-tiles .path-tile {
+    min-height: 0;
+    padding: 16px;
+    gap: 4px
+}
+
+.part-tiles .path-tile .metric-emblem {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 6px
+}
+
+.part-tiles .path-tile .metric-emblem .ui-icon {
+    width: 22px;
+    height: 22px
+}
+
+.part-tiles .path-tile b {
+    font-size: 18px
+}
+
+.part-tiles .path-tile small {
+    font-size: 14px
+}
+
+@media (min-width: 741px) and (max-width: 1150px) {
+    .home-tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+    }
+}
+
+@media (max-width: 740px) {
+    .topbar-brand {
+        flex: 1;
+        gap: 10px
+    }
+
+    .topbar-crest {
+        width: 36px
+    }
+
+    .home-cards .metric-title {
+        font-size: 17px;
+        hyphens: auto;
+        overflow-wrap: break-word
+    }
+
+    .home-cards .metric-note {
+        font-size: 13px
+    }
+
+    .home-tiles {
+        grid-template-columns: minmax(0, 1fr)
+    }
+
+    .home-tiles .path-tile {
+        min-height: 0
+    }
+
+    .part-tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px
+    }
+
+    .part-tiles .path-tile {
+        column-gap: 10px;
+        padding: 10px
+    }
+
+    .part-tiles .path-tile .metric-emblem {
+        grid-row: auto;
+        width: 36px;
+        height: 36px
+    }
+
+    .part-tiles .path-tile .metric-emblem .ui-icon {
+        width: 19px;
+        height: 19px
+    }
+
+    .part-tiles .path-tile b {
+        font-size: 15px;
+        line-height: 1.2
+    }
+
+    .part-tiles .path-tile small {
+        display: none
+    }
+}

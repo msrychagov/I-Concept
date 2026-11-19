@@ -3,8 +3,10 @@
 // what concerns the whole platoon → a student with three icons: the
 // autobiography, the results of testing and the autobiographical memory (the
 // essay). Every icon opens the window of its section; the data are those of
-// the sections, nothing is counted here.
-window.teacherPlatoonView = async function ({view, api, esc, start = 'platoons', home}) {
+// the sections, nothing is counted here. `start` is a screen name or a place;
+// every new place is told to `onPlace` (the browser history of the cabinet),
+// `bind` gets the way to come back to a place without telling it again.
+window.teacherPlatoonView = async function ({view, api, esc, start = 'platoons', home, onPlace, bind}) {
     const fmtDate = v => v ? new Date(v).toLocaleDateString('ru-RU') : '';
     const byNumber = (a, b) => a.localeCompare(b, 'ru', {numeric: true});
     const icon = (name, size = 26) => `<img class="ui-icon" src="/assets/images/icons/${name}.svg" alt="" width="${size}" height="${size}">`;
@@ -14,7 +16,7 @@ window.teacherPlatoonView = async function ({view, api, esc, start = 'platoons',
         test: {title: 'Результаты тестирования', short: 'тест', icon: 'target', done: 'Пройдено', going: 'Проходит', none: 'Не проходил'},
         essay: {title: 'Автобиографическая память', short: 'эссе', icon: 'book', done: 'Сдано', going: 'Пишет', none: 'Не писал'}
     };
-    let data, place = {screen: start}, search = '', generation = 0, stops = [];
+    let data, place = typeof start === 'object' ? start : {screen: start}, search = '', generation = 0, stops = [];
 
     // Everything the sections already give; a section that failed leaves its icon empty.
     async function load() {
@@ -82,13 +84,14 @@ window.teacherPlatoonView = async function ({view, api, esc, start = 'platoons',
     }
 
     // A new screen scrolls to the top; a tile inside the same screen does not.
-    function go(next, scroll = true) {
+    function go(next, scroll = true, silent = false) {
         stops.forEach(stop => stop());
         stops = [];
         generation++;
         place = next;
         draw();
         if (scroll) scrollTo({top: 0, behavior: 'smooth'});
+        if (!silent) onPlace?.(place);
     }
 
     function draw() {
@@ -104,7 +107,7 @@ window.teacherPlatoonView = async function ({view, api, esc, start = 'platoons',
             names.length ? `<div class="path-tiles">${names.map(p => {
                 const n = data.platoons.students.filter(s => s.platoon === p).length;
                 return tile({icon: 'users', title: platoonTitle(p), note: `${n} ${studentsWord(n)}`, attrs: `data-platoon="${esc(p)}"`});
-            }).join('')}</div>` : '<p class="muted">Взводов пока нет. Создайте их на странице «Управление взводом».</p>');
+            }).join('')}</div>` : '<p class="muted">Взводов пока нет. Создайте их в карточке «Управление взводом» на главной.</p>');
         view.querySelectorAll('[data-platoon]').forEach(b => b.onclick = () => go({screen: 'platoon', platoon: b.dataset.platoon, part: 'list'}));
     }
 
@@ -249,13 +252,13 @@ window.teacherPlatoonView = async function ({view, api, esc, start = 'platoons',
         if (!data.essays) return failed(box, 'Не удалось загрузить эссе.');
         const cohorts = data.essays.cohorts.filter(c => c.platoons.includes(p));
         if (!cohorts.length) {
-            box.innerHTML = `${heading}<p class="muted">Взвод не входит ни в один выпуск. Выпуск создаётся на странице «Управление взводом», раздел «Выпуски».</p>`;
+            box.innerHTML = `${heading}<p class="muted">Взвод не входит ни в один выпуск. Выпуск создаётся в карточке «Управление взводом» на главной, плитка «Выпуски».</p>`;
             return;
         }
         const ids = new Set(cohorts.map(c => c.id));
         const given = data.essays.assignments.filter(a => ids.has(a.cohortId)).sort((a, b) => String(b.created).localeCompare(String(a.created)));
         if (!given.length) {
-            box.innerHTML = `${heading}<p class="muted">Эссе выпуску «${esc(cohorts.map(c => c.name).join('», «'))}» ещё не выдавали. Выдать его можно в разделе «Эссе».</p>`;
+            box.innerHTML = `${heading}<p class="muted">Эссе выпуску «${esc(cohorts.map(c => c.name).join('», «'))}» ещё не выдавали. Выдать его можно в карточке «Эссе» на главной.</p>`;
             return;
         }
         const chosen = given.find(a => a.id === place.essay) || given[0];
@@ -287,9 +290,11 @@ window.teacherPlatoonView = async function ({view, api, esc, start = 'platoons',
     view.innerHTML = '<p role="status">Загрузка взводов и студентов…</p>';
     try {
         await load();
-        if (view.isConnected) draw();
+        if (!view.isConnected) return;
+        draw();
+        bind?.({go: next => go(next, true, true)});
     } catch (err) {
         view.innerHTML = `<h1>Взвода</h1><p class="error" role="alert">${esc(err.message)}</p><button id="pv-retry">Повторить</button>`;
-        view.querySelector('#pv-retry').onclick = () => window.teacherPlatoonView({view, api, esc, start, home});
+        view.querySelector('#pv-retry').onclick = () => window.teacherPlatoonView({view, api, esc, start, home, onPlace, bind});
     }
 };

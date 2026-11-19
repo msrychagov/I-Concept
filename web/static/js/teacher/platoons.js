@@ -1,5 +1,5 @@
 window.teacherPlatoons = async function ({view, api, esc}) {
-    view.innerHTML = '<div id="platoon-management" class="platoon-management"><p role="status">Загрузка взводов…</p></div><div id="cohort-management" class="platoon-management"></div>';
+    view.innerHTML = '<div id="platoon-management" class="platoon-management"><p role="status">Загрузка взводов…</p></div><div id="cohort-management" class="platoon-management" data-part-of="cohorts"></div>';
     const root = view.firstElementChild;
     window.teacherCohorts({view: view.children[1], api, esc});
     // The section «Преподаватели ВУЦ» is hidden (decided 25 October 2026): essays
@@ -36,22 +36,25 @@ window.teacherPlatoons = async function ({view, api, esc}) {
     function render() {
         const platoon = state.platoons.find(p => p.id === selected);
         const students = state.students.filter(s => selected === 'unassigned' ? !s.platoonId : !selected || s.platoonId === selected);
-        root.innerHTML = `<header class="page-heading"><div><div class="eyebrow">${esc(state.vuc)}</div><h1>Управление взводом</h1></div></header>
+        const filterOptions = `<option value="">Все взводы</option>${options(selected)}<option value="unassigned" ${selected === 'unassigned' ? 'selected' : ''}>Без взвода</option>`;
+        root.innerHTML = `<header class="page-heading"><div><div class="eyebrow">${esc(state.vuc)}</div><h1>Управление взводом</h1></div></header><div data-parts></div>
    <p id="platoon-feedback" role="status" aria-live="polite"></p>
-   <section class="surface settings-section"><h2>Учебные взводы</h2>
+   <section class="surface settings-section" data-part-of="platoons"><h2>Учебные взводы</h2>
     <form id="create-platoon"><label>Название нового взвода<input name="name" required maxlength="80" placeholder="Например, 101"></label><button type="submit">Создать учебный взвод</button></form>
-    <label>Показать состав<select id="platoon-filter"><option value="">Все взводы</option>${options(selected)}<option value="unassigned" ${selected === 'unassigned' ? 'selected' : ''}>Без взвода</option></select></label>
+    <label>Взвод<select class="platoon-filter">${filterOptions}</select></label>
     ${platoon ? `<form id="rename-platoon"><label>Название взвода<input name="name" required maxlength="80" value="${esc(platoon.name)}"></label><button type="submit" class="secondary">Сохранить название</button></form>
     <h3>Приглашение студентов</h3><p class="muted">Ссылка действует 2 дня. Студенты автоматически попадут в ВУЦ «${esc(state.vuc)}», взвод ${esc(platoon.name)}. Новая ссылка отключит предыдущую.</p><button id="generate-link">Создать ссылку</button><div id="issued-invite"></div>` : '<p class="muted">Выберите взвод для переименования и выдачи приглашений.</p>'}
    </section>
-   <section class="surface settings-section"><h2>Состав${platoon ? ' взвода ' + esc(platoon.name) : ''} · ${students.length}</h2>
+   <section class="surface settings-section" data-part-of="members"><h2>Состав${platoon ? ' взвода ' + esc(platoon.name) : ''} · ${students.length}</h2>
+    <label>Показать состав<select class="platoon-filter">${filterOptions}</select></label>
     ${students.length ? `<div style="overflow-x:auto"><table><thead><tr><th>Студент</th><th>Взвод</th><th>Доступ</th><th>Действия</th></tr></thead><tbody>${students.map(s => `<tr data-student="${esc(s.id)}"><td>${esc(s.name)}<br><small>${esc(s.email)}</small></td><td><div class="platoon-controls"><select aria-label="Взвод для ${esc(s.name)}"><option value="">Без взвода</option>${options(s.platoonId)}</select><button data-action="move" class="secondary">Перевести</button></div></td><td>${s.disabled ? 'Отключён' : 'Активен'}</td><td><div class="platoon-actions">${s.platoonId ? '<button data-action="remove" class="secondary">Удалить из взвода</button>' : ''}<button data-action="${s.disabled ? 'enable' : 'disable'}" class="secondary">${s.disabled ? 'Восстановить доступ' : 'Отключить кабинет'}</button></div></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">Студентов пока нет.</p>'}
    </section>`;
-        root.querySelector('#platoon-filter').onchange = e => {
+        // The platoon is chosen both for the invitation and for the list of members.
+        root.querySelectorAll('.platoon-filter').forEach(select => select.onchange = e => {
             selected = e.target.value;
             issued = null;
             render()
-        };
+        });
         root.querySelector('#create-platoon').onsubmit = e => {
             e.preventDefault();
             const f = e.currentTarget;
