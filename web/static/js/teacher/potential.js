@@ -29,7 +29,7 @@ window.potentialView = (() => {
         const shown = potential.areas.filter(a => a.level !== 'none');
         const high = potential.high.length ? `<p><b>Высокий уровень:</b> ${esc(potential.high.map(lower).join(', '))}.</p>` : '';
         const awards = potential.awards.length ? `<p><b>Государственные награды:</b> ${esc(potential.awards.map(a => a.year ? `${a.name} (${a.year})` : a.name).join('; '))}. На уровни не влияют.</p>` : '';
-        return `<section class="potential-card"><h3>Потенциал</h3><p class="muted">${esc(NOTE)}</p>${high}${awards}${shown.length ? table(shown) : '<p class="muted">Направлений с опытом нет.</p>'}<details class="potential-all"><summary>Все направления</summary>${table(potential.areas)}</details></section>`;
+        return `<section class="potential-card"><h3>Потенциал</h3><p class="muted">${esc(NOTE)}</p>${high}${awards}${window.diagnosticCharts.potential(potential, esc)}${shown.length ? table(shown) : '<p class="muted">Направлений с опытом нет.</p>'}<details class="potential-all"><summary>Все направления</summary>${table(potential.areas)}</details></section>`;
     }
 
     // The table "area × level" with counts; a count opens the list of students.
@@ -41,7 +41,7 @@ window.potentialView = (() => {
             const on = selected && selected.area === a.id && selected.level === l.level;
             return `<td>${l.students.length ? `<button class="secondary potential-count${on ? ' active' : ''}" data-area="${esc(a.id)}" data-level="${esc(l.level)}" aria-pressed="${on}">${l.students.length}</button>` : '<span class="muted">0</span>'}</td>`;
         }).join('')}</tr>`).join('');
-        return `<p class="muted">Учтено сданных автобиографий: ${data.submitted}. ${esc(NOTE)}</p><div class="table-scroll"><table class="potential-summary"><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
+        return `<p class="muted">Учтено сданных автобиографий: ${data.submitted}. ${esc(NOTE)}</p>${window.diagnosticCharts.distribution(data.areas, data.submitted, esc, selected, 'potential')}<div class="table-scroll"><table class="potential-summary"><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
     }
 
     // Students of one cell; each name opens the conclusion about the student.
