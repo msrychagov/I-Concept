@@ -22,6 +22,7 @@ window.teacherResult = async function ({view, api, esc, id, slices}) {
         dialog.innerHTML = `<div class="section-title"><div><h2>${esc(s.participant)}</h2><p>Взвод ${esc(s.group)} · ${esc(s.wave)}</p></div><button class="secondary" id="close-result">Закрыть</button></div>${window.sliceBar(slices, id, esc)}
    <p>${s.completed ? 'Прохождение завершено' : 'Прохождение в процессе'} · ответов на утверждения ${answered} из ${total}</p>
    <section class="surface test-portrait" id="test-portrait-box" aria-label="Вывод по тестированию"></section>
+   <section class="surface" id="test-dynamics-box" aria-label="Динамика тестирования"></section>
    <h3>Отчёт по утверждениям</h3><p class="muted">Средний балл по показателю рассчитывается по шкале 1–5 с учётом обратных утверждений. При неполном наборе ответов балл не рассчитывается; пропуски не заменяются нулём.</p>
    <details class="evidence-chart"><summary>Диаграмма показателей по утверждениям</summary>${window.diagnosticCharts.evidence(rows, esc)}</details>
    <section><div id="evidence-list"></div><nav class="list-pagination" id="evidence-pagination" aria-label="Страницы диагностических показателей"></nav></section>
@@ -31,6 +32,7 @@ window.teacherResult = async function ({view, api, esc, id, slices}) {
    <section class="surface values-block" id="values-box" hidden></section>
    <a class="button secondary" href="/api/v1/sessions/${encodeURIComponent(id)}/export">Экспорт сессии</a>`;
         dialog.querySelector('#close-result').onclick = () => dialog.close();
+        window.testDynamics.mount({element: dialog.querySelector('#test-dynamics-box'), history: r.dynamics, esc});
         window.sliceBar.bind(dialog, slices, next => {
             dialog.close();
             window.teacherResult({view, api, esc, id: next, slices});

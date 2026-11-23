@@ -161,7 +161,8 @@ ${paragraph(o.formation, o.formation.before || [])}${paragraph(o.moments)}${para
     }
 
     // A source of v2 is a paragraph or a recommendation of an analysis: its text, no quotes.
-    const sourcesWhy = group => why(`<ul class="essay-source-list">${group.sources.map(s => `<li><button type="button" class="link" data-essay="${esc(s.submissionId)}">${esc(s.student)}</button> <small class="muted">взвод ${esc(s.platoon)}</small> ${esc(s.text)}</li>`).join('')}</ul>`, `Из чего вывод · ${group.authors} ${authorsWord(group.authors)}`);
+    const sourceList = group => `<ul class="essay-source-list">${group.sources.map(s => `<li><button type="button" class="link" data-essay="${esc(s.submissionId)}">${esc(s.student)}</button> <small class="muted">взвод ${esc(s.platoon)}</small> ${esc(s.text)}</li>`).join('')}</ul>`;
+    const sourcesWhy = group => why(sourceList(group), `Из чего вывод · ${group.authors} ${authorsWord(group.authors)}`);
 
     function summaryBodyV2(sm) {
         const o = sm.output, c = sm.common;
@@ -177,12 +178,11 @@ ${['formation', 'moments', 'environment'].map(paragraph).join('')}
     function summaryBodyV3(sm) {
         const o = sm.output, c = sm.common;
         const paragraph = key => `<div class="essay-paragraph"><p>${esc(o[key].text)}</p>${sourcesWhy(c[key])}</div>`;
-        const list = (items, groups) => `<ol class="essay-advice">${items.map((r, i) => `<li>${esc(r.text)}${sourcesWhy(groups[i])}</li>`).join('')}</ol>`;
         const left = c.notIncluded.length ? `<details class="essay-left"><summary>Не вошло в общее «Что усилить»: ${c.notIncluded.length}</summary><p class="muted">Пункты «что ещё усилить» из разборов, на которые не опирается ни один пункт сводки.</p><ul class="essay-source-list">${c.notIncluded.map(s => `<li><button type="button" class="link" data-essay="${esc(s.submissionId)}">${esc(s.student)}</button> <small class="muted">взвод ${esc(s.platoon)}</small> ${esc(s.text)}</li>`).join('')}</ul></details>` : '';
         return `<section class="essay-findings"><h3>Выводы по выпуску</h3><p class="muted essay-note">Выводы по разборам эссе. Из чего сделан вывод — по кнопке под абзацем.</p>
 ${['formation', 'moments', 'environment'].map(paragraph).join('')}
-<h3>Что воспитал ВУЦ у выпуска</h3>${o.developed.length ? list(o.developed, c.developed) : '<p class="muted">Общего, что авторы связывают с ВУЦ, не нашлось.</p>'}
-<h3>Что усилить</h3>${o.strengthen.length ? list(o.strengthen, c.strengthen) : '<p class="muted">Общего не нашлось.</p>'}${left}</section>`;
+${window.diagnosticCharts.essayFeedback('Что полезного дал ВУЦ', o.developed, c.developed, esc, sourceList)}
+${window.diagnosticCharts.essayFeedback('Что усилить в воспитательной работе', o.strengthen, c.strengthen, esc, sourceList)}${left}</section>`;
     }
 
     // The pedagogical conclusion of a summary of v3 about the teachers.

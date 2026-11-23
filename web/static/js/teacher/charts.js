@@ -99,5 +99,18 @@ window.diagnosticCharts = (() => {
         return card('Готовность эссе', `Количество эссе · назначено ${total}. Статус разбора показывает готовность обработки текста.`, bars(rows, 0, total, esc), esc);
     }
 
-    return {potential, distribution, test, evidence, climate, values, valueAuthors, essayProgress};
+    function essayFeedback(title, items, groups, esc, sourceList) {
+        const rows = (items || []).map((item, n) => ({item, group: groups?.[n]}));
+        const total = Math.max(0, ...rows.map(r => r.group?.of || 0));
+        rows.sort((a, b) => (b.group?.authors || 0) - (a.group?.authors || 0));
+        const body = rows.length ? `<div class="feedback-rows">${rows.map(({item, group}) => {
+            const known = valid(group?.authors) && total > 0;
+            const width = known ? clamp(group.authors / total * 100) : 0;
+            const label = known ? `${group.authors} из ${total} эссе` : 'Нет данных об источниках';
+            return `<details class="feedback-row"><summary><span class="feedback-label">${esc(item.text)}</span><span class="feedback-measure"><span class="chart-track${known ? '' : ' chart-missing'}" aria-hidden="true">${known ? `<span class="chart-fill chart-color-green" style="width:${width}%"></span>` : ''}</span><strong>${esc(label)}</strong><small>Исходные эссе</small></span></summary><div class="essay-why-body">${group ? sourceList(group) : '<p class="muted">Ссылок на исходные эссе пока нет.</p>'}</div></details>`;
+        }).join('')}</div>` : '<p class="muted">Общих пунктов в сводке нет.</p>';
+        return card(title, 'Число разных эссе, на которых основан каждый пункт сводки. Один автор может входить в несколько пунктов. Нажмите на полосу, чтобы открыть источники.', body, esc);
+    }
+
+    return {potential, distribution, test, evidence, climate, values, valueAuthors, essayProgress, essayFeedback};
 })();
