@@ -46,23 +46,20 @@ func measurementDate(s model.Session) string {
 	}
 	return s.Created
 }
+func (a *Service) comparisonSignature(s model.Session) string {
+	ids := []string{}
+	for id := range s.Profile.Values {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	data, _ := json.Marshal(struct {
+		Items      []model.Item
+		Indicators []string
+	}{a.itemsFor(s), ids})
+	return s.BankVersion + "\n" + string(data)
+}
 func (a *Service) comparable(left, right model.Session) bool {
-	if left.BankVersion != right.BankVersion {
-		return false
-	}
-	signature := func(s model.Session) string {
-		ids := []string{}
-		for id := range s.Profile.Values {
-			ids = append(ids, id)
-		}
-		sort.Strings(ids)
-		data, _ := json.Marshal(struct {
-			Items      []model.Item
-			Indicators []string
-		}{a.itemsFor(s), ids})
-		return string(data)
-	}
-	return signature(left) == signature(right)
+	return a.comparisonSignature(left) == a.comparisonSignature(right)
 }
 func (a *Service) evidence(s model.Session, all []model.SessionRecord, rows []reportRow) []EvidenceRow {
 	result := []EvidenceRow{}
