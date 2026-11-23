@@ -57,6 +57,13 @@ window.teacherConceptTesting = async function ({view, state, api, esc}) {
                 else platoonBox.parentNode.append(summaryBox);
                 platoonValues(aiChoose.value);
                 drawSummary()
+                let dynamics = view.querySelector('#platoon-dynamics');
+                if (!dynamics) {
+                    dynamics = document.createElement('section');
+                    dynamics.id = 'platoon-dynamics';
+                    platoonBox.after(dynamics);
+                }
+                window.testDynamics.mount({element: dynamics, history: summary.dynamics, esc, platoon: true});
             } catch (err) {
                 summaryBox.innerHTML = `<p class="error">${esc(err.message)}</p>`
             }

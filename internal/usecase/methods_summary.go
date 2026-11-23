@@ -39,6 +39,7 @@ type MethodsSummary struct {
 	Groups   []string            `json:"groups"`
 	Sessions int                 `json:"sessions"`
 	Rows     []MethodsSummaryRow `json:"rows"`
+	Dynamics []TestCohortSlice   `json:"dynamics"`
 	// Platoon is what the screen of the conclusion by a platoon needs; only
 	// for one platoon.
 	Platoon *PlatoonView `json:"platoon,omitempty"`
@@ -171,6 +172,7 @@ func (a *Service) MethodsSummaryFor(teacherID, group string) (MethodsSummary, er
 	}
 	summary.Sessions = len(portraits)
 	summary.Rows = a.levelRows(portraits)
+	summary.Dynamics = a.platoonTestDynamics(db, teacherID, group)
 	if group != "" {
 		platoon := a.platoonPortrait(group, portraits)
 		summary.Platoon = &PlatoonView{Students: platoon.Students, Minimum: platoonMinimum, Defender: platoon.Defender, Catalogue: a.defender.Directions, Climate: platoon.Climate, WorkGroups: platoon.WorkGroups, Conclusion: a.platoonConclusion(portraits, platoon.WorkGroups)}

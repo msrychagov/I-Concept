@@ -213,11 +213,12 @@ window.teacherPlatoonView = async function ({view, api, esc, start = 'platoons',
 
     async function commonTest(box, p) {
         const alive = current();
-        box.innerHTML = '<h2>Результаты тестирования взвода</h2><div id="pv-conclusion" class="test-portrait"></div><div id="pv-values" class="values-block"></div><div id="pv-methods" aria-live="polite"><p class="muted">Загрузка…</p></div>';
+        box.innerHTML = '<h2>Результаты тестирования взвода</h2><div id="pv-conclusion" class="test-portrait"></div><section id="pv-dynamics"></section><div id="pv-values" class="values-block"></div><div id="pv-methods" aria-live="polite"><p class="muted">Загрузка…</p></div>';
         try {
             const summary = await api('/reports/methods?group=' + encodeURIComponent(p));
             if (!alive()) return;
             stops.push(window.testPortrait.mountPlatoon({element: box.querySelector('#pv-conclusion'), api, esc, group: p, platoon: summary.platoon, open: openResult}));
+            window.testDynamics.mount({element: box.querySelector('#pv-dynamics'), history: summary.dynamics, esc, platoon: true});
             let selected = null;
             const methods = box.querySelector('#pv-methods');
             // The table of the levels goes inside «Подробно» of the conclusion, not under every tab.

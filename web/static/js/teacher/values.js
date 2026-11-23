@@ -38,7 +38,7 @@ window.valuesBlock = (() => {
             return `<li><b>${esc(v.label)}</b> <small class="muted">${esc(v.ideaLabel)}</small> — ${esc(parts.join(' · '))}${quotes(v.quotes, esc, clickable)}</li>`;
         }).join('')}</ul></div>` : '';
         const other = c.other.length ? quotes(c.other, esc, clickable, `Не считаются (чужие слова без своего отношения): ${c.other.length}`) : '';
-        return `${ideas || '<p class="muted">Ценностей в собственных словах автора не отмечено.</p>'}${absent.length && met.length ? `<p class="muted">Не встретились: ${esc(absent.join(', '))}.</p>` : ''}${anti}${other}`;
+        return `${window.diagnosticCharts.values(c, esc)}${ideas || '<p class="muted">Ценностей в собственных словах автора не отмечено.</p>'}${absent.length && met.length ? `<p class="muted">Не встретились: ${esc(absent.join(', '))}.</p>` : ''}${anti}${other}`;
     }
 
     function status(view, esc) {
@@ -93,7 +93,7 @@ window.valuesBlock = (() => {
         };
         const ideas = data.ideas.filter(i => i.values.length).map(i => `<div class="values-idea"><h4>${esc(i.label)} <small class="muted">· у ${i.authors} из ${data.marked}</small></h4><ul class="values-list">${i.values.map(line).join('')}</ul></div>`).join('');
         const anti = data.antivalues.length ? `<div class="values-idea"><h4>Антиценности</h4><ul class="values-list">${data.antivalues.map(v => `<li><b>${esc(v.label)}</b> <small class="muted">${esc(v.ideaLabel)}</small> ${v.rejecting.length ? `<details class="essay-why"><summary>осуждают — ${v.rejecting.length}</summary><div class="essay-why-body">${who(v.rejecting)}</div></details>` : ''} ${v.authors.length ? `<details class="essay-why"><summary>принимают как норму — ${v.authors.length}</summary><div class="essay-why-body">${who(v.authors)}</div></details>` : ''}</li>`).join('')}</ul></div>` : '';
-        return `<p class="muted values-note">Разметка готова у ${data.marked} из ${data.texts} ${of}. У скольких ${noun} встречается ценность в их собственных словах или в том, что они одобряют у других; считает программа по отметкам модели. Не уровень и не оценка.</p>${ideas || `<p class="muted">Ценностей в собственных словах ${noun} не отмечено.</p>`}${anti}`;
+        return `<p class="muted values-note">Разметка готова у ${data.marked} из ${data.texts} ${of}. У скольких ${noun} встречается ценность в их собственных словах или в том, что они одобряют у других; считает программа по отметкам модели. Не уровень и не оценка.</p>${window.diagnosticCharts.valueAuthors(data, esc)}${ideas || `<p class="muted">Ценностей в собственных словах ${noun} не отмечено.</p>`}${anti}`;
     }
 
     return {mount, summary};

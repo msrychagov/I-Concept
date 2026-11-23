@@ -190,6 +190,7 @@ func (a *Service) analyze(s model.Session, all []model.SessionRecord) map[string
 	engine := a.engineFor(s)
 	result := engine.analyzeSnapshot(s, all)
 	result["psychological"] = engine.psychologicalReport(s)
+	result["dynamics"] = a.testDynamics(s, all)
 	if portrait := a.TestPortrait(s); portrait != nil {
 		result["methods"] = portrait
 		// The conclusion by the program (test_conclusion.go), only on a finished test.

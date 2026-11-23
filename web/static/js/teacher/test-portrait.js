@@ -229,9 +229,10 @@ window.testPortrait = (() => {
             return () => {};
         }
         const advice = (conclusion.recommendations || []).map(r => `<li>${esc(r.text)}</li>`).join('');
-        element.innerHTML = `${title}${tabs([['summary', 'Вывод'], ['details', 'Подробно'], ['advice', 'Рекомендации']])}
+        element.innerHTML = `${title}${tabs([['summary', 'Вывод'], ['details', 'Подробно'], ['charts', 'Диаграммы'], ['advice', 'Рекомендации']])}
    <div data-pane="summary" class="test-portrait-text"><p>${esc(conclusion.summary)}</p></div>
    <div data-pane="details" class="test-portrait-text" hidden><p class="muted">По ответам студента.</p>${(conclusion.details || []).map(p => `<h4>${esc(p.title)}</h4><p>${esc(p.text)}</p>`).join('')}${tables(methods, esc)}</div>
+   <div data-pane="charts" hidden>${window.diagnosticCharts.test(methods, esc)}</div>
    <div data-pane="advice" class="test-portrait-text" hidden>${advice ? `<ul class="test-portrait-recommendations">${advice}</ul>` : '<p class="muted">Рекомендаций нет.</p>'}</div>
    <p class="portrait-signature muted">${esc(SIGNATURE)}</p>`;
         bindTabs(element);
@@ -252,7 +253,7 @@ window.testPortrait = (() => {
         const body = Object.keys(COMPONENTS).map(code => group(COMPONENTS[code] + ' компонент', data.rows.filter(r => r.kind === 'method' && r.component === code))).join('')
             + group('Виды деятельности', data.rows.filter(r => r.kind === 'activity'));
         const head2 = titled ? '<h4>Уровни методик по взводу</h4><p>Сколько студентов взвода оказались на высоком, среднем и низком уровне по каждой методике теста. Нажмите на число — откроется список этих студентов.</p>' : '';
-        return `${head2}<p class="muted">Учтено тестирований: ${data.sessions} — последнее завершённое с методиками у каждого студента. Уровни посчитаны программой по ключам методик.</p><div class="table-scroll"><table class="potential-summary"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+        return `${head2}<p class="muted">Учтено тестирований: ${data.sessions} — последнее завершённое с методиками у каждого студента. Уровни посчитаны программой по ключам методик.</p>${window.diagnosticCharts.distribution(data.rows, data.sessions, esc, selected, 'methods')}<div class="table-scroll"><table class="potential-summary"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
     }
 
     function students(data, selected, esc) {
@@ -288,7 +289,7 @@ window.testPortrait = (() => {
         // The marks are not coloured: the sides are not levels.
         const mark = side => c.strongest.includes(side) ? ' <span class="muted">· сильнее всего</span>' : c.weakest.includes(side) ? ' <span class="muted">· слабее всего</span>' : '';
         return `<h4>Климат взвода</h4><p class="muted">${esc(c.method)}. Оценили все пары: ${c.rated.length} — ${esc(c.rated.map(s => s.name).join(', '))}. Средняя сумма: <b>${signed(c.sum)}</b> из ${signed(c.min)}…${signed(c.max)}. Уровней климата нет.</p>
-   <div class="table-scroll"><table class="potential-summary climate-summary"><thead><tr><th>Сторона климата</th><th>Средняя оценка</th></tr></thead><tbody>${c.pairs.map(p => `<tr><th scope="row">${esc(capital(p.side))}${mark(p.side)}</th><td>${signed(p.mean)}</td></tr>`).join('')}</tbody></table></div>
+   ${window.diagnosticCharts.climate(c.pairs, esc, true)}<div class="table-scroll"><table class="potential-summary climate-summary"><thead><tr><th>Сторона климата</th><th>Средняя оценка</th></tr></thead><tbody>${c.pairs.map(p => `<tr><th scope="row">${esc(capital(p.side))}${mark(p.side)}</th><td>${signed(p.mean)}</td></tr>`).join('')}</tbody></table></div>
    ${c.equal ? '<p class="muted">Все стороны климата оценены одинаково.</p>' : ''}`;
     }
 

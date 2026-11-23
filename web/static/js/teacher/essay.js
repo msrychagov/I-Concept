@@ -161,7 +161,8 @@ ${paragraph(o.formation, o.formation.before || [])}${paragraph(o.moments)}${para
     }
 
     // A source of v2 is a paragraph or a recommendation of an analysis: its text, no quotes.
-    const sourcesWhy = group => why(`<ul class="essay-source-list">${group.sources.map(s => `<li><button type="button" class="link" data-essay="${esc(s.submissionId)}">${esc(s.student)}</button> <small class="muted">взвод ${esc(s.platoon)}</small> ${esc(s.text)}</li>`).join('')}</ul>`, `Из чего вывод · ${group.authors} ${authorsWord(group.authors)}`);
+    const sourceList = group => `<ul class="essay-source-list">${group.sources.map(s => `<li><button type="button" class="link" data-essay="${esc(s.submissionId)}">${esc(s.student)}</button> <small class="muted">взвод ${esc(s.platoon)}</small> ${esc(s.text)}</li>`).join('')}</ul>`;
+    const sourcesWhy = group => why(sourceList(group), `Из чего вывод · ${group.authors} ${authorsWord(group.authors)}`);
 
     function summaryBodyV2(sm) {
         const o = sm.output, c = sm.common;
@@ -177,12 +178,11 @@ ${['formation', 'moments', 'environment'].map(paragraph).join('')}
     function summaryBodyV3(sm) {
         const o = sm.output, c = sm.common;
         const paragraph = key => `<div class="essay-paragraph"><p>${esc(o[key].text)}</p>${sourcesWhy(c[key])}</div>`;
-        const list = (items, groups) => `<ol class="essay-advice">${items.map((r, i) => `<li>${esc(r.text)}${sourcesWhy(groups[i])}</li>`).join('')}</ol>`;
         const left = c.notIncluded.length ? `<details class="essay-left"><summary>Не вошло в общее «Что усилить»: ${c.notIncluded.length}</summary><p class="muted">Пункты «что ещё усилить» из разборов, на которые не опирается ни один пункт сводки.</p><ul class="essay-source-list">${c.notIncluded.map(s => `<li><button type="button" class="link" data-essay="${esc(s.submissionId)}">${esc(s.student)}</button> <small class="muted">взвод ${esc(s.platoon)}</small> ${esc(s.text)}</li>`).join('')}</ul></details>` : '';
         return `<section class="essay-findings"><h3>Выводы по выпуску</h3><p class="muted essay-note">Выводы по разборам эссе. Из чего сделан вывод — по кнопке под абзацем.</p>
 ${['formation', 'moments', 'environment'].map(paragraph).join('')}
-<h3>Что воспитал ВУЦ у выпуска</h3>${o.developed.length ? list(o.developed, c.developed) : '<p class="muted">Общего, что авторы связывают с ВУЦ, не нашлось.</p>'}
-<h3>Что усилить</h3>${o.strengthen.length ? list(o.strengthen, c.strengthen) : '<p class="muted">Общего не нашлось.</p>'}${left}</section>`;
+${window.diagnosticCharts.essayFeedback('Что полезного дал ВУЦ', o.developed, c.developed, esc, sourceList)}
+${window.diagnosticCharts.essayFeedback('Что усилить в воспитательной работе', o.strengthen, c.strengthen, esc, sourceList)}${left}</section>`;
     }
 
     // The pedagogical conclusion of a summary of v3 about the teachers.
@@ -237,7 +237,7 @@ ${unlisted.length ? `<div class="essay-teacher"><b>Не сопоставлены
         const label = summary.status === 'failed' ? 'Повторить' : sm ? 'Обновить сводку' : 'Составить сводку';
         box.innerHTML = `<h2>Сводка по выпуску</h2><p class="muted">В сводке эссе с готовым разбором: ${c.analysed}. Сдано ${c.submitted}, не сдано ${c.notSubmitted}, у ${c.withPrevious} есть прежнее эссе${c.withoutAnalysis ? `, без разбора ${c.withoutAnalysis} (в сводку не вошли)` : ''}.</p>
   <div class="toolbar"><button id="compose" ${!summary.canCompose || busy || summary.status === 'off' ? 'disabled' : ''}>${label}</button> ${note}</div><div id="summary-error" role="alert"></div>
-  ${sm ? summaryBody(sm) : ''}<h2 style="margin-top:1.5rem">Преподаватели</h2>${teachersConclusion(sm)}<p class="muted">${summary.teachers.positions ? 'Что сказали о преподавателях — по должностям и фамилиям, как их написали студенты. Считает программа по разборам; сводка модели для этого не нужна.' : 'Что сказали о преподавателях из списка ВУЦ. Считает программа по разборам; сводка модели для этого не нужна.'}</p>${teachersBlock(summary.teachers)}
+  ${window.diagnosticCharts.essayProgress(c, esc)}${sm ? summaryBody(sm) : ''}<h2 style="margin-top:1.5rem">Преподаватели</h2>${teachersConclusion(sm)}<p class="muted">${summary.teachers.positions ? 'Что сказали о преподавателях — по должностям и фамилиям, как их написали студенты. Считает программа по разборам; сводка модели для этого не нужна.' : 'Что сказали о преподавателях из списка ВУЦ. Считает программа по разборам; сводка модели для этого не нужна.'}</p>${teachersBlock(summary.teachers)}
   <h2 style="margin-top:1.5rem">Ценности в эссе</h2>${window.valuesBlock.summary(values, esc, {noun: 'авторов', of: 'сданных эссе'})}`;
         box.querySelector('#compose').onclick = async e => {
             e.target.disabled = true;
