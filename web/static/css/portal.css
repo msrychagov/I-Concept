@@ -713,3 +713,58 @@
 .evidence-card p:empty {
     display: none
 }
+
+/* On a phone the roster is a list of cards: one student per card, a label above each value. */
+@media (max-width: 740px) {
+    .platoon-management .roster-table, .platoon-management .roster-table tbody,
+    .platoon-management .roster-table tr, .platoon-management .roster-table td {
+        display: block;
+        width: 100%
+    }
+
+    .platoon-management .roster-table thead {
+        display: none
+    }
+
+    .platoon-management .roster-table tr {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 4px 14px;
+        margin-bottom: 12px
+    }
+
+    .platoon-management .roster-table td {
+        border: 0;
+        padding: 10px 0;
+        overflow-wrap: normal
+    }
+
+    .platoon-management .roster-table td + td {
+        border-top: 1px solid var(--line)
+    }
+
+    .platoon-management .roster-table td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 6px;
+        color: #53604f;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: .05em
+    }
+
+    .platoon-management .roster-table td small {
+        overflow-wrap: anywhere
+    }
+
+    .platoon-management .roster-table .platoon-controls {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center
+    }
+
+    .platoon-management .roster-table .platoon-controls select {
+        flex: 1 1 140px;
+        width: auto
+    }
+}
