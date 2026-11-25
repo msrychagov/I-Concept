@@ -77,6 +77,25 @@ func (a *Service) essayTask(prompt promptbank.Prompt) portraitTask {
 			}
 			return list
 		}
+		// Since v6 the input has the first name of the student (decided 25
+		// November 2026): the analyses of v5, made without it, are shown too
+		// while the new one is made. The input of v5 is masked here as v5
+		// masked it; the mask of Earlier, which keeps the patronymic, then
+		// finds nothing more in it.
+		if essayNamed(prompt.Version) {
+			task.Check = checkEssayAnswerV6
+			older := task.Earlier
+			task.Earlier = func(a *Service, db model.Database, s Source) []*object {
+				submission, _ := findSubmission(db, s)
+				list := []*object{}
+				if payload, _, err := a.essayInput(db, submission, "v5"); err == nil {
+					if _, err := maskPersonal(payload); err == nil {
+						list = append(list, payload)
+					}
+				}
+				return append(list, older(a, db, s)...)
+			}
+		}
 		task.Show = func(a *Service, db model.Database, s Source, output []byte) []byte {
 			submission, _ := findSubmission(db, s)
 			if _, marks, err := a.essayInput(db, submission, prompt.Version); err == nil {
@@ -95,6 +114,14 @@ func essayMarked(version string) bool {
 	return n >= 5
 }
 
+// essayNamed says whether the input of a version has the first name of the
+// student, so that the analysis names him instead of «автор» (since v6,
+// decided 25 November 2026 after the remarks of 24 November).
+func essayNamed(version string) bool {
+	n, _ := promptbank.Number(version)
+	return n >= 6
+}
+
 // essayKeep is the personal data the input of a version keeps: the patronymic
 // up to v4 (decision Д13 of 25 October), nothing since v5.
 func essayKeep(version string) []string {
@@ -111,7 +138,35 @@ func (a *Service) essayInput(db model.Database, submission model.FormSubmission,
 	if err != nil || !essayMarked(version) {
 		return payload, nil, err
 	}
-	return payload, markRows(payload, "эссе", "прежнее_эссе"), nil
+	marks := markRows(payload, "эссе", "прежнее_эссе")
+	if essayNamed(version) {
+		if student, ok := studentOf(db, submission); ok {
+			if name := studentFirstName(student.Name); name != "" {
+				// The name goes first, before the answers.
+				payload.keys = append([]string{"имя"}, payload.keys...)
+				payload.values["имя"] = name
+			}
+		}
+	}
+	return payload, marks, nil
+}
+
+// studentFirstName finds the first name in the full name of an account
+// («Иванов Иван Иванович»): the word that is a first name of the book of
+// names, else the second of three words; "" when it cannot be told. Only the
+// first name goes to the model, never the surname or the patronymic.
+func studentFirstName(full string) string {
+	words := strings.Fields(full)
+	book := loadedNames()
+	for _, w := range words {
+		if book.names[normalWord(w)] {
+			return w
+		}
+	}
+	if len(words) == 3 {
+		return words[1]
+	}
+	return ""
 }
 
 const (

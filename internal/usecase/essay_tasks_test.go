@@ -103,7 +103,12 @@ func goodEssayV3(user string) map[string]any {
 // earlier versions as v2.
 func essayAnswerFor(c Completion) map[string]any {
 	if strings.Contains(c.System, "teachersConclusion") {
-		return goodEssayV3(c.User)
+		answer := goodEssayV3(c.User)
+		// v6 asks for what the student did himself.
+		if strings.Contains(c.System, "Поле deeds") {
+			answer["deeds"] = []any{}
+		}
+		return answer
 	}
 	return goodEssay(c.User)
 }
@@ -249,7 +254,7 @@ func TestEarlierEssayOfTheSameAuthorGoesWithTheNewOne(t *testing.T) {
 		} `json:"formation"`
 	}
 	_ = json.Unmarshal(view.Portrait.Output, &output)
-	if len(output.Formation.Before) != 1 || output.Formation.Before[0].Question != "1.1" || view.Portrait.Version != "v5" {
+	if len(output.Formation.Before) != 1 || output.Formation.Before[0].Question != "1.1" || view.Portrait.Version != "v6" {
 		t.Fatalf("quotes of the earlier essay: %+v", output.Formation)
 	}
 }
@@ -512,10 +517,9 @@ func TestAnalysisOfV4IsShownWhileV5HidesThePeople(t *testing.T) {
 	f.service.UseModel(nil)
 	f.service.portraits.tasks = nil
 	prompts, _ := promptbank.Load()
-	for _, task := range []string{essayForm, essayCohortTask} {
-		prompt, _ := promptbank.Latest(prompts, task)
-		f.service.RegisterPrompts(prompt)
-	}
+	v5, _ := promptbank.Find(prompts, essayForm, "v5")
+	cohort, _ := promptbank.Latest(prompts, essayCohortTask)
+	f.service.RegisterPrompts(v5, cohort)
 	view, err := f.portrait(f.owner, id)
 	if err != nil || view.Status != portraitReady || view.Portrait.Version != "v4" {
 		t.Fatalf("the analysis of v4 is not shown: %+v %v", view, err)
@@ -537,5 +541,66 @@ func TestAnalysisOfV4IsShownWhileV5HidesThePeople(t *testing.T) {
 	}
 	if json.Unmarshal(view.Portrait.Output, &output) != nil || len(output.Teachers) != 1 || output.Teachers[0].Name != "Иванов" || !strings.Contains(output.Teachers[0].Quotes[0].Quote, "Иванова Игоря Петровича") {
 		t.Fatalf("teachers: %+v", output.Teachers)
+	}
+}
+
+// The analysis of v5 is shown while the one of v6 is made; the input of v6 has
+// the first name of the student first and only it: the surname and the
+// patronymic of the account do not go (decided 25 November 2026).
+func TestAnalysisOfV5IsShownWhileV6GetsTheFirstName(t *testing.T) {
+	f := newEssayPortraitFixtureAt(t, "v5")
+	m := essayModel(nil)
+	f.service.UseModel(m)
+	login, id := f.submitted("essay-v6@example.test", "2401", f.assignment, nil)
+	if err := f.service.repo.Update(func(db *model.Database) error {
+		for n := range db.Students {
+			if db.Students[n].ID == login.Account.ID {
+				db.Students[n].Name = "Абуладзе Григорий Малхазович"
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	f.idle()
+	if m.count() != 1 || strings.Contains(m.calls[0].User, "Григорий") {
+		t.Fatalf("%d calls of v5: %.200s", m.count(), m.calls[0].User)
+	}
+	f.service.UseModel(nil)
+	f.service.portraits.tasks = nil
+	prompts, _ := promptbank.Load()
+	for _, task := range []string{essayForm, essayCohortTask} {
+		prompt, _ := promptbank.Latest(prompts, task)
+		f.service.RegisterPrompts(prompt)
+	}
+	view, err := f.portrait(f.owner, id)
+	if err != nil || view.Status != portraitReady || view.Portrait.Version != "v5" {
+		t.Fatalf("the analysis of v5 is not shown: %+v %v", view, err)
+	}
+	f.service.UseModel(m)
+	f.idle()
+	input := m.calls[len(m.calls)-1].User
+	if m.count() != 2 || !strings.HasPrefix(strings.TrimSpace(input), `{
+ "имя": "Григорий"`) || strings.Contains(input, "Абуладзе") || strings.Contains(input, "Малхазович") {
+		t.Fatalf("%d calls: input of v6 %.300s", m.count(), input)
+	}
+	view, err = f.portrait(f.owner, id)
+	if err != nil || view.Status != portraitReady || view.Portrait.Version != "v6" || !strings.Contains(string(view.Portrait.Output), `"deeds"`) {
+		t.Fatalf("%+v %v", view, err)
+	}
+}
+
+func TestStudentFirstName(t *testing.T) {
+	for full, want := range map[string]string{
+		"Абуладзе Григорий Малхазович": "Григорий",
+		"Иванов Иван Иванович":         "Иван",
+		"Григорий Абуладзе":            "Григорий",
+		"Тестов Тест":                  "",
+		"Цзинь Ли Бо":                  "Ли",
+		"":                             "",
+	} {
+		if got := studentFirstName(full); got != want {
+			t.Errorf("%q: %q, want %q", full, got, want)
+		}
 	}
 }
