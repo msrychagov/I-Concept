@@ -21,6 +21,8 @@ import (
 
 const (
 	essayDevelopedMost   = 3
+	// essayDeedsMost is the most points of «deeds» (v6): what the student did.
+	essayDeedsMost = 3
 	essayStrengthenLeast = 2
 	essayStrengthenMost  = 3
 	essayTeachersMost    = 3
@@ -58,6 +60,10 @@ func copiesExample(text string, examples []string) bool {
 	return false
 }
 
+// essayPointLists are the lists of points of an analysis of v3 and later:
+// «deeds» is there since v6.
+var essayPointLists = []string{"deeds", "developed", "strengthen"}
+
 // essayText is a text of an answer of v3 with the place it is at.
 type essayText struct {
 	where string
@@ -74,7 +80,7 @@ func essayTextsV3(output map[string]any) []essayText {
 			texts = append(texts, essayText{key, paragraph["text"]})
 		}
 	}
-	for _, key := range []string{"developed", "strengthen"} {
+	for _, key := range essayPointLists {
 		items, _ := asList(output[key])
 		for n, raw := range items {
 			if item := asMap(raw); item != nil {
@@ -149,17 +155,26 @@ var conclusionRank = regexp.MustCompile(`(?i)(^|[^\p{L}])(лейтенант|к�
 // must not hold and the teachers as in v2. The length is not checked: the
 // limit of 250 words is only in the instruction (decided 18 November 2026).
 func checkEssayAnswerV3(output map[string]any, payload *object) []string {
-	return essayV3Problems(output, payload, false)
+	return essayV3Problems(output, payload, false, false)
 }
 
 // checkEssayAnswerV5 is the check of v3 for an input with the people behind
 // labels: a label stands only in teachers.name, and a name is a label from the
 // quotes of its record or empty.
 func checkEssayAnswerV5(output map[string]any, payload *object) []string {
-	return essayV3Problems(output, payload, true)
+	return essayV3Problems(output, payload, true, false)
 }
 
-func essayV3Problems(output map[string]any, payload *object, marked bool) []string {
+// checkEssayAnswerV6 checks an analysis of v6 as one of v5 plus the list
+// «deeds» (what the student did himself), checked like «developed»: the
+// count and the quotes. The words of the remarks of 24 November are in the
+// instruction only: the program does not reject an answer by them (decided
+// 25 November 2026).
+func checkEssayAnswerV6(output map[string]any, payload *object) []string {
+	return essayV3Problems(output, payload, true, true)
+}
+
+func essayV3Problems(output map[string]any, payload *object, marked, deeds bool) []string {
 	current, previous := essayAnswers(payload, "эссе"), essayAnswers(payload, "прежнее_эссе")
 	problems := []string{}
 	for _, p := range []struct {
@@ -186,10 +201,17 @@ func essayV3Problems(output map[string]any, payload *object, marked bool) []stri
 		}
 	}
 
-	for _, list := range []struct {
+	lists := []struct {
 		key       string
 		low, high int
-	}{{"developed", 0, essayDevelopedMost}, {"strengthen", essayStrengthenLeast, essayStrengthenMost}} {
+	}{{"developed", 0, essayDevelopedMost}, {"strengthen", essayStrengthenLeast, essayStrengthenMost}}
+	if deeds {
+		lists = append(lists, struct {
+			key       string
+			low, high int
+		}{"deeds", 0, essayDeedsMost})
+	}
+	for _, list := range lists {
 		items, ok := asList(output[list.key])
 		if !ok || len(items) < list.low || len(items) > list.high {
 			problems = append(problems, fmt.Sprintf("%s: пунктов должно быть от %d до %d", list.key, list.low, list.high))
@@ -274,7 +296,7 @@ func trimTextsV3(output map[string]any) int {
 			trim(item)
 		}
 	}
-	for _, key := range []string{"developed", "strengthen"} {
+	for _, key := range essayPointLists {
 		items, _ := asList(output[key])
 		for _, raw := range items {
 			if item := asMap(raw); item != nil {
@@ -321,7 +343,7 @@ func trimLongQuotes(output map[string]any, current, previous map[string]string) 
 	if formation := asMap(output["formation"]); formation != nil {
 		cut(formation["before"], previous)
 	}
-	for _, key := range []string{"developed", "strengthen", "teachers"} {
+	for _, key := range append(slices.Clone(essayPointLists), "teachers") {
 		items, _ := asList(output[key])
 		for _, raw := range items {
 			if item := asMap(raw); item != nil {

@@ -80,12 +80,15 @@ ${paragraph(o.formation, o.formation.before || [])}${paragraph(o.moments)}${para
     // v3 (decided 5 November 2026): what the center brought up and what to
     // strengthen instead of the recommendations; the conclusion about the
     // teachers above the lines of the people the author names.
+    // v6 (decided 25 November 2026): what the student did himself, above
+    // what the center brought up; the analyses before v6 have no such list.
     function analysisV3(o, esc) {
         const paragraph = (p, before) => `<div class="essay-paragraph"><p>${esc(p.text)}</p>${quotesWhy(p.quotes, esc, before)}</div>`;
         const list = items => `<ol class="essay-advice">${items.map(r => `<li>${esc(r.text)}${quotesWhy(r.quotes, esc)}</li>`).join('')}</ol>`;
         const conclusion = o.teachersConclusion?.text ? paragraph(o.teachersConclusion) : '';
         return `<section class="essay-findings"><h3>Выводы по эссе</h3><p class="muted essay-note">Выводы по тексту эссе. Из чего сделан вывод — по кнопке под абзацем.</p>
 ${paragraph(o.formation, o.formation.before || [])}${paragraph(o.moments)}${paragraph(o.environment)}
+${o.deeds ? `<h3>Что сделал сам</h3>${o.deeds.length ? list(o.deeds) : '<p class="muted">Дел, проектов и мероприятий в эссе не названо.</p>'}` : ''}
 <h3>Что воспитал ВУЦ</h3>${o.developed.length ? list(o.developed) : '<p class="muted">Перемен, которые автор связывает с ВУЦ, в эссе нет.</p>'}
 <h3>Что ещё усилить</h3>${list(o.strengthen)}</section>${teacherLines(o.teachers, esc, conclusion)}`;
     }

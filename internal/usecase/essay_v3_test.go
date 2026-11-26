@@ -386,3 +386,43 @@ func TestSummaryOfV3OfACohortWithoutEarlierEssays(t *testing.T) {
 		}
 	}
 }
+
+// v6 adds the list «deeds», checked like «developed»: from 0 to 3 points, each
+// with quotes from the answers.
+func TestCheckOfV6AsksForTheDeeds(t *testing.T) {
+	answers := map[string]string{"1.1": "Я пошёл «в ВУЦ» ради «службы» и отсрочки.", "1.2": "Сам снял учебный ролик для занятий по огневой.", "2.4": "Хочу поблагодарить полковника Иванова за помощь."}
+	deed := func(quote string) any {
+		return map[string]any{"text": "По своей инициативе снял учебный ролик для занятий.", "quotes": []any{map[string]any{"question": "1.2", "quote": quote}}}
+	}
+	for name, c := range map[string]struct {
+		deeds any
+		want  string
+	}{
+		"no list":        {nil, "deeds: пунктов должно быть от 0 до 3"},
+		"empty":          {[]any{}, ""},
+		"one deed":       {[]any{deed("снял учебный ролик для занятий")}, ""},
+		"too many":       {[]any{deed("снял учебный ролик"), deed("учебный ролик для"), deed("ролик для занятий"), deed("для занятий по")}, "deeds: пунктов должно быть от 0 до 3"},
+		"a wrong quote":  {[]any{deed("снял фильм о войне")}, "deeds, пункт 1"},
+		"a label inside": {[]any{map[string]any{"text": "Вместе с [человек 1] снял ролик.", "quotes": []any{map[string]any{"question": "1.2", "quote": "снял учебный ролик"}}}}, "deeds, пункт 1"},
+	} {
+		payload := essayPayloadFor(answers, nil)
+		output := goodEssayV3For(payload)
+		if c.deeds != nil {
+			output["deeds"] = c.deeds
+		}
+		back := roundTrip(t, output)
+		var found []string
+		for _, p := range checkEssayAnswerV6(back, payload) {
+			if strings.HasPrefix(p, "deeds") {
+				found = append(found, p)
+			}
+		}
+		joined := strings.Join(found, " | ")
+		switch {
+		case c.want == "" && joined != "":
+			t.Errorf("%s: %s", name, joined)
+		case c.want != "" && !strings.Contains(joined, c.want):
+			t.Errorf("%s: want %q, got %q", name, c.want, joined)
+		}
+	}
+}
