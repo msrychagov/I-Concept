@@ -57,7 +57,9 @@ type answerRequest struct {
 }
 type completionRequest struct {
 	AllowPartial bool `json:"allowPartial"`
-	Revision     *int `json:"revision"`
+	// Part is the part of the test being submitted; needed when the test has parts.
+	Part     string `json:"part,omitempty"`
+	Revision *int   `json:"revision"`
 }
 type sectionRequest struct {
 	Answers  map[string]json.RawMessage `json:"answers"`

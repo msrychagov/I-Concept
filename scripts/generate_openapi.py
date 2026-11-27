@@ -83,8 +83,9 @@ S['StartSession'] = obj({'url':string(example='/survey?id=ID-сессии')}, ['
 S['ConsentInput'] = obj({'value':boolean(enum=[True]),'revision':integer(minimum=0)}, ['value','revision'])
 S['AnswerInput'] = obj({'value':integer(nullable=True,description='Значение в пределах шкалы вопроса. Для type=textarea: value=0 отмечает заполнение, текст передаётся в note (до 4000 символов), балл не рассчитывается. null удаляет ответ и его текст.'),'note':string(maxLength=4000),'revision':integer(minimum=0)}, ['value','revision'])
 S['AnswerInput']['example'] = {'value':5,'note':'','revision':1}
-S['CompletionInput'] = obj({'allowPartial':boolean(default=False),'revision':integer(minimum=0)}, ['revision'])
-S['RevisionResponse'] = obj({'revision':integer(),'updated':string(format='date-time'),'completed':boolean()}, ['revision','updated','completed'])
+S['CompletionInput'] = obj({'allowPartial':boolean(default=False),'part':string(description='Часть тестирования, которую студент сдаёт: self, will или vuc. Без неё сдаются все ещё не сданные части.'),'revision':integer(minimum=0)}, ['revision'])
+S['TestPart'] = obj({'id':string(),'name':string(),'modules':{'type':'array','items':string()},'answered':integer(),'total':integer(),'submitted':boolean()}, ['id','name','modules','answered','total','submitted'])
+S['RevisionResponse'] = obj({'revision':integer(),'updated':string(format='date-time'),'completed':boolean(),'parts':{'type':'array','items':ref('TestPart'),'description':'Части тестирования и что сдано; только у тестирования, разбитого на части.'}}, ['revision','updated','completed'])
 S['PublicQuestion'] = obj({'id':string(),'module':string(),'text':string(),'min':integer(),'max':integer(),'type':string(),'indicator':string(),'options':arr(obj({'id':string(),'text':string()}, ['id','text']))}, ['id','module','text','min','max','type'])
 S['Survey'] = obj({'session':ref('Session'),'items':arr(ref('PublicQuestion')),'modules':{'type':'object','additionalProperties':string()},'version':string()}, ['session','items','modules','version'])
 S['Survey']['description'] = 'Только собственная незавершённая сессия активного назначения. В session.profile передаётся пустая структура; ключи, веса вариантов и расчёты отсутствуют.'
@@ -143,7 +144,7 @@ endpoint('/students/me/assignments/{id}/session','post','startAssignment','Ст�
 endpoint('/students/me/sessions/{id}','get','getSurvey','Анкета','Получить свою анкету','Survey',auth='student',codes=[403])
 endpoint('/students/me/sessions/{id}/consent','put','saveConsent','Анкета','Подтвердить согласие','RevisionResponse','ConsentInput','student',codes=[409])
 endpoint('/students/me/sessions/{id}/answers/{itemId}','put','saveAnswer','Анкета','Сохранить ответ и комментарий','RevisionResponse','AnswerInput','student',description='Записывает ответ и комментарий, увеличивает revision. Передайте value=null, чтобы удалить ответ. Отсутствующий note очищает комментарий.',codes=[409])
-endpoint('/students/me/sessions/{id}/completion','post','completeSurvey','Анкета','Завершить тестирование','RevisionResponse','CompletionInput','student',description='Без allowPartial=true пропуски приводят к 422 с partial=true. После завершения студент не может изменять ответы.',codes=[409,422])
+endpoint('/students/me/sessions/{id}/completion','post','completeSurvey','Анкета','Сдать часть или завершить тестирование','RevisionResponse','CompletionInput','student',description='Если тестирование разбито на части, сдаётся часть part (без part — все оставшиеся); тестирование завершено, когда сданы все части. Без allowPartial=true пропуски приводят к 422 с partial=true. Ответы сданной части и завершённого тестирования изменить нельзя.',codes=[409,422])
 endpoint('/question-bank','get','getQuestionBank','Методика','Банк вопросов и показатели','Bank')
 endpoint('/dashboard','get','getDashboard','Преподаватель','Данные панели преподавателя','Dashboard')
 endpoint('/templates','get','listTemplates','Шаблоны','Список шаблонов и основа нового шаблона','Templates')

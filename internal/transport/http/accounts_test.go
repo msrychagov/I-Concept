@@ -163,7 +163,10 @@ func TestRegistrationAssignmentsPrivacyAndRoles(t *testing.T) {
 	}
 	requireCode(t, callAccount(t, a, "PUT /api/v1/students/me/sessions/"+sessionID+"/consent", map[string]any{"value": true, "revision": 0}, first), 200)
 	requireCode(t, callAccount(t, a, "PUT /api/v1/students/me/sessions/"+sessionID+"/answers/I001", map[string]any{"value": 5, "note": "", "revision": 1}, first), 200)
-	requireCode(t, callAccount(t, a, "/api/v1/students/me/sessions/"+sessionID+"/completion", map[string]any{"allowPartial": true, "revision": 2}, first), 200)
+	// The test of pilot-2.7 is finished when its three parts are submitted.
+	for n, part := range []string{"self", "will", "vuc"} {
+		requireCode(t, callAccount(t, a, "/api/v1/students/me/sessions/"+sessionID+"/completion", map[string]any{"allowPartial": true, "part": part, "revision": 2 + n}, first), 200)
+	}
 	completed := callAccount(t, a, "/api/v1/students/me/assignments", nil, first)
 	requireCode(t, completed, 200)
 	for _, word := range []string{"\"answers\"", "\"rows\"", "\"report\"", "passwordHash", "\"profile\""} {

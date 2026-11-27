@@ -39,6 +39,9 @@ func (a *Service) SurveyCommand(loginToken, sessionID string, b Input, op string
 			if err := a.validateAnswer(s, id, value); err != nil {
 				return nil, failure(Invalid, map[string]any{"error": err.Error()})
 			}
+			if a.partLocked(s, id) {
+				return nil, failure(Conflict, map[string]any{"error": "Эта часть уже сдана, ответы изменить нельзя."})
+			}
 			note := str(b, "note")
 			if utf8.RuneCountInString(note) > 4000 {
 				return nil, failure(Invalid, map[string]any{"error": "Заметка слишком длинная."})
@@ -63,6 +66,12 @@ func (a *Service) SurveyCommand(loginToken, sessionID string, b Input, op string
 			} else {
 				s.Notes[id] = note
 			}
+		} else if len(a.testParts(s)) > 0 {
+			done, err := a.submitPart(&s, str(b, "part"), boolean(b, "allowPartial"))
+			if err != nil {
+				return nil, err
+			}
+			finished = done
 		} else {
 			if len(s.Answers) != len(a.itemsFor(s)) && !boolean(b, "allowPartial") {
 				return nil, failure(Incomplete, map[string]any{"error": "Есть пропуски. Ответы сохранены.", "partial": true})
@@ -84,5 +93,9 @@ func (a *Service) SurveyCommand(loginToken, sessionID string, b Input, op string
 	if finished {
 		a.queuePortraits(Source{"session", saved.ID})
 	}
-	return map[string]any{"revision": saved.Revision, "updated": saved.Updated, "completed": saved.Completed}, nil
+	result := map[string]any{"revision": saved.Revision, "updated": saved.Updated, "completed": saved.Completed}
+	if parts := a.partStates(saved); parts != nil {
+		result["parts"] = parts
+	}
+	return result, nil
 }
