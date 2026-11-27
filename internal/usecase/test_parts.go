@@ -151,3 +151,21 @@ func (a *Service) partLocked(s model.Session, item string) bool {
 	}
 	return false
 }
+
+// onlyModules is the session with the answers of the modules only.
+func onlyModules(items []model.Item, s model.Session, modules map[string]bool) model.Session {
+	out := clone(s)
+	out.Answers, out.Notes = map[string]int{}, map[string]string{}
+	for _, item := range items {
+		if !modules[item.Module] {
+			continue
+		}
+		if v, ok := s.Answers[item.ID]; ok {
+			out.Answers[item.ID] = v
+		}
+		if note, ok := s.Notes[item.ID]; ok {
+			out.Notes[item.ID] = note
+		}
+	}
+	return out
+}

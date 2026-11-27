@@ -24,6 +24,10 @@ type TestConclusion struct {
 	Summary         string             `json:"summary"`
 	Details         []ConclusionPart   `json:"details"`
 	Recommendations []ConclusionAdvice `json:"recommendations"`
+	// Partial is true when not all parts of the test are submitted: then there
+	// are only the sentences of the submitted parts, no summary and no
+	// recommendations (Вики/Тестирование/План разбивки теста на три части.md).
+	Partial bool `json:"partial,omitempty"`
 }
 
 // ConclusionPart is one part of «Подробно».
@@ -349,6 +353,24 @@ var russianLevels = map[string]string{"высокий": "high", "средний"
 
 // testConclusionOf writes the conclusion on the data of a finished test.
 func (a *Service) testConclusionOf(data *TestPortraitData) (*TestConclusion, testFacts, error) {
+	return a.testConclusionWith(data, nil)
+}
+
+// partialTestConclusion is the conclusion on the parts submitted so far: has
+// are the modules of the submitted parts. Every sentence needs all the modules
+// its data come from; the summary and the recommendations need all parts.
+func (a *Service) partialTestConclusion(data *TestPortraitData, has map[string]bool) *TestConclusion {
+	if data == nil || has == nil {
+		return nil
+	}
+	c, _, err := a.testConclusionWith(data, has)
+	if err != nil {
+		return nil
+	}
+	return c
+}
+
+func (a *Service) testConclusionWith(data *TestPortraitData, has map[string]bool) (*TestConclusion, testFacts, error) {
 	p, err := loadedTestPhrases()
 	if err != nil {
 		return nil, testFacts{}, err
@@ -365,7 +387,7 @@ func (a *Service) testConclusionOf(data *TestPortraitData) (*TestConclusion, tes
 	if err := json.Unmarshal(raw, &all); err != nil {
 		return nil, testFacts{}, err
 	}
-	w := testWriter{p: p, v: v, answers: map[string]string{}}
+	w := testWriter{p: p, v: v, answers: map[string]string{}, has: has}
 	w.collectAnswers(all)
 	return w.conclusion(), w.facts, nil
 }
@@ -387,7 +409,27 @@ type testWriter struct {
 	v       testView
 	answers map[string]string // the level of the answer by the question of the questionnaire
 	facts   testFacts
+	// has are the modules of the submitted parts; nil when the test is whole.
+	has map[string]bool
 }
+
+// got is true when all the modules are submitted (always for a whole test).
+// The modules the sentences read: A — the images of the self, B — the
+// statements on the qualities, C — patriotism, V — motivation, U, W, X — the
+// methods of the will, K — the questionnaire of the activity component, AZM,
+// AZC — identity, D — the conditions, F — the stories of the activity.
+func (w *testWriter) got(modules ...string) bool {
+	for _, m := range modules {
+		if w.has != nil && !w.has[m] {
+			return false
+		}
+	}
+	return true
+}
+
+// whole is true when the test is whole: the summary, the recommendations and
+// the levels of the kinds of activity read all parts.
+func (w *testWriter) whole() bool { return w.has == nil }
 
 // collectAnswers finds the answers of the questionnaire of the activity
 // component wherever the input has them: {вопрос_анкеты, уровень} or
@@ -575,7 +617,7 @@ func (w *testWriter) height(mean float64) string {
 
 func (w *testWriter) values() string {
 	sentences := []string{}
-	if text := w.p.Motivation[w.level(w.p.MotivationMethod)]; text != "" {
+	if text := w.p.Motivation[w.level(w.p.MotivationMethod)]; text != "" && w.got("V") {
 		sentences = append(sentences, text)
 	}
 	r := w.p.Relations
@@ -586,7 +628,9 @@ func (w *testWriter) values() string {
 		case r.Platoon:
 			sentences = append(sentences, w.platoon(relation.Items)...)
 		case r.Country:
-			sentences = append(sentences, w.country(relation.Items)...)
+			if w.got("B", "C") {
+				sentences = append(sentences, w.country(relation.Items)...)
+			}
 		}
 	}
 	return strings.Join(sentences, " ")
@@ -596,6 +640,13 @@ func (w *testWriter) values() string {
 // comrades of the platoon, with the teachers, and what it says of him.
 func (w *testWriter) people(items []testScoredItem) []string {
 	r := w.p.Relations
+	if !w.got("B") {
+		// Only the sentence on the teachers, from the third part.
+		if text := w.teachers(); text != "" {
+			return []string{text}
+		}
+		return nil
+	}
 	strong, weak, even, mean := standOut(items, r.Gap, r.Max)
 	if mean == 0 {
 		return nil
@@ -666,6 +717,9 @@ func (w *testWriter) rating(name string) string {
 // notice him in class and how he feels the trust, the attention and the
 // example of the elders.
 func (w *testWriter) teachers() string {
+	if !w.got("K", "D") {
+		return ""
+	}
 	t := w.p.Relations.Teachers
 	parts, lacking, above := []string{}, []string{}, 0
 	if text := w.answer(t.Activity); text != "" {
@@ -707,8 +761,11 @@ func (w *testWriter) teachers() string {
 func (w *testWriter) platoon(items []testScoredItem) []string {
 	r := w.p.Relations
 	sentences := []string{}
-	if text := w.answer(r.Work); text != "" {
+	if text := w.answer(r.Work); text != "" && w.got("K") {
 		sentences = append(sentences, text)
+	}
+	if !w.got("B") {
+		return sentences
 	}
 	strong, weak, _, mean := standOut(items, r.Gap, r.Max)
 	if mean == 0 {
@@ -782,12 +839,12 @@ func (w *testWriter) country(items []testScoredItem) []string {
 func (w *testWriter) will() string {
 	sentences := []string{}
 	wl := w.p.Will
-	if text := wl.Emotional[w.level(w.p.EmotionalMethod)]; text != "" {
+	if text := wl.Emotional[w.level(w.p.EmotionalMethod)]; text != "" && w.got("U") {
 		sentences = append(sentences, text)
 	}
 	byLevel := map[string][]string{}
 	for _, method := range wl.RegulationMethods {
-		if level := w.level(method); level != "" {
+		if level := w.level(method); level != "" && w.got("W") {
 			byLevel[level] = append(byLevel[level], cmp.Or(w.p.WillNames[method], strings.ToLower(method)))
 		}
 	}
@@ -803,10 +860,12 @@ func (w *testWriter) will() string {
 	case len(byLevel) > 1:
 		sentences = append(sentences, fullSentence(fill(wl.Regulation["mixedLow"], map[string]string{"weak": upperFirst(joinNouns(byLevel["low"])), "verb": verb(byLevel["low"]), "strong": joinNouns(byLevel["medium"])})))
 	}
-	if text := wl.Qualities[w.level(wl.QualitiesMethod)]; text != "" {
+	if text := wl.Qualities[w.level(wl.QualitiesMethod)]; text != "" && w.got("X") {
 		sentences = append(sentences, text)
 	}
-	sentences = append(sentences, w.practice()...)
+	if w.got("K") {
+		sentences = append(sentences, w.practice()...)
+	}
 	return strings.Join(append(sentences, w.choice()...), " ")
 }
 
@@ -862,6 +921,9 @@ func (w *testWriter) practice() []string {
 func (w *testWriter) choice() []string {
 	s := w.p.Self
 	sentences := []string{}
+	if !w.got("AZM", "AZC", "K") {
+		return sentences
+	}
 	if text := s.MilitaryText[w.self(s.Military)]; text != "" {
 		sentences = append(sentences, text)
 	}
@@ -926,6 +988,9 @@ func (w *testWriter) even() bool {
 }
 
 func (w *testWriter) image() string {
+	if !w.got("A") {
+		return ""
+	}
 	im := w.p.Image
 	sentences := []string{}
 	_, _, _, _, mean := w.extremes()
@@ -1070,6 +1135,9 @@ func (w *testWriter) environment() string {
 	sentences := []string{}
 	byLevel, kinds := map[string][]string{}, 0
 	for _, side := range w.v.Life {
+		if !w.whole() {
+			break
+		}
 		if kind, level := e.Kinds[side.Side], russianLevels[side.Level]; kind != "" && level != "" {
 			byLevel[level] = append(byLevel[level], kind)
 			kinds++
@@ -1088,6 +1156,9 @@ func (w *testWriter) environment() string {
 	}
 	clauses := []string{}
 	for _, level := range []string{"high", "medium", "low"} {
+		if !w.got("K") {
+			break
+		}
 		names := []string{}
 		for _, s := range e.Satisfied {
 			if w.answers[s.Question] == level {
@@ -1104,7 +1175,7 @@ func (w *testWriter) environment() string {
 		clauses = append(clauses, fill(e.SatisfiedText[level], map[string]string{"list": joinNouns(names), "verb": verb}))
 	}
 	text := strings.Join(clauses, ", ")
-	if patriotic := w.answer(e.Patriotic); patriotic != "" {
+	if patriotic := w.answer(e.Patriotic); patriotic != "" && w.got("K") {
 		if text == "" {
 			text = patriotic
 		} else {
@@ -1115,6 +1186,9 @@ func (w *testWriter) environment() string {
 		sentences = append(sentences, fullSentence(text))
 	}
 	lacking := append(w.rated(e.Ratings["lacking"]), w.rated(e.Ratings["below"])...)
+	if !w.got("D") {
+		lacking = nil
+	}
 	if len(lacking) > e.LackingMax {
 		lacking = lacking[:e.LackingMax]
 	}
@@ -1123,7 +1197,7 @@ func (w *testWriter) environment() string {
 	}
 	can := []string{}
 	for _, name := range w.rated(e.Ratings["above"]) {
-		if phrase := e.Conditions[name].Can; phrase != "" && len(can) < e.AboveMax {
+		if phrase := e.Conditions[name].Can; phrase != "" && len(can) < e.AboveMax && w.got("D") {
 			can = append(can, phrase)
 		}
 	}
@@ -1132,6 +1206,9 @@ func (w *testWriter) environment() string {
 	}
 	stories := []string{}
 	for _, story := range w.v.Stories {
+		if !w.got("F") {
+			break
+		}
 		text := strings.TrimRight(strings.TrimSpace(story.Answer), ".")
 		if text != "" && len(stories) < e.StoriesMax {
 			stories = append(stories, fill(e.Story, map[string]string{"text": text}))
@@ -1335,6 +1412,17 @@ func (w *testWriter) attentionGroup() (testGroupView, string, bool) {
 }
 
 func (w *testWriter) conclusion() *TestConclusion {
+	if !w.whole() {
+		c := &TestConclusion{Details: []ConclusionPart{}, Recommendations: []ConclusionAdvice{}, Partial: true}
+		for _, part := range []struct{ id, text string }{
+			{"values", w.values()}, {"will", w.will()}, {"image", w.image()}, {"environment", w.environment()},
+		} {
+			if part.text != "" {
+				c.Details = append(c.Details, ConclusionPart{ID: part.id, Title: w.p.Titles[part.id], Text: part.text})
+			}
+		}
+		return c
+	}
 	advice := w.advice()
 	c := &TestConclusion{Summary: w.summary(advice), Details: []ConclusionPart{}, Recommendations: advice}
 	for _, part := range []struct{ id, text string }{
