@@ -20,7 +20,7 @@ window.teacherResult = async function ({view, api, esc, id, slices}) {
         const total = rows.reduce((sum, row) => sum + row.total, 0);
         const statements = data.items.filter(item => !item.responseOnly && (item.scored || ['B', 'C', 'D'].includes(item.module)));
         dialog.innerHTML = `<div class="section-title"><div><h2>${esc(s.participant)}</h2><p>Взвод ${esc(s.group)} · ${esc(s.wave)}</p></div><button class="secondary" id="close-result">Закрыть</button></div>${window.sliceBar(slices, id, esc)}
-   <p>${s.completed ? 'Прохождение завершено' : 'Прохождение в процессе'} · ответов на утверждения ${answered} из ${total}</p>
+   <p>${s.completed ? 'Прохождение завершено' : r.parts ? `Сдано частей ${r.parts.filter(p => p.submitted).length} из ${r.parts.length}` : 'Прохождение в процессе'} · ответов на утверждения ${answered} из ${total}</p>
    <section class="surface test-portrait" id="test-portrait-box" aria-label="Вывод по тестированию"></section>
    <section class="surface" id="test-dynamics-box" aria-label="Динамика тестирования"></section>
    <h3>Отчёт по утверждениям</h3><p class="muted">Средний балл по показателю рассчитывается по шкале 1–5 с учётом обратных утверждений. При неполном наборе ответов балл не рассчитывается; пропуски не заменяются нулём.</p>
@@ -37,7 +37,7 @@ window.teacherResult = async function ({view, api, esc, id, slices}) {
             dialog.close();
             window.teacherResult({view, api, esc, id: next, slices});
         });
-        stopAI = window.testPortrait.mount({element: dialog.querySelector('#test-portrait-box'), api, esc, id, methods: r.methods, completed: s.completed, conclusion: r.conclusion});
+        stopAI = window.testPortrait.mount({element: dialog.querySelector('#test-portrait-box'), api, esc, id, methods: r.methods, completed: s.completed, conclusion: r.conclusion, parts: r.parts});
         // Values by the ontograph in the open answers «Мои действия и опыт» (values.js).
         // The values go inside «Подробно» of the conclusion, not under every tab.
         dialog.querySelector('#test-portrait-box [data-pane="details"]')?.append(dialog.querySelector('#values-box'));

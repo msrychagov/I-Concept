@@ -191,11 +191,26 @@ func (a *Service) analyze(s model.Session, all []model.SessionRecord) map[string
 	result := engine.analyzeSnapshot(s, all)
 	result["psychological"] = engine.psychologicalReport(s)
 	result["dynamics"] = a.testDynamics(s, all)
-	if portrait := a.TestPortrait(s); portrait != nil {
+	// A test in parts shows the methods and the conclusion by the submitted
+	// parts only, until all of them are; the parts are shown with their state.
+	view, has := s, map[string]bool(nil)
+	if parts := a.partStates(s); parts != nil {
+		result["parts"] = parts
+		if !s.Completed {
+			has = a.submittedModules(s)
+			view = onlyModules(a.itemsFor(s), s, has)
+		}
+	}
+	if portrait := a.TestPortrait(view); portrait != nil {
 		result["methods"] = portrait
-		// The conclusion by the program (test_conclusion.go), only on a finished test.
+		// The conclusion by the program (test_conclusion.go): whole on a finished
+		// test, by the submitted parts on a test in parts.
 		if s.Completed {
 			if c := a.testConclusion(portrait); c != nil {
+				result["conclusion"] = c
+			}
+		} else if a.partsStarted(s) {
+			if c := a.partialTestConclusion(portrait, has); c != nil {
 				result["conclusion"] = c
 			}
 		}

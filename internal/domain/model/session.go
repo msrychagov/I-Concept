@@ -40,6 +40,9 @@ type Session struct {
 	Revision           int               `json:"revision"`
 	Revoked            bool              `json:"revoked"`
 	TeacherID          string            `json:"teacherId,omitempty"`
+	// Parts are the ids of the parts of the test (Bank.Parts) the student has
+	// submitted; Completed is set when all of them are. Empty without parts.
+	Parts []string `json:"parts,omitempty"`
 }
 
 type SessionRecord struct {

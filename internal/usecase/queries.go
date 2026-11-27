@@ -67,7 +67,16 @@ func (a *Service) Survey(loginToken, id string) (any, error) {
 	pub := clone(s)
 	pub.Profile = model.Profile{}
 	pub.TeacherID = ""
-	return map[string]any{"session": pub, "items": a.publicItems(s), "modules": a.Bank().Modules, "version": s.BankVersion, "instructions": a.engineFor(s).bank.Instructions}, nil
+	// The names of the modules are those of the bank of the session: an old
+	// session keeps «Мое самочувствие», which pilot-2.7 has not.
+	engine := a.engineFor(s)
+	modules := clone(engine.bank.Modules)
+	delete(modules, "E")
+	result := map[string]any{"session": pub, "items": a.publicItems(s), "modules": modules, "version": s.BankVersion, "instructions": engine.bank.Instructions}
+	if parts := a.partStates(s); parts != nil {
+		result["parts"] = parts
+	}
+	return result, nil
 }
 func (a *Service) ExportCSV(w io.Writer, group string) error {
 	return a.ExportCSVFor("", w, group)

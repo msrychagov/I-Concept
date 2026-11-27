@@ -56,6 +56,9 @@ func (a *Service) AssignmentCommandFor(teacherID string, b Input, op string) (an
 		if op == "assignment" && str(b, "formId") != "" {
 			return a.assignForm(db, teacherID, b)
 		}
+		if op == "assignment" && str(b, "profileId") == "" {
+			return a.assignTest(db, teacherID, b)
+		}
 		if op == "assignment" {
 			var p model.Profile
 			for _, x := range db.Profiles {
@@ -122,6 +125,24 @@ func (a *Service) AssignmentCommandFor(teacherID string, b Input, op string) (an
 		}
 		return nil, failure(Invalid, map[string]any{"error": fmt.Sprintf("Неизвестное действие %s", op)})
 	})
+}
+
+// assignTest assigns the test as one button, like the autobiography: no
+// template and no switches — all the bank, all its parts (decided on 27
+// November 2026). The questions are drawn once, as with a template.
+func (a *Service) assignTest(db *model.Database, teacherID string, b Input) (any, error) {
+	title := strings.TrimSpace(str(b, "title"))
+	platoon := strings.TrimSpace(str(b, "platoon"))
+	if title == "" || len(title) > 200 || len(platoon) > 80 {
+		return nil, failure(Invalid, map[string]any{"error": "Укажите название тестирования."})
+	}
+	p := a.emptyProfile()
+	p.Name = "Диагностическое тестирование"
+	p.Questions = clone(a.bank.Items)
+	p.Questions = a.assignmentQuestions(p, true, true, true)
+	as := model.Assignment{ID: uuid(), Title: title, Platoon: platoon, Profile: p, Activity: true, Motivation: true, Methods: true, Active: true, Created: time.Now().UTC().Format(time.RFC3339), OwnerID: teacherID}
+	db.Assignments = append(db.Assignments, as)
+	return map[string]any{"ok": true}, nil
 }
 
 // assignForm assigns a fixed questionnaire; it needs no template. An essay is

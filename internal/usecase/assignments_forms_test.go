@@ -28,8 +28,13 @@ func TestFormAssignmentNeedsNoTemplateButTestsStillDo(t *testing.T) {
 			t.Errorf("%s: %v", name, err)
 		}
 	}
-	if _, err := s.AssignmentCommand(Input{"title": raw(t, "Тест")}, "assignment"); kind(err) != Invalid {
-		t.Fatalf("test assignment without a template: %v", err)
+	// The test is assigned without a template since 27 November 2026; an
+	// unknown template and a blank title are still refused.
+	if _, err := s.AssignmentCommand(Input{"title": raw(t, " ")}, "assignment"); kind(err) != Invalid {
+		t.Fatalf("test assignment without a title: %v", err)
+	}
+	if _, err := s.AssignmentCommand(Input{"title": raw(t, "Тест"), "profileId": raw(t, "nope")}, "assignment"); kind(err) != Invalid {
+		t.Fatalf("test assignment with an unknown template: %v", err)
 	}
 	p := s.emptyProfile()
 	p.ID, p.Name, p.Author = "template", "Шаблон", "Тест"

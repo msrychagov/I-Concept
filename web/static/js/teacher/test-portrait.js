@@ -218,10 +218,29 @@ window.testPortrait = (() => {
     // the summary, the details with the tables of the methods and the
     // recommendations. Returns the function that stops it: nothing to stop,
     // the conclusion comes ready in the report.
-    function mount({element, esc, methods, completed, conclusion}) {
+    function mount({element, esc, methods, completed, conclusion, parts}) {
         const title = '<h3>Вывод по тестированию</h3>';
         if (!methods) {
             element.innerHTML = `${title}<p class="muted">В этом тестировании нет методик уровней Я-концепции, вывод не составляется. Включите «Методики уровней Я-концепции» при назначении.</p>`;
+            return () => {};
+        }
+        // A test in parts: until all are submitted, the part of the conclusion
+        // that comes from the submitted parts, without the summary and advice.
+        if (!completed && parts?.length) {
+            const done = parts.map((p, n) => ({...p, n: n + 1})).filter(p => p.submitted),
+                numbers = done.map(p => p.n), all = ['одной', 'двух', 'трёх', 'четырёх'][parts.length - 1] || parts.length;
+            const line = done.length
+                ? `${done.length === 1 ? 'Сдана часть' : 'Сданы части'} ${numbers.length > 1 ? numbers.slice(0, -1).join(', ') + ' и ' + numbers.at(-1) : numbers[0]} из ${all}: ${done.map(p => '«' + esc(p.name) + '»').join(', ')}. Общий вывод и рекомендации появятся, когда будут сданы все части.`
+                : 'Ни одна часть ещё не сдана. Вывод будет появляться по мере того, как студент сдаёт части.';
+            if (!done.length || !conclusion) {
+                element.innerHTML = `${title}<p class="info test-parts-state">${line}</p>`;
+                return () => {};
+            }
+            element.innerHTML = `${title}<p class="info test-parts-state">${line}</p>${tabs([['details', 'По сданным частям'], ['charts', 'Диаграммы']])}
+   <div data-pane="details" class="test-portrait-text"><p class="muted">По ответам студента в сданных частях.</p>${(conclusion.details || []).map(p => `<h4>${esc(p.title)}</h4><p>${esc(p.text)}</p>`).join('')}${tables(methods, esc)}</div>
+   <div data-pane="charts" hidden>${window.diagnosticCharts.test(methods, esc)}</div>
+   <p class="portrait-signature muted">${esc(SIGNATURE)}</p>`;
+            bindTabs(element);
             return () => {};
         }
         if (!completed || !conclusion) {

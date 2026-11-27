@@ -16,7 +16,12 @@ import (
 // methods, by the surname of the student.
 func demoTestPortraits(t *testing.T) (*Service, map[string]*TestPortraitData) {
 	t.Helper()
-	a := testApp(t)
+	return demoTestPortraitsOf(t, testApp(t))
+}
+
+// demoTestPortraitsOf are the demo portraits of the service a.
+func demoTestPortraitsOf(t *testing.T, a *Service) (*Service, map[string]*TestPortraitData) {
+	t.Helper()
 	db, err := a.demoDatabase()
 	if err != nil {
 		t.Fatal(err)
@@ -38,9 +43,12 @@ func demoTestPortraits(t *testing.T) (*Service, map[string]*TestPortraitData) {
 }
 
 // The conclusions on the demo students are kept in testdata/test_conclusion;
-// with -update they are rewritten.
+// with -update they are rewritten. They are written on pilot-2.6, the bank of
+// the sessions before the test was split into parts: the conclusion on a
+// finished old session must not change. The demo answers are drawn in the
+// order of the questions, so on pilot-2.7 without PS they are other answers.
 func TestTestConclusionOfDemoStudents(t *testing.T) {
-	a, portraits := demoTestPortraits(t)
+	a, portraits := demoTestPortraitsOf(t, legacyApp(t))
 	dir := filepath.Join("testdata", "test_conclusion")
 	for _, name := range sortedKeys(portraits) {
 		t.Run(name, func(t *testing.T) {
@@ -222,7 +230,7 @@ func TestReportHasTheTestConclusion(t *testing.T) {
 		if _, ok := a.analyze(s, db.Sessions)["conclusion"].(*TestConclusion); !ok {
 			t.Fatalf("%s: no conclusion in the report", s.Participant)
 		}
-		s.Completed = false
+		s.Completed, s.Parts = false, nil
 		result := a.analyze(s, db.Sessions)
 		if _, ok := result["conclusion"]; ok {
 			t.Fatal("a conclusion on an unfinished session")
@@ -236,9 +244,10 @@ func TestReportHasTheTestConclusion(t *testing.T) {
 }
 
 // The conclusions by the demo platoons are kept in testdata/test_conclusion,
-// «взвод N.json»; with -update they are rewritten.
+// «взвод N.json»; with -update they are rewritten. On pilot-2.6, as the
+// conclusions on the students.
 func TestPlatoonConclusionOfDemoPlatoons(t *testing.T) {
-	a := testApp(t)
+	a := legacyApp(t)
 	if err := a.SeedDemo(); err != nil {
 		t.Fatal(err)
 	}

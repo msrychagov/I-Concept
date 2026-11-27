@@ -17,6 +17,17 @@ type Bank struct {
 	// Climate is the express method of the climate of the platoon; its pairs
 	// have no level, only the ratings and their sum.
 	Climate *ClimateMethod `json:"climate,omitempty"`
+	// Parts split the test into parts a student submits one by one, in any
+	// order; the test is finished when every part is submitted. A bank without
+	// parts is taken whole.
+	Parts []BankPart `json:"parts,omitempty"`
+}
+
+// BankPart is one part of the test: its modules in the order they are asked.
+type BankPart struct {
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Modules []string `json:"modules"`
 }
 
 // ClimateMethod is the express method of the social and psychological climate

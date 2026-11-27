@@ -269,6 +269,9 @@ func (a *Service) AccountState(loginToken, role string) (any, error) {
 				entry["status"] = "В процессе"
 				entry["answered"] = len(session.Answers)
 				entry["total"] = len(a.itemsFor(*session))
+				if parts := a.partStates(*session); parts != nil {
+					entry["parts"] = parts
+				}
 			}
 		}
 		list = append(list, entry)

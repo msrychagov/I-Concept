@@ -136,7 +136,41 @@ func (a *Service) demoDatabase() (model.Database, error) {
 	a.addDemoMethods(&db, full, created, now, teacherID)
 	a.addDemoEssays(&db, created, now, teacherID)
 	a.addDemoPlatoon(&db, full, created, now, teacherID)
+	a.addDemoParts(&db, created, now, teacherID)
 	return db, nil
+}
+
+// addDemoParts gives the test in parts to platoon 103 by one button; its first
+// student has submitted only the first part, so the teacher sees a part of the
+// conclusion. A finished demo session of a bank with parts has all of them.
+func (a *Service) addDemoParts(db *model.Database, created string, now time.Time, teacherID string) {
+	if len(a.bank.Parts) == 0 {
+		return
+	}
+	for n := range db.Sessions {
+		s := &db.Sessions[n].Session
+		if s.Completed && len(s.Parts) == 0 {
+			for _, part := range a.testParts(*s) {
+				s.Parts = append(s.Parts, part.ID)
+			}
+		}
+	}
+	p := a.emptyProfile()
+	p.Name = "Диагностическое тестирование"
+	p.Questions = clone(a.bank.Items)
+	p.Questions = a.assignmentQuestions(p, true, true, true)
+	as := model.Assignment{ID: uuid(), Title: "Диагностическое тестирование", Platoon: "103", Profile: p, Activity: true, Motivation: true, Methods: true, Active: true, Created: created, OwnerID: teacherID}
+	db.Assignments = append(db.Assignments, as)
+	for _, student := range db.Students {
+		if student.Role != "student" || student.Platoon != "103" {
+			continue
+		}
+		first := a.bank.Parts[0]
+		s := model.Session{ID: uuid(), StudentID: student.ID, AssignmentID: as.ID, Kind: "student", Participant: student.Name, Group: student.Platoon, Wave: as.Title, Profile: clone(p), BankVersion: a.bank.Version, Created: created, Updated: now.Add(-30 * time.Minute).Format(time.RFC3339), Seed: 37, Consent: true, ConsentAt: created, Activity: true, Motivation: true, Methods: true, Parts: []string{first.ID}, Answers: map[string]int{}, Notes: map[string]string{}, Plan: []model.PlanItem{}, TeacherID: teacherID}
+		demoProfileAnswers(a.partItems(s, first), &s, 37, 0.6, nil)
+		db.Sessions = append(db.Sessions, model.SessionRecord{TokenHash: hash(token()), Session: s})
+		return
+	}
 }
 
 // addDemoAutobiography assigns the autobiography to platoon 101: the first

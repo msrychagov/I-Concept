@@ -11,7 +11,7 @@ import (
 // А. Н. Лутошкин: fourteen pairs of opposite statements, seven options from
 // +3 to −3, no indicator and no levels. pilot-2.5 is kept for old sessions.
 func TestPilot26HasTheClimateMethod(t *testing.T) {
-	bank, err := Load()
+	bank, err := load26()
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -39,11 +39,12 @@
         },
         profiles: {
             open: 'results', list: [
-                {id: 'assign', icon: 'send', title: 'Назначить', note: 'Шаблон, взвод, методики'},
+                {id: 'assign', icon: 'send', title: 'Назначить', note: 'Всем взводам или одному'},
                 {id: 'list', icon: 'clipboard', title: 'Назначенные', note: 'Открыть и закрыть доступ'},
                 {id: 'results', icon: 'user', title: 'Результаты студентов', note: 'Результат и вывод по каждому'},
-                {id: 'levels', icon: 'chart', title: 'Уровни методик по взводу', note: 'Вывод по взводу, ценности'},
-                {id: 'templates', icon: 'edit', title: 'Шаблоны тестирования', note: 'Состав вопросов'}
+                {id: 'levels', icon: 'chart', title: 'Уровни методик по взводу', note: 'Вывод по взводу, ценности'}
+                // «Шаблоны тестирования» are hidden since 27 November 2026: the test
+                // is assigned whole, by one button; the editor (profiles) is kept.
             ]
         },
         essay: {
