@@ -46,7 +46,7 @@ window.teacherPlatoonView = async function ({view, api, esc, start = 'platoons',
             rows = data.forms.submissions.filter(s => s.studentId === studentId).map(s => ({id: s.id, date: s.completedAt || s.updated, completed: s.completed, title: t.get(s.assignmentId) || 'Автобиография'}));
         } else if (kind === 'test' && data.tests) {
             const t = titles(data.tests.assignments);
-            rows = data.tests.sessions.filter(s => s.studentId === studentId).map(s => ({id: s.id, date: s.updated, completed: s.completed, title: t.get(s.assignmentId) || s.title || 'Тестирование'}));
+            rows = data.tests.sessions.filter(s => s.studentId === studentId).map(s => ({id: s.id, date: s.updated, completed: s.completed, title: t.get(s.assignmentId) || s.title || 'Тестирование', parts: s.parts}));
         } else if (kind === 'essay' && data.essays) {
             rows = data.essays.assignments.flatMap(a => a.students.filter(s => s.studentId === studentId && s.submissionId).map(s => ({id: s.submissionId, date: s.completedAt || a.created, completed: s.status === 'submitted', title: a.title})));
         }
@@ -62,7 +62,7 @@ window.teacherPlatoonView = async function ({view, api, esc, start = 'platoons',
         return (list.open.completed ? `${k.done} ${fmtDate(list.open.date)}` : k.going) + more;
     }
 
-    const slicesOf = list => list.rows.map(r => ({id: r.id, label: `${fmtDate(r.date)} · ${r.title}${r.completed ? '' : ' · не завершено'}`}));
+    const slicesOf = list => list.rows.map(r => ({id: r.id, label: `${fmtDate(r.date)} · ${r.title}${r.completed ? '' : r.parts ? ` · сдано частей ${r.parts.filter(p => p.submitted).length} из ${r.parts.length}` : ' · не завершено'}`}));
 
     // ---- drawing -----------------------------------------------------------
     function crumbs(items) {
