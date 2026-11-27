@@ -1,0 +1,8 @@
+{
+  "version": "pilot-2.7",
+  "parts": [
+    {"id": "self", "name": "Каким я себя вижу", "modules": ["A", "S", "V", "C"]},
+    {"id": "will", "name": "Мои качества и воля", "modules": ["B", "W", "X", "U", "CL"]},
+    {"id": "vuc", "name": "Я в ВУЦ", "modules": ["D", "K", "AZM", "AZC", "F"]}
+  ]
+}

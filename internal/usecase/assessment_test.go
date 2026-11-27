@@ -15,6 +15,28 @@ func testApp(t *testing.T) *Service {
 	if err != nil {
 		t.Fatal(err)
 	}
+	return testAppWith(t, bank)
+}
+
+// legacyApp is the service whose current bank is pilot-2.6, the last one with
+// the section «Мое самочувствие» and without parts.
+func legacyApp(t *testing.T) *Service {
+	t.Helper()
+	banks, err := questionbank.Previous()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, bank := range banks {
+		if bank.Version == "pilot-2.6" {
+			return testAppWith(t, bank)
+		}
+	}
+	t.Fatal("pilot-2.6 is not kept")
+	return nil
+}
+
+func testAppWith(t *testing.T, bank model.Bank) *Service {
+	t.Helper()
 	repo, err := jsonfile.Open(filepath.Join(t.TempDir(), "data.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -47,17 +69,17 @@ func mustSnapshot(t *testing.T, repo Repository) model.Database {
 }
 func TestBankAndModuleSelection(t *testing.T) {
 	a := testApp(t)
-	if got := len(a.bank.Indicators); got != 67 {
-		t.Fatalf("indicators=%d, want 67", got)
+	if got := len(a.bank.Indicators); got != 39 {
+		t.Fatalf("indicators=%d, want 39", got)
 	}
 	base := model.Session{Kind: "student"}
-	if got := len(a.itemsFor(base)); got != 386 {
-		t.Fatalf("base items=%d, want 386", got)
+	if got := len(a.itemsFor(base)); got != 237 {
+		t.Fatalf("base items=%d, want 237", got)
 	}
 	base.Activity = true
 	base.Motivation = true
-	if got := len(a.itemsFor(base)); got != 442 {
-		t.Fatalf("extended items=%d, want 442", got)
+	if got := len(a.itemsFor(base)); got != 293 {
+		t.Fatalf("extended items=%d, want 293", got)
 	}
 	if got := len(a.itemsFor(model.Session{Kind: "observer"})); got != 8 {
 		t.Fatalf("observer items=%d, want 8", got)
@@ -69,8 +91,8 @@ func TestTemplateControlsQuestionAndReportComposition(t *testing.T) {
 	p := a.emptyProfile()
 	delete(p.Values, "Q01")
 	s := model.Session{Kind: "student", Profile: p, Answers: map[string]int{}, Notes: map[string]string{}}
-	if got := len(a.itemsFor(s)); got != 377 {
-		t.Fatalf("items after excluding Q01=%d, want 377", got)
+	if got := len(a.itemsFor(s)); got != 228 {
+		t.Fatalf("items after excluding Q01=%d, want 228", got)
 	}
 	for _, item := range a.itemsFor(s) {
 		if item.Indicator == "Q01" {
@@ -85,7 +107,7 @@ func TestTemplateControlsQuestionAndReportComposition(t *testing.T) {
 }
 
 func TestScoringAndIncompleteMean(t *testing.T) {
-	a := testApp(t)
+	a := legacyApp(t)
 	direct, _ := a.item("I001")
 	reverse, _ := a.item("I002")
 	if score(direct, 2) != 2 {

@@ -6,7 +6,7 @@ import (
 	"vucdiagnostic/internal/domain/model"
 )
 
-//go:embed bank.json pilot-2.0.json psychological.json activity.json methods.json identity.json climate.json defender.json environment.json
+//go:embed bank.json pilot-2.0.json psychological.json activity.json methods.json identity.json climate.json parts.json defender.json environment.json
 var files embed.FS
 
 // Defender returns the tables of the portrait by the test: the image of the
@@ -38,10 +38,47 @@ func Defender() (model.DefenderImage, error) {
 	return image, nil
 }
 
-// Load returns pilot-2.6: pilot-2.5 and the express method of the climate of
+// Load returns pilot-2.7: pilot-2.6 without the section «Мое самочувствие»
+// (PS) and split into three parts (parts.json; Вики/Тестирование/План
+// разбивки теста на три части.md, approved on 27 November 2026).
+func Load() (model.Bank, error) {
+	bank, err := load26()
+	if err != nil {
+		return bank, err
+	}
+	data, err := files.ReadFile("parts.json")
+	if err != nil {
+		return bank, err
+	}
+	var addition model.Bank
+	if err := json.Unmarshal(data, &addition); err != nil {
+		return bank, err
+	}
+	bank.Version = addition.Version
+	bank.Parts = addition.Parts
+	delete(bank.Modules, "PS")
+	delete(bank.Instructions, "PS")
+	items := bank.Items[:0:0]
+	for _, item := range bank.Items {
+		if item.Module != "PS" {
+			items = append(items, item)
+		}
+	}
+	bank.Items = items
+	indicators := bank.Indicators[:0:0]
+	for _, indicator := range bank.Indicators {
+		if indicator.Block != "psychological" {
+			indicators = append(indicators, indicator)
+		}
+	}
+	bank.Indicators = indicators
+	return bank, nil
+}
+
+// load26 returns pilot-2.6: pilot-2.5 and the express method of the climate of
 // the platoon by А. Н. Лутошкин (climate.json; Вики/Тестирование/Лутошкин —
 // адаптация для ВУЦ.md, approved on 25 October 2026).
-func Load() (model.Bank, error) {
+func load26() (model.Bank, error) {
 	bank, err := load25()
 	if err != nil {
 		return bank, err
@@ -202,5 +239,9 @@ func Previous() ([]model.Bank, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []model.Bank{bank, recent, previous, activity, methods, identity}, nil
+	climate, err := load26()
+	if err != nil {
+		return nil, err
+	}
+	return []model.Bank{bank, recent, previous, activity, methods, identity, climate}, nil
 }
