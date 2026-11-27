@@ -8398,7 +8398,7 @@
           },
           "profileId": {
             "type": "string",
-            "description": "Шаблон теста. Не передаётся, если указан formId."
+            "description": "Шаблон теста (прежний способ). Без шаблона и без formId назначается тестирование целиком, всеми частями, — как кнопкой «Назначить тестирование»."
           },
           "formId": {
             "type": "string",
@@ -8415,16 +8415,18 @@
           },
           "activity": {
             "type": "boolean",
-            "default": false
+            "default": false,
+            "description": "Только с шаблоном."
           },
           "motivation": {
             "type": "boolean",
-            "default": false
+            "default": false,
+            "description": "Только с шаблоном."
           },
           "methods": {
             "type": "boolean",
             "default": false,
-            "description": "Методики уровней Я-концепции из таблицы 8 руководителя: добавляются целиком вместе с ВПМ (модуль V)."
+            "description": "Только с шаблоном. Методики уровней Я-концепции из таблицы 8 руководителя: добавляются целиком вместе с ВПМ (модуль V). Без шаблона методики, мотивация и деятельность входят всегда."
           }
         },
         "additionalProperties": false,
@@ -8432,11 +8434,8 @@
           "title"
         ],
         "example": {
-          "title": "Входное тестирование",
-          "profileId": "ID-шаблона",
-          "platoon": "101",
-          "activity": false,
-          "motivation": false
+          "title": "Диагностическое тестирование",
+          "platoon": "101"
         }
       },
       "AssignmentStatusInput": {
@@ -8533,6 +8532,12 @@
           "printable": {
             "type": "boolean",
             "description": "Только у сданной автобиографии: текст для печати — GET /students/me/submissions/{id}/autobiography."
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestPart"
+            }
           }
         },
         "additionalProperties": false,
@@ -8607,6 +8612,12 @@
           },
           "total": {
             "type": "integer"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestPart"
+            }
           }
         },
         "additionalProperties": false,
@@ -8973,6 +8984,13 @@
           },
           "version": {
             "type": "string"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestPart"
+            },
+            "description": "Части тестирования в порядке показа; только у тестирования, разбитого на части."
           },
           "instructions": {
             "type": "object",
