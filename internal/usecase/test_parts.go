@@ -21,12 +21,27 @@ type PartState struct {
 	Submitted bool     `json:"submitted"`
 }
 
-// testParts are the parts of the bank of the session; nil when it has none.
+// testParts are the parts of the bank of the session; nil when it has none,
+// and when a part has no question of the session: a short test of an old
+// template is taken whole, as before the parts.
 func (a *Service) testParts(s model.Session) []model.BankPart {
 	if s.Kind != "student" {
 		return nil
 	}
-	return a.engineFor(s).bank.Parts
+	parts := a.engineFor(s).bank.Parts
+	if len(parts) == 0 {
+		return nil
+	}
+	asked := map[string]bool{}
+	for _, item := range a.itemsFor(s) {
+		asked[partOf(parts, item.Module)] = true
+	}
+	for _, part := range parts {
+		if !asked[part.ID] {
+			return nil
+		}
+	}
+	return parts
 }
 
 // partOf is the id of the part a module belongs to; empty when none.
@@ -65,9 +80,7 @@ func (a *Service) partStates(s model.Session) []PartState {
 				state.Answered++
 			}
 		}
-		if state.Total > 0 {
-			out = append(out, state)
-		}
+		out = append(out, state)
 	}
 	return out
 }

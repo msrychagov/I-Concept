@@ -183,3 +183,19 @@ func TestDemoHasATestInParts(t *testing.T) {
 		t.Fatalf("%d demo students with one part", partial)
 	}
 }
+
+// A short test of a template without some parts is taken whole, as before.
+func TestShortTemplateHasNoParts(t *testing.T) {
+	a := testApp(t)
+	p := a.emptyProfile()
+	p.Questions = []model.Item{}
+	for _, item := range a.bank.Items {
+		if item.Module == "B" || item.Module == "D" {
+			p.Questions = append(p.Questions, item)
+		}
+	}
+	s := model.Session{Kind: "student", Profile: p, BankVersion: p.BankVersion, Answers: map[string]int{}}
+	if a.testParts(s) != nil || a.partStates(s) != nil {
+		t.Fatal("a short test is split into parts")
+	}
+}
