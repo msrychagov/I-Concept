@@ -183,7 +183,7 @@ func TestDemoHasFinishedSessionsWithMethods(t *testing.T) {
 	finished := 0
 	for _, record := range db.Sessions {
 		s := record.Session
-		if !s.Methods {
+		if !s.Methods || !s.Completed {
 			continue
 		}
 		finished++

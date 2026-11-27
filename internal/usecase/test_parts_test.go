@@ -152,3 +152,34 @@ func TestFinishWithoutPartSubmitsAllParts(t *testing.T) {
 		t.Fatalf("completed %v, parts %v", s.Completed, s.Parts)
 	}
 }
+
+// The demo has the test in parts: finished sessions with all parts, and a
+// student of platoon 103 with only the first part, whose report has a part of
+// the conclusion.
+func TestDemoHasATestInParts(t *testing.T) {
+	a := testApp(t)
+	db, err := a.demoDatabase()
+	if err != nil {
+		t.Fatal(err)
+	}
+	partial := 0
+	for _, record := range db.Sessions {
+		s := record.Session
+		if len(a.testParts(s)) == 0 {
+			continue
+		}
+		if s.Completed && len(s.Parts) != 3 {
+			t.Fatalf("%s: finished with parts %v", s.Participant, s.Parts)
+		}
+		if !s.Completed && len(s.Parts) == 1 && s.Group == "103" {
+			partial++
+			c, ok := a.analyze(s, db.Sessions)["conclusion"].(*TestConclusion)
+			if !ok || !c.Partial || len(c.Details) == 0 {
+				t.Fatalf("%s: no part of the conclusion", s.Participant)
+			}
+		}
+	}
+	if partial != 1 {
+		t.Fatalf("%d demo students with one part", partial)
+	}
+}

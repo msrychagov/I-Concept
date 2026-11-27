@@ -230,7 +230,7 @@ func TestReportHasTheTestConclusion(t *testing.T) {
 		if _, ok := a.analyze(s, db.Sessions)["conclusion"].(*TestConclusion); !ok {
 			t.Fatalf("%s: no conclusion in the report", s.Participant)
 		}
-		s.Completed = false
+		s.Completed, s.Parts = false, nil
 		result := a.analyze(s, db.Sessions)
 		if _, ok := result["conclusion"]; ok {
 			t.Fatal("a conclusion on an unfinished session")
